@@ -1,10 +1,9 @@
 import os
 import hashlib
-
-from api.hello_world import blueprint
-from api import get_response_formatted, get_response_error_formatted
-from flask import jsonify, request
 import traceback
+
+from flask import jsonify, request
+from api import get_response_formatted, get_response_error_formatted
 
 
 def file_as_blockiter(afile, blocksize=65536):
@@ -43,7 +42,6 @@ def generate_file_md5(file_p):
         traceback.print_tb(e.__traceback__)
 
     return None, None
-
 
 
 def ensure_dir(f):

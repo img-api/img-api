@@ -10,6 +10,7 @@ from api.user.models import User
 
 API_VERSION = "0.50pa"
 
+
 def get_response_formatted(content, pretty=True):
     """ Returns a formatted response with the API version
         It cleans the input from private information.
@@ -60,6 +61,7 @@ def api_key_or_login_required(func):
     # 2. The user might be logged in, so we check if the login system from flask has the user registered
 
     """
+
     @wraps(func)
     def decorated_view(*args, **kwargs):
         user = None
@@ -110,4 +112,3 @@ def api_key_or_login_required(func):
         return get_response_error_formatted(401, {'error_msg': "User Unauthorized, check token with admin"})
 
     return decorated_view
-

@@ -8,6 +8,7 @@ from api.tools import generate_file_md5, ensure_dir
 from flask import current_app, url_for
 from api.user.routes import generate_random_user
 
+
 def get_media_valid_extension(file_name):
     """ Checks with the system to see if the extension provided is valid,
         You should never trust the frontend """
@@ -19,10 +20,10 @@ def get_media_valid_extension(file_name):
 
     return extension
 
+
 @blueprint.route('/upload', methods=['POST'])
 def api_upload_media():
     from flask_login import current_user, login_user
-
     """Upload media files to this system
     ---
     tags:
@@ -55,6 +56,8 @@ def api_upload_media():
                 type: integer
 
     """
+    from .models import File_Tracking
+
     if request.method != "POST":
         return get_response_error_formatted(404, {"error_msg": "No files to upload!"})
 
@@ -73,7 +76,8 @@ def api_upload_media():
     for key, f_request in request.files.items():
         print(" Upload multiple " + key)
 
-        full_path = media_path + current_user.username + "/"
+        user_space_path = current_user.username + "/"
+        full_path = media_path + user_space_path
         ensure_dir(full_path)
 
         if key.startswith("image"):
@@ -87,9 +91,29 @@ def api_upload_media():
             if not extension:
                 return get_response_error_formatted(400, {"error_msg": "FILE FORMAT NOT SUPPORTED YET!"})
 
-            final_path = full_path + md5 + extension
-            f_request.save(final_path)
+            relative_file_path = user_space_path + md5 + extension
+            final_absolute_path = media_path + relative_file_path
+
+            if os.path.exists(final_absolute_path):
+                # File already exists on disk, we just ignore it
+                print(" FILE ALREADY UPLOADED ")
+                continue
+
+            f_request.save(final_absolute_path)
             uploaded_ft.append({'file_md5': md5})
+
+            new_file = {
+                'file_name': file_name,
+                'file_path': relative_file_path,
+                'file_size': size,
+                'file_format': extension,
+                'checksum_md5': md5,
+                'username': current_user.username,
+                'is_public': current_user.is_anon
+            }
+
+            my_file = File_Tracking(**new_file)
+            my_file.save()
 
     ret = {'uploaded_files': uploaded_ft, 'username': current_user.username, 'status': 'success'}
     return get_response_formatted(ret)
