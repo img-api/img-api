@@ -2,7 +2,7 @@
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container-fluid">
             &nbsp;&nbsp;
-            <a class="navbar-brand" href="/">IMG-API</a>
+            <a class="navbar-brand" href="/"><span style='color:#3ec1d5'>IMG</span>API</a>
             <button class="navbar-toggler" type="button" data-mdb-toggle="collapse" data-mdb-target="#navbarColor02"
                 aria-controls="navbarColor02" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
@@ -30,7 +30,7 @@
 
                     {% if current_user.username %}
                     <li class="nav-item me-3 me-lg-0">
-                        <a class="btn btn-primary bg-theme mb-5" href="/{{ current_user.username }}/posts"
+                        <a class="btn btn-success bg-theme mb-5" href="/user/{{ current_user.username }}/posts"
                             role="button">Browse your images</a>
                     </li>
                     {% else %}

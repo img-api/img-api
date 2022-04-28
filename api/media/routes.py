@@ -10,6 +10,10 @@ from api.tools import generate_file_md5, ensure_dir
 from api.user.routes import generate_random_user
 from .models import File_Tracking
 
+from mongoengine.queryset import QuerySet
+from mongoengine.queryset.visitor import Q
+
+
 def get_media_valid_extension(file_name):
     """ Checks with the system to see if the extension provided is valid,
         You should never trust the frontend """
@@ -174,3 +178,66 @@ def api_get_media(media_id):
     abs_path = get_media_path() + my_file.file_path
     return send_file(abs_path, attachment_filename=my_file.file_name)
 
+
+@blueprint.route('/posts/<string:user_id>', methods=['GET'])
+def api_get_posts_json(user_id):
+    """Returns a json object with a list of media objects owned by this user.
+    ---
+    tags:
+      - media
+    schemes: ['http', 'https']
+    deprecated: false
+    definitions:
+      image_file:
+        type: object
+    parameters:
+        - in: query
+          name: key
+          schema:
+            type: string
+          description: A token that you get when you register or when you ask for a token
+    responses:
+      200:
+        description: Returns a json list of public images or public and private if it is yourself
+        schema:
+          id: Media list
+          type: object
+          properties:
+            media_files:
+              type: array
+              items:
+                type: object
+                properties:
+                  filename:
+                      type: string
+                  media_id:
+                      type: string
+                  username:
+                      type: string
+                  is_public:
+                      type: boolean
+    """
+    from flask_login import current_user, login_user
+
+    username = None
+    if hasattr(current_user, "username"):
+        username = current_user.username
+
+    if user_id == username:
+        query = Q(username=username)
+    else:
+        query = Q(username=username) | Q(is_public=True)
+
+    file_list = File_Tracking.objects(query)
+
+    return_list = []
+    for ft in file_list:
+        return_list.append({
+            'filename': str(ft.file_name),
+            'media_id': str(ft.pk),
+            'username': str(ft.username),
+            'is_public': ft.is_public
+        })
+
+    ret = {'status': 'success', 'media_files': return_list}
+    return get_response_formatted(ret)

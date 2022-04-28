@@ -49,3 +49,8 @@ footer {
 .main_username {
     color: #aaa;
 }
+
+.img-fit-inside {
+    object-fit: contain;
+    object-position: center;
+}

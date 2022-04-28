@@ -99,6 +99,7 @@ def register_app_blueprints(app):
     print(" APP BLUE PRINTS ")
     for module_name in (
             'root',
+            'user',
             'media',
             'landing',
     ):
