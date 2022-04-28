@@ -11,6 +11,25 @@ db = MongoEngine()
 
 app = Flask(__name__)
 
+MONGODB_SETTINGS={
+    'host': 'localhost',
+    'port': 27017
+}
+
+app.config.update(
+    DEBUG=True,
+    MONGODB_SETTINGS=MONGODB_SETTINGS,
+    SECRET_KEY="mysecret_key_loaded_from_the_system"
+)
+
+# Database initialization
+
+db.init_app(app)
+
+# Login manager to handle users
+
+login_manager = LoginManager()
+
 # Swagger and documentation
 
 app.json_encoder = LazyJSONEncoder # Required by swagger
@@ -47,6 +66,7 @@ swagger = Swagger(app, template=swagger_template, config=swagger_config)
 def register_api_blueprints(app):
     print(" API BLUE PRINTS ")
     for module_name in (
+            'user',
             'admin',
             'hello_world',
     ):
@@ -72,8 +92,3 @@ def register_app_blueprints(app):
 register_api_blueprints(app)
 register_app_blueprints(app)
 
-# Database initialization
-
-db.init_app(app)
-
-login_manager = LoginManager()

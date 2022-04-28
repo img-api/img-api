@@ -26,8 +26,8 @@ def get_response_error_formatted(status, content, is_warning=False):
         1xx: Hold on
         2xx: Here you go
         3xx: Go away
-        4xx: You fucked up
-        5xx: I fucked up
+        4xx: You failed up
+        5xx: I failed up
     """
 
     content['api'] = API_VERSION
