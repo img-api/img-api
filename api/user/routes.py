@@ -1,12 +1,42 @@
-import os
+import bcrypt
+import binascii
 
 from api.user import blueprint
-from api import get_response_formatted, get_response_error_formatted
-from flask import jsonify, request, Response
 
+from api import get_response_formatted, get_response_error_formatted, api_key_or_login_required
+
+from flask import jsonify, request, Response
+from flask_login import current_user, login_user, logout_user
 from api.tools import generate_file_md5, ensure_dir
 
 from .models import User
+
+
+def get_user_from_request():
+    if request.method == 'POST':
+        form = request.form
+        email = form['email']
+        password = form['password']
+    else:
+        email = request.args.get("email")
+        password = request.args.get("password")
+
+    if not password:
+        return get_response_error_formatted(401, {'error_msg': "Please provide a password."})
+
+    user = User.objects(username=email).first()
+    if not user:
+        return get_response_error_formatted(401, {'error_msg': "Please create an account."})
+
+    user_pass = binascii.unhexlify(user.password)
+    if not bcrypt.checkpw(password.encode('utf-8'), user_pass):
+        return get_response_error_formatted(
+            401, {'error_msg': "Wrong user or password, please try again or create a new user!"})
+
+    if not user.active:
+        return get_response_error_formatted(401, {'error_msg': "Please wait for an admin to give you access."})
+
+    return user
 
 
 @blueprint.route('/login', methods=['GET'])
@@ -14,35 +44,60 @@ def api_login_user():
     """Login an user into the system
     ---
     tags:
-      - test
+      - user
     schemes: ['http', 'https']
     deprecated: false
+    parameters:
+        - in: query
+          name: email
+          schema:
+            type: string
+          description: A valid email
+        - in: query
+          name: password
+          schema:
+            type: string
+          description: A vaild password
+    definitions:
+      user:
+        type: object
     definitions:
       user_file:
         type: object
     responses:
       200:
-        description: Returns if the file was successfully uploaded
+        description: Logins the user
         schema:
-          id: Standard status message
+          id: Token to use on the api
           type: object
           properties:
             msg:
                 type: string
             status:
                 type: string
-            timestamp:
+            token:
                 type: string
-            time:
-                type: integer
-
+      401:
+        description: User is not authorized to perform this operation, read the error message
+        schema:
+          id: Login error
+          type: object
+          properties:
+            msg:
+                type: string
+            status:
+                type: string
     """
-    from flask import session
 
-    admin = User.objects(username="admin").first()
-    has_admin = True if admin else False
+    user = get_user_from_request()
+    if isinstance(user, Response):
+        return user
 
-    return get_response_formatted({'status': 'success', 'msg': 'hello user'})
+    login_user(user, remember=True)
+
+    token = current_user.generate_auth_token()
+
+    return get_response_formatted({'status': 'success', 'msg': 'hello user', 'token': token})
 
 
 def split_addr(emailStr, encoding):
@@ -186,9 +241,7 @@ def api_create_user_local():
 
     """
 
-    import bcrypt
-
-    print(" CREATE USER LOCAL")
+    print("======= CREATE USER LOCAL =============")
 
     if request.method == 'POST':
         form = request.form
@@ -224,3 +277,132 @@ def api_create_user_local():
 
     ret = {'user': email, 'status': 'success', 'msg': 'Thanks for registering'}
     return get_response_formatted(ret)
+
+
+@blueprint.route('/remove', methods=['GET', 'POST'])
+def api_remove_user_local():
+    """ An user can delete its account
+    ---
+    tags:
+      - user
+    schemes: ['http', 'https']
+    deprecated: false
+    parameters:
+        - in: query
+          name: email
+          schema:
+            type: string
+          description: A valid email
+        - in: query
+          name: password
+          schema:
+            type: string
+          description: A vaild password
+    definitions:
+      user:
+        type: object
+    responses:
+      200:
+        description: Returns if the user was successfully deleted
+        schema:
+          id: Standard status message
+          type: object
+          properties:
+            msg:
+                type: string
+            status:
+                type: string
+    """
+    print("======= DELETE USER LOCAL =============")
+
+    user = get_user_from_request()
+    if isinstance(user, Response):
+        return user
+
+    user.delete()
+    return get_response_formatted({'status': 'success', 'msg': 'user deleted'})
+
+
+@blueprint.route('/token', methods=['GET'])
+@api_key_or_login_required
+def get_auth_token():
+    """ Gets a token that an user can user to upload and perform operations.
+
+    ---
+    tags:
+      - user
+    schemes: ['http', 'https']
+    deprecated: false
+    parameters:
+        - in: query
+          name: token
+          schema:
+            type: string
+          description: (Optional) If there is a token on the call, it will check if it is validity
+
+    definitions:
+      token:
+        type: object
+    responses:
+      200:
+        description: Returns the user token
+        schema:
+          id: Token
+          type: object
+          properties:
+            token:
+                type: string
+    """
+
+    token = request.args.get("key")
+    if not token:
+        token = current_user.generate_auth_token()
+        return get_response_formatted({'token': token})
+
+    user = User.verify_auth_token(token)
+    if isinstance(user, Response):
+        return user
+
+    login_user(user, remember=True)
+    return get_response_formatted({'token': token, 'user': user.username, 'status': 'success'})
+
+
+@blueprint.route('/get', methods=['GET'])
+def api_get_current_user():
+    """ Returns the current user being logged in
+    ---
+    tags:
+      - user
+    schemes: ['http', 'https']
+    deprecated: false
+    definitions:
+      user:
+        type: object
+    definitions:
+      user_file:
+        type: object
+    responses:
+      200:
+        description: Returns if the file was successfully uploaded
+        schema:
+          id: Standard status message
+          type: object
+          properties:
+            username:
+                type: string
+      401:
+        description: There is a problem with this user
+        schema:
+          id: Login error
+          type: object
+          properties:
+            msg:
+                type: string
+            status:
+                type: string
+    """
+
+    if not current_user or not current_user.username:
+        return get_response_error_formatted(401, {'error_msg': "Please create an account."})
+
+    return get_response_formatted({'user': current_user.username})

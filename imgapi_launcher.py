@@ -29,6 +29,7 @@ db.init_app(app)
 # Login manager to handle users
 
 login_manager = LoginManager()
+login_manager.init_app(app)
 
 # Swagger and documentation
 

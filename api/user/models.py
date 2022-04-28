@@ -8,7 +8,6 @@ from flask_login import UserMixin
 
 from imgapi_launcher import db, login_manager
 from itsdangerous import (TimedJSONWebSignatureSerializer as Serializer, BadSignature, SignatureExpired)
-from api import get_response_formatted, get_response_error_formatted
 
 
 @login_manager.user_loader
@@ -52,9 +51,7 @@ class User(UserMixin, db.Document):
     first_name = db.StringField(default="")
     last_name = db.StringField(default="")
 
-    email = db.StringField(unique=True)
     password = db.StringField()
-
     lang = db.StringField()
 
     active = db.BooleanField(default=False)
@@ -63,7 +60,7 @@ class User(UserMixin, db.Document):
     def generate_auth_token(self, expiration=(12 * 31 * 24 * 60 * 60), extra={}):
         print("- SERIALIZE APP KEY " + str(current_app.config['SECRET_KEY']))
         s = Serializer(current_app.config['SECRET_KEY'], expires_in=expiration)
-        return s.dumps({'id': self.username, 'db': self.database, 'extra': extra}).decode("utf-8")
+        return s.dumps({'id': self.username, 'extra': extra}).decode("utf-8")
 
     @staticmethod
     def is_valid_token(request):
@@ -94,27 +91,29 @@ class User(UserMixin, db.Document):
 
     @staticmethod
     def verify_auth_token(token, check_active=True):
+        from api import get_response_formatted, get_response_error_formatted
+
         s = Serializer(current_app.config['SECRET_KEY'])
         try:
             data = s.loads(token)
         except SignatureExpired:
             print(" Error: valid token, but expired ")
-            return get_response_formatted(
-                {'warning': 'Check Token Expired. System accepts expired tokens at the moment!'}), None
+            return get_response_formatted(403,
+                {'warning': 'Check Token Expired. System accepts expired tokens at the moment!'})
 
         except BadSignature:
             print(" Invalid valid token")
-            return get_response_error_formatted(403, {'error_msg': 'Invalid token'}), None
+            return get_response_error_formatted(403, {'error_msg': 'Invalid token'})
 
         user_id = data['id']
         print("Token with user %s " % user_id)
 
         user = User.objects(username=user_id).first()
         if not user:
-            return get_response_error_formatted(403, {'error_msg': 'User does not exist!'}), None
+            return get_response_error_formatted(403, {'error_msg': 'User does not exist!'})
 
         if user.is_active():
             print("User Active [%s]" % user_id)
             return user
 
-        return get_response_error_formatted(403, {'error_msg': 'User is not active!'}), None
+        return get_response_error_formatted(403, {'error_msg': 'User is not active!'})
