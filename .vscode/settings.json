@@ -22,7 +22,7 @@
         "**/.git": true,
         "**/.pyc": true,
     },
-    "python.pythonPath": "venv/bin/python",
+    "python.pythonPath": ".venv/bin/python",
     "[python]": {
         "editor.codeActionsOnSave": {
             "source.organizeImports": false

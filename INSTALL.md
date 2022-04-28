@@ -27,5 +27,18 @@ py -3 -m venv .venv
 .venv\scripts\activate
 ```
 
+### Install mongodb
+
+The database of choice for this project is Mongodb since we can dynamically grow the project and scale it through clusters
+
+```
+sudo apt-get install mongodb
+```
+
+### Update project dependences
+```
+./update.sh
+```
+
 ## REFERENCE
 https://code.visualstudio.com/docs/python/tutorial-flask
