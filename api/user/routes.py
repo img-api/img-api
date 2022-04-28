@@ -14,6 +14,7 @@ from .models import User
 from mongoengine.queryset import QuerySet
 from mongoengine.queryset.visitor import Q
 
+
 def get_user_from_request():
     if request.method == 'POST':
         form = request.form

@@ -13,3 +13,14 @@ def root_app_test():
 def root_main_render():
     """ Returns the main HTML site """
     return render_template('index.html')
+
+
+@blueprint.route('/login', methods=['GET', 'POST'])
+def root_login_into_account():
+    """ Shows the login and password """
+    return render_template('login.html')
+
+@blueprint.route('/create_account', methods=['GET', 'POST'])
+def root_create_account():
+    """ Shows the login and password """
+    return render_template('create_account.html')

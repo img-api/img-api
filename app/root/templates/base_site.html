@@ -7,13 +7,56 @@
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <!-- Google Fonts Roboto -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" />
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" />
     <!-- MDB -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='mdb-ui-kit/css/mdb.min.css') }}" />
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/4.0.0/mdb.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/img-api.css') }}" />
 </head>
 
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/4.0.0/mdb.min.js"></script>
+
 <html>
-<body>
-{% block content %}Please override the content block{% endblock %}</title>
+
+<body style="{% block body_style %}{% endblock %}">
+    {% block content %}Please override the content block{% endblock %}</title>
 </body>
+
+{% block footer %}
+<footer class="bg-dark text-center text-white">
+    <div class="container p-4 pb-0">
+        <section class="">
+            <form action="">
+                <div class="row d-flex justify-content-center">
+                    <div class="col-auto">
+                        <p class="pt-2">
+                            <strong>Sign up for our newsletter</strong>
+                        </p>
+                    </div>
+                    <div class="col-md-5 col-12">
+                        <div class="form-outline form-white mb-4">
+                            <input type="email" id="form5Example29" class="form-control" />
+                            <label class="form-label" for="form5Example29">Email address</label>
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-outline-light mb-4">
+                            Subscribe
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </section>
+    </div>
+
+    <!-- Copyright -->
+    <div class="text-center p-3" style="background-color: rgba(0, 0, 0, 0.2);">
+        ©2022 Copyright:
+        <a class="text-white" href="http://engineer.blue">Sergio A. Martinez</a>
+    </div>
+    <!-- Copyright -->
+</footer>
+{% endblock %}
+
 </html>

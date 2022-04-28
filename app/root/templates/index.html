@@ -1,20 +1,132 @@
 {% extends "base_site.html" %}
 {% block title %} IMG - API Where your images come to life! {% endblock title %}
 
+{% block body_style %}
+background-color: #404040;
+{% endblock %}
+
 {% block content %}
-<h1>IMG - API Where your images come to life!</h1>
-<a href='/apidocs/'>Check out our amazing documentation and API</a> <br>
-<a href='/media/upload/'>Upload an image</a> <br>
-<a href='/top/'>See the best</a> <br>
+<div class=''>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            &nbsp;&nbsp;
+            <a class="navbar-brand" href="#">IMG-API</a>
+            <button class="navbar-toggler" type="button" data-mdb-toggle="collapse" data-mdb-target="#navbarColor02"
+                aria-controls="navbarColor02" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarColor02">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item active">
+                        <a class="nav-link" aria-current="page" href="#">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Top Images</a>
+                    </li>
+                </ul>
 
-{% if current_user.username %}
+                <ul class="navbar-nav d-flex flex-row">
+                    <!-- Icons -->
+                    <li class="nav-item me-3 me-lg-0">
+                        <a class="btn btn-primary bg-theme mb-5" href="/apidocs/" role="button">API & Documentation</a>
+                    </li>
+                    <li class="nav-item me-3 me-lg-0">
+                        <a class="nav-link" href="/login">
+                            <i class="fas fa-user hidden"></i>
+                        </a>
+                    </li>
 
-<a href='/{{ current_user.username }}/posts'>Browse your images</a> <br>
-{% else %}
+                    {% if current_user.username %}
+                    <li class="nav-item me-3 me-lg-0">
+                        <a class="btn btn-primary bg-theme mb-5" href="/{{ current_user.username }}/posts"
+                            role="button">Browse your images</a>
+                    </li>
+                    {% else %}
 
-    {% include "inc_login.html" %}
-{% endif %}
+                    <li class="nav-item me-3 me-lg-0">
+                        <a class="btn btn-primary bg-theme mb-5" href="/login" role="button">Sign In</a>
+                    </li>
+                    <li class="nav-item me-3 me-lg-0">
+                        <a class="nav-link" href="/login">
+                            <i class="fas fa-user hidden"></i>
+                        </a>
+                    </li>
+                    <li class="nav-item me-3 me-lg-0">
+                        <a class="btn btn-success bg-theme mb-5" href="/create_account" role="button">Sign Up</a>
+                    </li>
+                    {% endif %}
 
+                </ul>
+            </div>
+        </div>
+    </nav>
+</div>
+<div class='container'>
+    <br>
+    <section class="">
+        <header>
+            <!-- Background image -->
+            <div class="p-5 text-center bg-image" style="
+                  background-image: url('https://mdbcdn.b-cdn.net/img/new/slides/041.webp');
+                  height: 400px; ">
+                <div class="mask" style="background-color: rgba(0, 0, 0, 0.6)">
+                    <div class="d-flex justify-content-center align-items-center h-100">
+                        <div class="text-white">
 
+                            <h1 class="mb-3">
+                                <center>
+                                    <a class="sticky-logo" href="/">
+                                        <h1 style='color:white'><span>IMG</span>API</h1>
+                                    </a>
+                                </center>
+                            </h1>
+
+                            <h4 class="mb-3">Where your images come to life!</h4>
+                            <a class="btn btn-outline-light btn-lg" href="#!" role="button">Upload an image</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Background image -->
+        </header>
+    </section>
+
+    <hr>
+    <section class="text-center">
+        <div class="row">
+            <div class="col-lg-4 col-md-12 mb-4">
+                <div class="bg-image hover-overlay ripple shadow-1-strong rounded">
+                    <img src="https://mdbcdn.b-cdn.net/img/new/fluid/city/113.webp" class="img-fluid">
+                    <a href="#!">
+                        <div class="mask" style="background-color: rgba(57, 192, 237, 0.2)"></div>
+                    </a>
+                </div>
+            </div>
+
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="bg-image hover-zoom hover-shadow rounded">
+                    <img src="https://mdbcdn.b-cdn.net/img/new/standard/city/053.webp" class="img-fluid">
+                </div>
+            </div>
+
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="bg-image hover-overlay ripple shadow-1-strong rounded">
+                    <img src="https://mdbcdn.b-cdn.net/img/new/fluid/city/113.webp" class="img-fluid">
+                    <a href="#!">
+                        <div class="mask" style="
+                      background: linear-gradient(
+                        45deg,
+                        rgba(29, 236, 197, 0.5),
+                        rgba(91, 14, 214, 0.5) 100%
+                      );
+                    "></div>
+                    </a>
+                </div>
+            </div>
+
+        </div>
+
+    </section>
+</div>
 
 {% endblock content %}

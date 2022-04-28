@@ -13,9 +13,6 @@
         // your workspace
         "**/__pycache__": true,
         "**/*.pyc": true,
-        "prints/": true,
-        "camera/": true,
-        "videos/": true,
     },
     "python.languageServer": "None",
     "search.exclude": {
