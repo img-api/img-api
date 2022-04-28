@@ -4,8 +4,16 @@ from flasgger import Swagger, LazyString, LazyJSONEncoder
 from flasgger import swag_from
 from importlib import import_module
 
+from flask_login import current_user, LoginManager
+from flask_mongoengine import MongoEngine, MongoEngineSessionInterface
+
+db = MongoEngine()
+
 app = Flask(__name__)
-app.json_encoder = LazyJSONEncoder
+
+# Swagger and documentation
+
+app.json_encoder = LazyJSONEncoder # Required by swagger
 app.config['SWAGGER'] = {
     'title': 'IMG API'
 }
@@ -32,8 +40,9 @@ swagger_config = {
 }
 
 template = dict(swaggerUiPrefix=LazyString(lambda : request.environ.get('HTTP_X_SCRIPT_NAME', '')))
-
 swagger = Swagger(app, template=swagger_template, config=swagger_config)
+
+# Blue prints section
 
 def register_api_blueprints(app):
     print(" API BLUE PRINTS ")
@@ -63,3 +72,8 @@ def register_app_blueprints(app):
 register_api_blueprints(app)
 register_app_blueprints(app)
 
+# Database initialization
+
+db.init_app(app)
+
+login_manager = LoginManager()

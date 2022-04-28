@@ -8,9 +8,3 @@ def test_landing(client):
     assert "Landing check" in html
     assert landing.status_code == 200
 
-def test_hello_world(client):
-    landing = client.get("/")
-
-    json = client.get("/hello_world/")
-
-    assert True
