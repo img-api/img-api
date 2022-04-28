@@ -148,6 +148,44 @@ def is_password_valid(password):
 
 @blueprint.route('/create', methods=['GET', 'POST'])
 def api_create_user_local():
+    """ User creation
+    ---
+    tags:
+      - user
+    schemes: ['http', 'https']
+    deprecated: false
+    parameters:
+        - in: query
+          name: email
+          schema:
+            type: string
+          description: A valid email that will define username
+        - in: query
+          name: password
+          schema:
+            type: string
+          description: A vaild password
+    definitions:
+      user:
+        type: object
+    responses:
+      200:
+        description: Returns if the user was successfully created
+        schema:
+          id: Standard status message
+          type: object
+          properties:
+            msg:
+                type: string
+            status:
+                type: string
+            timestamp:
+                type: string
+            time:
+                type: integer
+
+    """
+
     import bcrypt
 
     print(" CREATE USER LOCAL")
@@ -161,21 +199,20 @@ def api_create_user_local():
         password = request.args.get("password")
 
     if not is_password_valid(password):
-        return get_response_error_formatted(400, {'error_msg': "Invalid password"})
+        return get_response_error_formatted(401, {'error_msg': "Invalid password"})
+
+    is_user = User.objects(username=email).first()
+
+    if is_user:
+        return get_response_error_formatted(401, {'error_msg': "User already on the system, would you like to login?"})
 
     email = get_validated_email(email)
     if isinstance(email, Response):
         return email
 
     hashpass = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
-    try:
-        hex_pass = hashpass.hex()
-    except:
-        import binascii
-        hex_pass = str(binascii.hexlify(hashpass))
-
     user_obj = {
-        'password': hex_pass,
+        'password': hashpass.hex(),
         'username': email,
 
         # Active by default, we don't have validation on this system

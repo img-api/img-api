@@ -8,7 +8,6 @@ from api.tools import generate_file_md5, ensure_dir
 
 @blueprint.route('/upload', methods=['GET'])
 def api_upload_image():
-
     """Uploads an image
     ---
     tags:
