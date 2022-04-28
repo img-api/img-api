@@ -1,0 +1,89 @@
+{
+    "files.exclude": {
+        "**/.git": true, // this is a default value
+        "**/.DS_Store": true, // this is a default value
+
+        "**/node_modules": true, // this excludes all folders
+        // named "node_modules" from
+        // the explore tree
+
+        // alternative version
+        "node_modules": true, // this excludes the folder
+        // only from the root of
+        // your workspace
+        "**/__pycache__": true,
+        "**/*.pyc": true,
+        "prints/": true,
+        "camera/": true,
+        "videos/": true,
+    },
+    "python.languageServer": "None",
+    "search.exclude": {
+        "**/.git": true,
+        "**/.pyc": true,
+    },
+    "python.pythonPath": "venv/bin/python",
+    "[python]": {
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": false
+        }
+    },
+
+    "editor.autoClosingBrackets": "never",
+    "editor.autoSurround": "never",
+    "editor.acceptSuggestionOnEnter": "on",
+    "editor.acceptSuggestionOnCommitCharacter": false,
+    "editor.hover.enabled": false,
+    "editor.minimap.enabled": false,
+    "editor.parameterHints.enabled": false,
+    "editor.quickSuggestions": true,
+    "editor.quickSuggestionsDelay": 2,
+    "editor.quickSuggestions.other": false,
+    "editor.suggest.snippetsPreventQuickSuggestions": false,
+    "editor.suggestOnTriggerCharacters": false,
+    "editor.wordBasedSuggestions": true,
+
+    "workbench.editor.enablePreview": false,
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true,
+    "workbench.colorCustomizations": {
+        "terminal.foreground": "#00FD61",
+        "terminal.background": "#000"
+    },
+    "beautify.language": {
+        "html": [
+            "htm",
+            "html",
+            "django-html"
+        ],
+        "css": [
+            "css",
+            "scss"
+        ],
+    },
+
+    "python.formatting.provider": "yapf",
+    "python.formatting.yapfArgs": [
+        "--style={ column_limit: 120 }"
+    ],
+    "python.linting.pylintArgs": [
+        "--disable=C0103"
+    ],
+
+    "python.linting.lintOnSave": false,
+    "python.linting.pylintUseMinimalCheckers": false,
+    "python.linting.pycodestyleEnabled": false,
+    "python.linting.flake8Enabled": false,
+    "python.linting.mypyEnabled": false,
+    "python.linting.pylamaEnabled": false,
+    "python.linting.enabled": false,
+    "python.linting.pylintEnabled": false,
+
+    "cSpell.diagnosticLevel": "Hint",
+    "cSpell.ignoreRegExpList": [
+        ".*"
+    ],
+    "cSpell.words": [
+        "imgapi"
+    ],
+}

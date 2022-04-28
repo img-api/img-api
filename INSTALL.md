@@ -1,12 +1,14 @@
-# CLONE PROJECT
+# WELCOME
+
+## CLONE PROJECT
 
 ```
 git clone git@github.com:sergioamr/img-api.git
 ```
 
-# INSTALLATION
+## INSTALLATION
 
-# Create a virtual environment to run this project
+### Create a virtual environment to run this project
 
 ```
 cd img-api
@@ -24,3 +26,6 @@ source .venv/bin/activate
 py -3 -m venv .venv
 .venv\scripts\activate
 ```
+
+## REFERENCE
+https://code.visualstudio.com/docs/python/tutorial-flask
