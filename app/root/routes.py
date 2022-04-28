@@ -2,6 +2,7 @@ from app.root import blueprint
 from api import get_response_formatted
 from flask import render_template
 
+
 @blueprint.route('/test', methods=['GET', 'POST'])
 def root_app_test():
     """ Returns a simple hello world used by the testing unit to check if the system works """
@@ -22,6 +23,7 @@ def root_main_render():
 def root_login_into_account():
     """ Shows the login and password """
     return render_template('login.html')
+
 
 @blueprint.route('/create_account', methods=['GET', 'POST'])
 def root_create_account():

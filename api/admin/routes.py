@@ -2,10 +2,12 @@ from api.admin import blueprint
 from api import get_response_formatted
 from flask import current_app, url_for
 
+
 def has_no_empty_params(rule):
     defaults = rule.defaults if rule.defaults is not None else ()
     arguments = rule.arguments if rule.arguments is not None else ()
     return len(defaults) >= len(arguments)
+
 
 @blueprint.route('/', methods=['GET', 'POST'])
 def api_admin_hello_world():
@@ -14,6 +16,7 @@ def api_admin_hello_world():
     """
 
     return get_response_formatted({'status': 'success', 'msg': 'Admin success'})
+
 
 @blueprint.route("/site-map")
 def site_map():

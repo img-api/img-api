@@ -133,7 +133,8 @@ def api_upload_media():
 
 @blueprint.route('/get/<string:media_id>', methods=['GET'])
 def api_get_media(media_id):
-    """Returns a file from disk
+    """Returns a media object given it's media_id.
+        The user might be rejected if the media is private
     ---
     tags:
       - media
@@ -151,6 +152,11 @@ def api_get_media(media_id):
     responses:
       200:
         description: Returns a file or a generic placeholder for the file
+      401:
+        description: User doesn't have access to this resource.
+      404:
+        description: File doesn't exist anymore on the system
+
     """
     from flask_login import current_user, login_user
 
@@ -171,7 +177,7 @@ def api_get_media(media_id):
 
     if not my_file.is_public and my_file.username != username:
         if is_api_call:
-            return get_response_error_formatted(405, {"error_msg": "FILE IS PRIVATE!"})
+            return get_response_error_formatted(401, {"error_msg": "FILE IS PRIVATE!"})
         else:
             return redirect("/static/images/placeholder_private.jpg")
 

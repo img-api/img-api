@@ -101,8 +101,8 @@ class User(UserMixin, db.Document):
             data = s.loads(token)
         except SignatureExpired:
             print(" Error: valid token, but expired ")
-            return get_response_formatted(403,
-                {'warning': 'Check Token Expired. System accepts expired tokens at the moment!'})
+            return get_response_formatted(
+                403, {'warning': 'Check Token Expired. System accepts expired tokens at the moment!'})
 
         except BadSignature:
             print(" Invalid valid token")
