@@ -2,6 +2,15 @@
 {% block title %} IMG - API Where your images come to life! {% endblock title %}
 {% block content %}
 
-<h1>List of user images</h1>
+<input id='user_posts' class='hidden' value='{{ username}}'></input>
+<br>
+<h3 id='system_message'><i class='fa fa-spinner fa-gears'></i> Loading ...</h3>
+
+<div class="row" id='media_posts_container'></div>
 
 {% endblock content %}
+
+{% block javascripts %}
+{{ super() }}
+<script src="{{ url_for('app_user_media_blueprint.static', filename='images_download.js') }}"></script>
+{% endblock javascripts %}
