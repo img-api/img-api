@@ -35,7 +35,8 @@ login_manager.init_app(app)
 
 app.json_encoder = LazyJSONEncoder # Required by swagger
 app.config['SWAGGER'] = {
-    'title': 'IMG API'
+    'title': 'IMG API',
+    'DEFAULT_MODEL_DEPTH': -1
 }
 
 swagger_template = dict(info={
@@ -82,6 +83,7 @@ def register_app_blueprints(app):
     print(" APP BLUE PRINTS ")
     for module_name in (
             'root',
+            'media',
             'landing',
     ):
         module = import_module('app.{}.routes'.format(module_name))

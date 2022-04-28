@@ -1,0 +1,45 @@
+{% extends "base_site.html" %}
+{% block title %} IMG - API Upload new image! {% endblock title %}
+
+{% block main_css %}
+<link rel="stylesheet" href="{{ url_for('app_media_blueprint.static', filename='drop.css') }}" />
+{% endblock %}
+
+{% block content %}
+<br>
+<div class='container'>
+    {% if current_user.username %}
+    You are uploading as {{ current_user.username }}
+    {% else %}
+    <center>
+        <span>
+            You are uploading as a non registered user.
+        </span>
+        <br>
+        <br>
+        <span>
+            <a class="btn btn-primary bg-theme" href="/login" role="button">Sign In</a>
+        </span>
+        <hr>
+    </center>
+    {% endif %}
+
+    {% include "inc_media_upload.html" %}
+</div>
+{% endblock content %}
+
+{% block footer %}
+<footer class="bg-dark text-center text-white footer_small">
+    <!-- Copyright -->
+    <div class="text-center p-3" style="background-color: rgba(0, 0, 0, 0.2);">
+        ©2022 Copyright:
+        <a class="text-white" href="http://engineer.blue">Sergio A. Martinez</a>
+    </div>
+    <!-- Copyright -->
+</footer>
+{% endblock %}
+
+{% block javascripts %}
+{{ super() }}
+<script src="{{ url_for('app_media_blueprint.static', filename='drop.js') }}"></script>
+{% endblock javascripts %}

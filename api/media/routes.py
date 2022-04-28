@@ -17,6 +17,12 @@ def api_upload_media():
     definitions:
       image_file:
         type: object
+    parameters:
+        - in: query
+          name: key
+          schema:
+            type: string
+          description: A token that you get when you register or when you ask for a token
     responses:
       200:
         description: Returns if the file was successfully uploaded
@@ -36,10 +42,6 @@ def api_upload_media():
     """
     if request.method != "POST":
         return get_response_error_formatted(404, {"error_msg": "No files to upload!"})
-
-    topic = request.args.get("topic")
-    if not topic:
-        return get_response_error_formatted(404, {"error_msg": "No user topic to upload!"})
 
     uploaded_ft = []
     for key, f_request in request.files.items():

@@ -78,7 +78,7 @@ def api_login_user():
       200:
         description: Logins the user
         schema:
-          id: Token to use on the api
+          id: Token callback response
           type: object
           properties:
             msg:
