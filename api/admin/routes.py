@@ -17,6 +17,34 @@ def api_admin_hello_world():
 
 @blueprint.route("/site-map")
 def site_map():
+    """Returns a view of the site map for debugging.
+    ---
+    tags:
+      - test
+    schemes: ['http', 'https']
+    deprecated: false
+    definitions:
+      site_map:
+        type: object
+    responses:
+      200:
+        description: Will return a list of entry points and function paths
+        schema:
+          id: url map definitions
+          type: object
+          properties:
+            site_map:
+              type: array
+              items:
+                type: object
+                properties:
+                  url_path:
+                      type: string
+                  entry_path:
+                      type: string
+
+    """
+
     links = []
     for rule in current_app.url_map.iter_rules():
         # Filter out rules we can't navigate to in a browser

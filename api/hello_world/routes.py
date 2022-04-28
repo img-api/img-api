@@ -1,23 +1,33 @@
 from api.hello_world import blueprint
 from api import get_response_formatted
+from flask import jsonify
 
-def has_no_empty_params(rule):
-    defaults = rule.defaults if rule.defaults is not None else ()
-    arguments = rule.arguments if rule.arguments is not None else ()
-    return len(defaults) >= len(arguments)
-
-@blueprint.route('/', methods=['GET', 'POST'])
+@blueprint.route('/', methods=['GET'])
 def api_hello_world():
-    """
-        Returns a simple hello world used by the testing unit to check if the system works
-        ---
-        tags:
-          - testing
-        definitions:
-        parameters:
-        responses:
-          200:
-            All good
-    """
+    """Returns a hello world for testing the API endpoint
+    ---
+    tags:
+      - test
+    schemes: ['http', 'https']
+    deprecated: false
+    definitions:
+      hello_world:
+        type: object
+    responses:
+      200:
+        description: Returns a valid json with the msg hello world
+        schema:
+          id: hello world test
+          type: object
+          properties:
+            msg:
+                type: string
+            status:
+                type: string
+            timestamp:
+                type: string
+            time:
+                type: integer
 
+    """
     return get_response_formatted({'status': 'success', 'msg': 'hello world'})
