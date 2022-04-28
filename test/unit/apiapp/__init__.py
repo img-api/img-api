@@ -28,6 +28,8 @@ def create_test_user(client):
 
 def remove_test_user(client):
     # Remove login
+    DUMMY_CREDENTIALS = client.environ_base['DUMMY_CREDENTIALS']
+
     ret = client.get("/api/user/login?" + DUMMY_CREDENTIALS)
     assert ret.json['status'] == 'success'
 
