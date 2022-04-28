@@ -1,6 +1,8 @@
+import json
+
 from test.unit.apiapp import client
 
 def test_hello_world(client):
-    json = client.get("/api/hello_world/")
+    ret = client.get("/api/hello_world/")
 
-    assert True
+    assert ret.json['status'] == 'success'

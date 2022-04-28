@@ -1,9 +1,13 @@
 from app.landing import blueprint
+from flask import render_template
 from api import get_response_formatted
 
-@blueprint.route('/', methods=['GET', 'POST'])
-def app_hello_world():
-    """ Returns a simple hello world used by the testing unit to check if the system works """
+@blueprint.route('/test', methods=['GET', 'POST'])
+def app_landing_test():
+    return get_response_formatted({'status': 'success', 'msg': 'landing'})
 
-    return get_response_formatted({'status': 'success', 'msg': 'hello world'})
 
+@blueprint.route('/html_check', methods=['GET', 'POST'])
+def root_main_render():
+    """ Returns the main HTML site """
+    return render_template('html_check.html')
