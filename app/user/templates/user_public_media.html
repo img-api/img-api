@@ -1,10 +1,19 @@
 {% extends "base_site.html" %}
 {% block title %} IMG - API Where your images come to life! {% endblock title %}
-{% block content %}
+{% block body_style %}background-color: #404040; {% endblock %}
 
+{% block content %}
 <input id='user_posts' class='hidden' value='{{ username}}'></input>
 <br>
 <h3 id='system_message'><i class='fa fa-spinner fa-gears'></i> Loading ...</h3>
+
+{% if current_user.is_anon %}
+<div class='container'>
+    <span style='color: white'> You are not registered, please consider signing up to keep access to your images. </span>
+    <a class="btn btn-success bg-theme mb-5 pull-right" href="/create_account" role="button">Sign Up</a>
+</div>
+    <hr>
+{% endif %}
 
 <div class="row" id='media_posts_container'></div>
 
@@ -14,3 +23,6 @@
 {{ super() }}
 <script src="{{ url_for('app_user_media_blueprint.static', filename='images_download.js') }}"></script>
 {% endblock javascripts %}
+
+{% block footer %}
+{% endblock %}

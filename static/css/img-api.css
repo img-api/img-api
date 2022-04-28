@@ -54,3 +54,12 @@ footer {
     object-fit: contain;
     object-position: center;
 }
+
+.pull-right {
+    float: right;
+}
+
+.big_image_auto {
+    width: 100%;
+    height: auto;
+}

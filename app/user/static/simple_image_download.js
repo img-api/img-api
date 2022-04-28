@@ -1,5 +1,6 @@
 var username = document.getElementById('user_posts').value;
-fetch('/api/media/posts/' + username)
+var media_id = document.getElementById('media_id').value;
+fetch('/api/media/get/' + media_id)
     .then(response => response.json())
     .then(data => {
 
