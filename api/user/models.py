@@ -47,6 +47,7 @@ class User(UserMixin, db.Document):
     last_access_date = db.DateTimeField()
 
     username = db.StringField(unique=True)
+    email = db.StringField(unique=True)
 
     first_name = db.StringField(default="")
     last_name = db.StringField(default="")

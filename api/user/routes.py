@@ -11,20 +11,29 @@ from api.tools import generate_file_md5, ensure_dir
 
 from .models import User
 
+from mongoengine.queryset import QuerySet
+from mongoengine.queryset.visitor import Q
 
 def get_user_from_request():
     if request.method == 'POST':
         form = request.form
+
         email = form['email']
+        username = form['username']
         password = form['password']
     else:
         email = request.args.get("email")
+        username = request.args.get("username")
         password = request.args.get("password")
 
     if not password:
         return get_response_error_formatted(401, {'error_msg': "Please provide a password."})
 
-    user = User.objects(username=email).first()
+    if not email:
+        return get_response_error_formatted(401, {'error_msg': "Please provide an email."})
+
+    user = User.objects(username=username).first()
+
     if not user:
         return get_response_error_formatted(401, {'error_msg': "Please create an account."})
 
@@ -96,7 +105,6 @@ def api_login_user():
     login_user(user, remember=True)
 
     token = current_user.generate_auth_token()
-
     return get_response_formatted({'status': 'success', 'msg': 'hello user', 'token': token})
 
 
@@ -246,15 +254,17 @@ def api_create_user_local():
     if request.method == 'POST':
         form = request.form
         email = form['email']
+        username = form['username']
         password = form['password']
     else:
         email = request.args.get("email")
+        username = request.args.get("username")
         password = request.args.get("password")
 
     if not is_password_valid(password):
         return get_response_error_formatted(401, {'error_msg': "Invalid password"})
 
-    is_user = User.objects(username=email).first()
+    is_user = User.objects(Q(username=username) | Q(email=email)).first()
 
     if is_user:
         return get_response_error_formatted(401, {'error_msg': "User already on the system, would you like to login?"})
@@ -266,7 +276,8 @@ def api_create_user_local():
     hashpass = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
     user_obj = {
         'password': hashpass.hex(),
-        'username': email,
+        'username': username,
+        'email': email,
 
         # Active by default, we don't have validation on this system
         'active': True,
@@ -275,7 +286,7 @@ def api_create_user_local():
     user = User(**user_obj)
     user.save()
 
-    ret = {'user': email, 'status': 'success', 'msg': 'Thanks for registering'}
+    ret = {'username': username, 'email': email, 'status': 'success', 'msg': 'Thanks for registering'}
     return get_response_formatted(ret)
 
 
@@ -368,6 +379,7 @@ def get_auth_token():
 
 
 @blueprint.route('/get', methods=['GET'])
+@api_key_or_login_required
 def api_get_current_user():
     """ Returns the current user being logged in
     ---
@@ -401,6 +413,9 @@ def api_get_current_user():
             status:
                 type: string
     """
+
+    if not hasattr(current_user, 'username'):
+        return get_response_error_formatted(401, {'error_msg': "Please login or create an account."})
 
     if not current_user or not current_user.username:
         return get_response_error_formatted(401, {'error_msg': "Please create an account."})

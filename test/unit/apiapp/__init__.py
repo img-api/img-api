@@ -30,7 +30,7 @@ def remove_test_user(client):
     # Remove login
     DUMMY_CREDENTIALS = client.environ_base['DUMMY_CREDENTIALS']
 
-    ret = client.get("/api/user/login?" + DUMMY_CREDENTIALS)
+    ret = client.get("/api/user/remove?" + DUMMY_CREDENTIALS)
     assert ret.json['status'] == 'success'
 
 
@@ -45,8 +45,9 @@ def client():
 
     #app.config['TESTING'] = True
     client = app.test_client()
-    client.environ_base['DUMMY_CREDENTIALS'] = "email=dummy@engineer.blue&password=test1234"
+    client.environ_base['DUMMY_CREDENTIALS'] = "username=dummy&email=dummy@engineer.blue&password=test1234"
 
     create_test_user(client)
     yield client
+
     remove_test_user(client)

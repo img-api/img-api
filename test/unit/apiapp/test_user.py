@@ -3,11 +3,10 @@ from test.unit.apiapp import client
 
 def test_user(client):
 
-    TEST_CREDENTIALS = "email=user_test@engineer.blue&password=test1234test"
+    TEST_CREDENTIALS = "username=user_test&email=user_test@engineer.blue&password=test1234test"
 
     # Delete the user in case we have it already there.
     ret = client.get("/api/user/remove?" + TEST_CREDENTIALS)
-    assert ret.json['status'] == 'error'
 
     # Create an user
     ret = client.get("/api/user/create?" + TEST_CREDENTIALS)
