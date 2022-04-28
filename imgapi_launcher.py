@@ -1,5 +1,4 @@
 from flask import Flask, jsonify, request
-from flask_swagger import swagger
 
 from flasgger import Swagger, LazyString, LazyJSONEncoder
 from flasgger import swag_from
@@ -12,6 +11,7 @@ swagger_template = dict(info={
     'title': LazyString(lambda: 'IMG-API API document'),
     'version': LazyString(lambda: '0.1'),
     'description': LazyString(lambda: 'API Description to upload, convert and download images'),
+    "basePath": "/docs",  # base bash for blueprint registration
 },
                         host=LazyString(lambda: request.host))
 
@@ -31,7 +31,9 @@ swagger_config = {
     "/apidocs/"
 }
 
-swagger = Swagger(app, template=swagger_template, config=swagger_config)
+template = dict(swaggerUiPrefix=LazyString(lambda : request.environ.get('HTTP_X_SCRIPT_NAME', '')))
+
+swagger = Swagger(app, template=template, config=swagger_config)
 
 @app.route("/home_testing")
 def home():
@@ -41,6 +43,7 @@ def home():
 def register_api_blueprints(app):
     print(" API BLUE PRINTS ")
     for module_name in (
+            'admin',
             'hello_world',
     ):
         module = import_module('api.{}.routes'.format(module_name))
