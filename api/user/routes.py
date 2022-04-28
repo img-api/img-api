@@ -148,6 +148,8 @@ def is_password_valid(password):
 
 @blueprint.route('/create', methods=['GET', 'POST'])
 def api_create_user_local():
+    import bcrypt
+
     print(" CREATE USER LOCAL")
 
     if request.method == 'POST':
@@ -164,6 +166,24 @@ def api_create_user_local():
     email = get_validated_email(email)
     if isinstance(email, Response):
         return email
+
+    hashpass = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+    try:
+        hex_pass = hashpass.hex()
+    except:
+        import binascii
+        hex_pass = str(binascii.hexlify(hashpass))
+
+    user_obj = {
+        'password': hex_pass,
+        'username': email,
+
+        # Active by default, we don't have validation on this system
+        'active': True,
+    }
+
+    user = User(**user_obj)
+    user.save()
 
     ret = {'user': email, 'status': 'success', 'msg': 'Thanks for registering'}
     return get_response_formatted(ret)

@@ -7,3 +7,4 @@ mongoengine
 flask-swagger
 flasgger
 pytest
+bcrypt
