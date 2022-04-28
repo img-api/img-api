@@ -4,6 +4,17 @@
 {% block content %}
 <h1>IMG - API Where your images come to life!</h1>
 <a href='/apidocs/'>Check out our amazing documentation and API</a> <br>
-<a href='/image/'>Upload an image</a> <br>
-<a href='/browse/'>See your images</a> <br>
+<a href='/media/upload/'>Upload an image</a> <br>
+<a href='/top/'>See the best</a> <br>
+
+{% if current_user.username %}
+
+<a href='/{{ current_user.username }}/posts'>Browse your images</a> <br>
+{% else %}
+
+    {% include "inc_login.html" %}
+{% endif %}
+
+
+
 {% endblock content %}

@@ -1,0 +1,32 @@
+<hr>
+<h2>Login</h2>
+
+<form id="login_user_form" onsubmit="/user/login" >
+    <div>
+        <input class="form-control required" id="username_login" name="username" placeholder="Username" type="text" value="" pattern="\S(?:\s*\S){1}.*\S">
+    </div>
+    <div class="form-group has-feedback">
+        <input class="form-control required has-feedback-right password_container" id="pwd_login" name="password" autocomplete="off" placeholder="Password" type="password" value="">
+    </div>
+    <div>
+        <button id='btn_log_in' class="btn btn-default" type="button"
+            name="login">Log in</button>
+    </div>
+</form>
+
+
+<hr>
+<h2>Create account</h2>
+
+<form id="login_user_form" onsubmit="/user/create" >
+    <div>
+        <input class="form-control required" id="username_login" name="username" placeholder="Username" type="text" value="" pattern="\S(?:\s*\S){1}.*\S">
+    </div>
+    <div class="form-group has-feedback">
+        <input class="form-control required has-feedback-right password_container" id="pwd_login" name="password" autocomplete="off" placeholder="Password" type="password" value="">
+    </div>
+    <input id="email" class="email" type="text" name="email" placeholder="Email">
+    <div>
+        <button id='btn_create_account' class="btn btn-default" type="button" name="login">Create Account</button>
+    </div>
+</form>

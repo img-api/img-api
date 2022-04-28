@@ -4,9 +4,9 @@ import datetime
 from flask import Blueprint
 
 blueprint = Blueprint(
-    'api_upload_blueprint',
+    'app_user_media_blueprint',
     __name__,
-    url_prefix='/api/image',
+    url_prefix='/u',
     template_folder='templates',
     static_folder='static'
 )

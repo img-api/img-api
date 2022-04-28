@@ -1,14 +1,14 @@
 import os
 
-from api.hello_world import blueprint
+from api.media import blueprint
 from api import get_response_formatted, get_response_error_formatted
 from flask import jsonify, request
 
 from api.tools import generate_file_md5, ensure_dir
 
 @blueprint.route('/upload', methods=['GET'])
-def api_upload_image():
-    """Uploads an image
+def api_upload_media():
+    """Upload media files to this system
     ---
     tags:
       - test

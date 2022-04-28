@@ -41,7 +41,7 @@ app.config['SWAGGER'] = {
 swagger_template = dict(info={
     'title': LazyString(lambda: 'IMG-API API document'),
     'version': LazyString(lambda: '0.1'),
-    'description': LazyString(lambda: 'API Description to upload, convert, operate and download images'),
+    'description': LazyString(lambda: 'API Description to upload, convert, operate and download images and media'),
     "basePath": "/docs",  # base bash for blueprint registration
 },
                         host=LazyString(lambda: request.host))
@@ -69,6 +69,7 @@ def register_api_blueprints(app):
     for module_name in (
             'user',
             'admin',
+            'media',
             'hello_world',
     ):
         module = import_module('api.{}.routes'.format(module_name))
