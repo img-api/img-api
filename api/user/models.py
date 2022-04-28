@@ -57,6 +57,8 @@ class User(UserMixin, db.Document):
 
     active = db.BooleanField(default=False)
 
+    is_anon = db.BooleanField(default=False)
+
     # Tokens are valid for ~12 Months
     def generate_auth_token(self, expiration=(12 * 31 * 24 * 60 * 60), extra={}):
         print("- SERIALIZE APP KEY " + str(current_app.config['SECRET_KEY']))

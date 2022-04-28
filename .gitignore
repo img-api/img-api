@@ -129,3 +129,6 @@ dmypy.json
 .pyre/
 
 node_modules
+
+# Application files
+MEDIA_FILES/

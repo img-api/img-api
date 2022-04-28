@@ -1,5 +1,6 @@
 import bcrypt
 import binascii
+import datetime
 
 from api.user import blueprint
 
@@ -422,3 +423,33 @@ def api_get_current_user():
         return get_response_error_formatted(401, {'error_msg': "Please create an account."})
 
     return get_response_formatted({'user': current_user.username})
+
+
+def generate_random_name():
+    """ Generates a random name so we can use it for the anonymous user.
+        This name should come from a dictionary like 3words
+    """
+
+    random_name = str(datetime.datetime.now())
+    return bcrypt.hashpw(random_name.encode('utf-8'), bcrypt.gensalt())
+
+
+def generate_random_user():
+    """ We generate a random user for files which are going to be anonymous
+        The user will be able to modify the files until they delete their cookies
+    """
+
+    random_name = generate_random_name().hex()
+    user_obj = {
+        'password': random_name,
+        'username': random_name[:16],
+        'email': random_name[:16] + "@img-api.com",
+        'is_anon': True,
+        'active': True,
+    }
+
+    user = User(**user_obj)
+    user.save()
+
+    login_user(user, remember=True)
+    return user

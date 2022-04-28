@@ -1,3 +1,4 @@
+import os
 from flask import Flask, jsonify, request
 
 from flasgger import Swagger, LazyString, LazyJSONEncoder
@@ -11,16 +12,9 @@ db = MongoEngine()
 
 app = Flask(__name__)
 
-MONGODB_SETTINGS={
-    'host': 'localhost',
-    'port': 27017
-}
+MONGODB_SETTINGS = {'host': 'localhost', 'port': 27017}
 
-app.config.update(
-    DEBUG=True,
-    MONGODB_SETTINGS=MONGODB_SETTINGS,
-    SECRET_KEY="mysecret_key_loaded_from_the_system"
-)
+app.config.update(DEBUG=True, MONGODB_SETTINGS=MONGODB_SETTINGS, SECRET_KEY="mysecret_key_loaded_from_the_system")
 
 # Database initialization
 
@@ -33,19 +27,37 @@ login_manager.init_app(app)
 
 # Swagger and documentation
 
-app.json_encoder = LazyJSONEncoder # Required by swagger
-app.config['SWAGGER'] = {
-    'title': 'IMG API',
-    'DEFAULT_MODEL_DEPTH': -1
-}
+app.json_encoder = LazyJSONEncoder  # Required by swagger
+app.config['SWAGGER'] = {'title': 'IMG API', 'DEFAULT_MODEL_DEPTH': -1}
 
-swagger_template = dict(info={
-    'title': LazyString(lambda: 'IMG-API API document'),
-    'version': LazyString(lambda: '0.1'),
-    'description': LazyString(lambda: 'API Description to upload, convert, operate and download images and media'),
-    "basePath": "/docs",  # base bash for blueprint registration
-},
-                        host=LazyString(lambda: request.host))
+
+def configure_media_folder(app):
+    """ Gets the media folder path from the environment or uses a local one inside the application """
+    from api.tools import ensure_dir
+
+    media_path = os.environ.get("IMGAPI_MEDIA_PATH", "")
+
+    # The media folder SHOULD not be inside the application folder.
+    if not media_path:
+        media_path = os.path.dirname(__file__) + "/MEDIA_FILES/"
+
+        print("!-------------------------------------------------------------!")
+        print("  WARNING MEDIA PATH IS NOT BEING DEFINED ")
+        print("  PATH: " + media_path)
+        print("!-------------------------------------------------------------!")
+
+    app.config['MEDIA_PATH'] = media_path
+    ensure_dir(media_path)
+
+
+swagger_template = dict(
+    info={
+        'title': LazyString(lambda: 'IMG-API API document'),
+        'version': LazyString(lambda: '0.1'),
+        'description': LazyString(lambda: 'API Description to upload, convert, operate and download images and media'),
+        "basePath": "/docs",  # base bash for blueprint registration
+    },
+    host=LazyString(lambda: request.host))
 
 swagger_config = {
     "headers": [],
@@ -55,15 +67,19 @@ swagger_config = {
         "rule_filter": lambda rule: True,
         "model_filter": lambda tag: True,
     }],
-    "static_url_path": "/flasgger_static",
-    "swagger_ui": True,
-    "specs_route": "/apidocs/"
+    "static_url_path":
+    "/flasgger_static",
+    "swagger_ui":
+    True,
+    "specs_route":
+    "/apidocs/"
 }
 
-template = dict(swaggerUiPrefix=LazyString(lambda : request.environ.get('HTTP_X_SCRIPT_NAME', '')))
+template = dict(swaggerUiPrefix=LazyString(lambda: request.environ.get('HTTP_X_SCRIPT_NAME', '')))
 swagger = Swagger(app, template=swagger_template, config=swagger_config)
 
 # Blue prints section
+
 
 def register_api_blueprints(app):
     print(" API BLUE PRINTS ")
@@ -95,4 +111,4 @@ def register_app_blueprints(app):
 # Our application is composed by the VIEW that facilities admin, access to the documentation and APIs
 register_api_blueprints(app)
 register_app_blueprints(app)
-
+configure_media_folder(app)

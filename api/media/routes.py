@@ -5,9 +5,24 @@ from api import get_response_formatted, get_response_error_formatted
 from flask import jsonify, request
 
 from api.tools import generate_file_md5, ensure_dir
+from flask import current_app, url_for
+from api.user.routes import generate_random_user
 
-@blueprint.route('/upload', methods=['GET'])
+def get_media_valid_extension(file_name):
+    """ Checks with the system to see if the extension provided is valid,
+        You should never trust the frontend """
+
+    extension = os.path.splitext(file_name)[1].upper()
+    image_list = [".JPEG", ".JPG", ".GIF", ".GIFV", ".PNG", ".BMP", ".TGA"]
+    if extension not in image_list:
+        return False
+
+    return extension
+
+@blueprint.route('/upload', methods=['POST'])
 def api_upload_media():
+    from flask_login import current_user, login_user
+
     """Upload media files to this system
     ---
     tags:
@@ -43,23 +58,38 @@ def api_upload_media():
     if request.method != "POST":
         return get_response_error_formatted(404, {"error_msg": "No files to upload!"})
 
+    media_path = current_app.config.get('MEDIA_PATH')
+    if not media_path:
+        return get_response_error_formatted(500,
+                                            {"error_msg": "Internal error, application MEDIA_PATH is not configured!"})
+
+    # If we don't have an user, we generate a temporal one with random names
+    if not hasattr(current_user, 'username'):
+        current_user = generate_random_user()
+
+    print(" User to upload files " + current_user.username)
+
     uploaded_ft = []
     for key, f_request in request.files.items():
         print(" Upload multiple " + key)
-        full_path = ""
 
+        full_path = media_path + current_user.username + "/"
         ensure_dir(full_path)
 
-        if key.startswith("file"):
+        if key.startswith("image"):
             file_name = f_request.filename
 
-            md5 = generate_file_md5(f_request)
+            md5, size = generate_file_md5(f_request)
+            if size == 0:
+                return get_response_error_formatted(400, {"error_msg": "THERE WAS SOME PROBLEM WITH UPLOAD!"})
 
-            absolute_path = "MYPATH/" + md5
-            f_request.save(absolute_path)
-            uploaded_ft.append({ 'file_md5': md5 })
+            extension = get_media_valid_extension(file_name)
+            if not extension:
+                return get_response_error_formatted(400, {"error_msg": "FILE FORMAT NOT SUPPORTED YET!"})
 
-    ret = {
-        'uploaded_files': uploaded_ft
-    }
-    return get_response_formatted({'status': 'success', 'msg': 'hello world'})
+            final_path = full_path + md5 + extension
+            f_request.save(final_path)
+            uploaded_ft.append({'file_md5': md5})
+
+    ret = {'uploaded_files': uploaded_ft, 'username': current_user.username, 'status': 'success'}
+    return get_response_formatted(ret)

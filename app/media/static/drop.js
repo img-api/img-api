@@ -131,7 +131,7 @@ function previewAnduploadImage(image) {
     formData.append('image', image);
 
     // upload the image
-    var uploadLocation = 'https://api-img.com/api/media/upload';
+    var uploadLocation = 'https://img-api.com/api/media/upload';
 
     var ajax = new XMLHttpRequest();
     ajax.open("POST", uploadLocation, true);
@@ -142,6 +142,7 @@ function previewAnduploadImage(image) {
                 // done!
             } else {
                 // error!
+                alert(" ERROR UPLOADING FILE ");
             }
         }
     }
