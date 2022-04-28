@@ -27,6 +27,15 @@
             ],
             "envFile": "${workspaceRoot}/.venv",
             "jinja": true
+        },
+        {
+            "name": "IMG-API: Debug Tests",
+            "type": "python",
+            "request": "launch",
+            "module": "pytest",
+            "purpose": ["debug-test"],
+            "console": "integratedTerminal",
+            "justMyCode": false
         }
     ]
 }

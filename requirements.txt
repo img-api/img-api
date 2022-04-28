@@ -2,3 +2,4 @@ flask
 mongoengine
 flask-swagger
 flasgger
+pytest

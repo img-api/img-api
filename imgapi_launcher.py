@@ -3,6 +3,7 @@ from flask_swagger import swagger
 
 from flasgger import Swagger, LazyString, LazyJSONEncoder
 from flasgger import swag_from
+from importlib import import_module
 
 app = Flask(__name__)
 app.json_encoder = LazyJSONEncoder
@@ -32,14 +33,34 @@ swagger_config = {
 
 swagger = Swagger(app, template=swagger_template, config=swagger_config)
 
-@app.route("/")
+@app.route("/home_testing")
 def home():
     return "Hello, World"
 
 
-@app.route("/spec")
-def spec():
-    swag = swagger(app)
-    swag['info']['version'] = "1.0"
-    swag['info']['title'] = "IMG API"
-    return jsonify(swag)
+def register_api_blueprints(app):
+    print(" API BLUE PRINTS ")
+    for module_name in (
+            'hello_world',
+    ):
+        module = import_module('api.{}.routes'.format(module_name))
+        app.register_blueprint(module.blueprint)
+
+        print(" Registering API " + str(module_name))
+
+
+def register_app_blueprints(app):
+    print(" APP BLUE PRINTS ")
+    for module_name in (
+            'root',
+            'landing',
+    ):
+        module = import_module('app.{}.routes'.format(module_name))
+        app.register_blueprint(module.blueprint)
+
+        print(" Registering API " + str(module_name))
+
+
+# Our application is composed by the VIEW that facilities admin, access to the documentation and APIs
+register_api_blueprints(app)
+register_app_blueprints(app)
