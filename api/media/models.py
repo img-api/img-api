@@ -25,7 +25,9 @@ class File_Tracking(db.DynamicDocument):
 
     # Did we process this file with our services
     processed = db.BooleanField(default=False)
+
     is_public = db.BooleanField(default=False)
+    is_anon = db.BooleanField(default=False)
 
     comments = db.ListField(db.StringField())
 

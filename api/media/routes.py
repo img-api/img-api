@@ -2,12 +2,13 @@ import os
 
 from api.media import blueprint
 from api import get_response_formatted, get_response_error_formatted
-from flask import jsonify, request
+from flask import jsonify, request, send_file
+
+from flask import current_app, url_for
 
 from api.tools import generate_file_md5, ensure_dir
-from flask import current_app, url_for
 from api.user.routes import generate_random_user
-
+from .models import File_Tracking
 
 def get_media_valid_extension(file_name):
     """ Checks with the system to see if the extension provided is valid,
@@ -21,13 +22,20 @@ def get_media_valid_extension(file_name):
     return extension
 
 
+def get_media_path():
+    media_path = current_app.config.get('MEDIA_PATH')
+    if not media_path:
+        abort(500, "Internal error, application MEDIA_PATH is not configured!")
+
+    return media_path
+
+
 @blueprint.route('/upload', methods=['POST'])
 def api_upload_media():
-    from flask_login import current_user, login_user
     """Upload media files to this system
     ---
     tags:
-      - test
+      - media
     schemes: ['http', 'https']
     deprecated: false
     definitions:
@@ -56,15 +64,12 @@ def api_upload_media():
                 type: integer
 
     """
-    from .models import File_Tracking
+    from flask_login import current_user, login_user
 
     if request.method != "POST":
         return get_response_error_formatted(404, {"error_msg": "No files to upload!"})
 
-    media_path = current_app.config.get('MEDIA_PATH')
-    if not media_path:
-        return get_response_error_formatted(500,
-                                            {"error_msg": "Internal error, application MEDIA_PATH is not configured!"})
+    media_path = get_media_path()
 
     # If we don't have an user, we generate a temporal one with random names
     if not hasattr(current_user, 'username'):
@@ -109,6 +114,9 @@ def api_upload_media():
                 'file_format': extension,
                 'checksum_md5': md5,
                 'username': current_user.username,
+                'is_anon': current_user.is_anon,
+
+                # An user file by default is not public, but if you are anonymous, the file is public
                 'is_public': current_user.is_anon
             }
 
@@ -117,3 +125,52 @@ def api_upload_media():
 
     ret = {'uploaded_files': uploaded_ft, 'username': current_user.username, 'status': 'success'}
     return get_response_formatted(ret)
+
+
+@blueprint.route('/get/<string:media_id>', methods=['GET'])
+def api_get_media(media_id):
+    """Returns a file from disk
+    ---
+    tags:
+      - media
+    schemes: ['http', 'https']
+    deprecated: false
+    definitions:
+      image_file:
+        type: object
+    parameters:
+        - in: query
+          name: key
+          schema:
+            type: string
+          description: A token that you get when you register or when you ask for a token
+    responses:
+      200:
+        description: Returns a file or a generic placeholder for the file
+    """
+    from flask_login import current_user, login_user
+
+    username = None
+    if hasattr(current_user, "username"):
+        username = current_user.username
+
+    is_api_call = False
+    if 'Content-Type' in request.headers and request.headers['Content-Type'] == 'application/json':
+        is_api_call = True
+
+    my_file = File_Tracking.objects(pk=media_id).first()
+    if not my_file:
+        if is_api_call:
+            return get_response_error_formatted(404, {"error_msg": "FILE NOT FOUND"})
+        else:
+            return redirect("/static/images/placeholder.jpg")
+
+    if not my_file.is_public and my_file.username != username:
+        if is_api_call:
+            return get_response_error_formatted(405, {"error_msg": "FILE IS PRIVATE!"})
+        else:
+            return redirect("/static/images/placeholder_private.jpg")
+
+    abs_path = get_media_path() + my_file.file_path
+    return send_file(abs_path, attachment_filename=my_file.file_name)
+

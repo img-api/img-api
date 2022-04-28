@@ -12,7 +12,10 @@ def root_app_test():
 @blueprint.route('/', methods=['GET', 'POST'])
 def root_main_render():
     """ Returns the main HTML site """
-    return render_template('index.html')
+    from api.media.models import File_Tracking
+
+    files = File_Tracking.objects(is_public=True)
+    return render_template('index.html', media_files=files)
 
 
 @blueprint.route('/login', methods=['GET', 'POST'])
