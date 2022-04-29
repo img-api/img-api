@@ -31,21 +31,20 @@
     </center>
 
     {% include "inc_media_upload.html" %}
+
+    <!-- Name input -->
+    <hr>
+    <div class="form-outline mb-4">
+        <input type="text" id="user_media_upload_request_url" class="form-control" />
+        <label class="form-label" for="form7Example1">Download from URL</label>
+    </div>
+
 </div>
 {% endblock content %}
 
-{% block footer %}
-<footer class="bg-dark text-center text-white footer_small">
-    <!-- Copyright -->
-    <div class="text-center p-3" style="background-color: rgba(0, 0, 0, 0.2);">
-        ©2022 Copyright:
-        <a class="text-white" href="http://engineer.blue">Sergio A. Martinez</a>
-    </div>
-    <!-- Copyright -->
-</footer>
-{% endblock %}
 
 {% block javascripts %}
 {{ super() }}
 <script src="{{ url_for('app_media_blueprint.static', filename='drop.js') }}"></script>
+<script src="{{ url_for('app_media_blueprint.static', filename='media_upload.js') }}"></script>
 {% endblock javascripts %}

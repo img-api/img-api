@@ -1,14 +1,15 @@
 import bcrypt
 import binascii
 import datetime
+import validators
 
 from api.user import blueprint
 
 from api import get_response_formatted, get_response_error_formatted, api_key_or_login_required
 
-from flask import jsonify, request, Response
+from flask import jsonify, request, Response, redirect
 from flask_login import current_user, login_user, logout_user
-from api.tools import generate_file_md5, ensure_dir
+from api.tools import generate_file_md5, ensure_dir, is_api_call
 
 from .models import User
 
@@ -17,11 +18,16 @@ from mongoengine.queryset.visitor import Q
 
 
 def get_user_from_request():
+    user = None
+    username = None
+
     if request.method == 'POST':
-        form = request.form
+        form = request.json
 
         email = form['email']
-        username = form['username']
+        if 'username' in form:
+            username = form['username']
+
         password = form['password']
     else:
         email = request.args.get("email")
@@ -34,7 +40,10 @@ def get_user_from_request():
     if not email:
         return get_response_error_formatted(401, {'error_msg': "Please provide an email."})
 
-    user = User.objects(username=username).first()
+    if username:
+        user = User.objects(username=username).first()
+    else:
+        user = User.objects(email=email).first()
 
     if not user:
         return get_response_error_formatted(401, {'error_msg': "Please create an account."})
@@ -50,7 +59,7 @@ def get_user_from_request():
     return user
 
 
-@blueprint.route('/login', methods=['GET'])
+@blueprint.route('/login', methods=['GET', 'POST'])
 def api_login_user():
     """Login an user into the system
     ---
@@ -181,20 +190,23 @@ def check_email(email):
 def get_validated_email(email):
     # https://stackoverflow.com/questions/8022530/how-to-check-for-valid-email-address
 
+    if not validators.email(email):
+        return get_response_error_formatted(400, {'error_msg': "Please provide a valid email"})
+
     try:
         if not email or len(email) == 0:
-            return get_response_error_formatted(404, {'error_msg': "Please provide a valid email"})
+            return get_response_error_formatted(400, {'error_msg': "Please provide a valid email"})
 
         email_clean = sanitize_address(email, 'iso-8859-1')
         if not email_clean or not check_email(email_clean):
-            return get_response_error_formatted(404,
+            return get_response_error_formatted(400,
                                                 {'error_msg': "Please provide a valid email " + email + " is no valid"})
 
         print(" Email after sanitize_address " + str(email_clean))
         return email_clean
 
     except Exception as e:
-        return get_response_error_formatted(404,
+        return get_response_error_formatted(400,
                                             {'error_msg': "Please provide a valid email " + email + " is no valid"})
 
     return None
@@ -254,11 +266,17 @@ def api_create_user_local():
     print("======= CREATE USER LOCAL =============")
 
     if request.method == 'POST':
-        form = request.form
+        form = request.json
+        first_name = form['first_name']
+        last_name = form['last_name']
+
         email = form['email']
         username = form['username']
         password = form['password']
     else:
+        first_name = request.args.get("first_name")
+        last_name = request.args.get("last_name")
+
         email = request.args.get("email")
         username = request.args.get("username")
         password = request.args.get("password")
@@ -277,6 +295,8 @@ def api_create_user_local():
 
     hashpass = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
     user_obj = {
+        'first_name': first_name,
+        'last_name': last_name,
         'password': hashpass.hex(),
         'username': username,
         'email': email,
@@ -453,3 +473,29 @@ def generate_random_user():
 
     login_user(user, remember=True)
     return user
+
+
+@blueprint.route('/logout', methods=['GET', 'POST'])
+def api_user_logout():
+    """ User logout, remove cookies
+    ---
+    tags:
+      - user
+    schemes: ['http', 'https']
+    deprecated: false
+    definitions:
+      user:
+        type: object
+    responses:
+      200:
+        description: Just logs out the user
+    """
+
+    if not hasattr(current_user, 'username'):
+        return get_response_error_formatted(401, {'error_msg': "Please login or create an account."})
+
+    logout_user()
+    if is_api_call():
+        return get_response_formatted({'status': 'success', 'msg': 'user logged out'})
+
+    return redirect("/")

@@ -8,3 +8,7 @@ flask-swagger
 flasgger
 pytest
 bcrypt
+
+redis
+rq
+validators

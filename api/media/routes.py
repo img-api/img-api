@@ -1,4 +1,5 @@
 import os
+import validators
 
 from api.media import blueprint
 from api import get_response_formatted, get_response_error_formatted
@@ -6,7 +7,7 @@ from flask import jsonify, request, send_file
 
 from flask import current_app, url_for
 
-from api.tools import generate_file_md5, ensure_dir
+from api.tools import generate_file_md5, ensure_dir, is_api_call
 from api.user.routes import generate_random_user
 from .models import File_Tracking
 
@@ -164,19 +165,15 @@ def api_get_media(media_id):
     if hasattr(current_user, "username"):
         username = current_user.username
 
-    is_api_call = False
-    if 'Content-Type' in request.headers and request.headers['Content-Type'] == 'application/json':
-        is_api_call = True
-
     my_file = File_Tracking.objects(pk=media_id).first()
     if not my_file:
-        if is_api_call:
+        if is_api_call():
             return get_response_error_formatted(404, {"error_msg": "FILE NOT FOUND"})
         else:
             return redirect("/static/images/placeholder.jpg")
 
     if not my_file.is_public and my_file.username != username:
-        if is_api_call:
+        if is_api_call():
             return get_response_error_formatted(401, {"error_msg": "FILE IS PRIVATE!"})
         else:
             return redirect("/static/images/placeholder_private.jpg")
@@ -246,4 +243,50 @@ def api_get_posts_json(user_id):
         })
 
     ret = {'status': 'success', 'media_files': return_list}
+    return get_response_formatted(ret)
+
+
+
+@blueprint.route('/fetch', methods=['GET', 'POST',])
+def api_fetch_from_url():
+    """Returns a JOB ID for the task of fetching this resource. It calls RQ to get the task done.
+    ---
+    tags:
+      - media
+    schemes: ['http', 'https']
+    deprecated: false
+    definitions:
+      request_url:
+        type: object
+    parameters:
+        - in: query
+          name: request_url
+          schema:
+            type: string
+          description: A valid URL that contains a file format on it.
+    responses:
+      200:
+        description: Returns a job ID
+        schema:
+          id: Job ID
+          type: object
+          properties:
+            job_id:
+              type: string
+    """
+
+    if request.method == 'POST':
+        request_url = request.json['request_url']
+    else:
+        request_url = request.args.get("request_url")
+
+    if not request_url:
+        return get_response_error_formatted(404, {"error_msg": "URL Not found"})
+
+    if not validators.url(request_url):
+        return get_response_error_formatted(400, {'error_msg': "Please provide a valid URL"})
+
+    print("REQUEST " + request_url)
+
+    ret = {'status': 'success', 'job_id': "JOB_ID_STUB" , 'request_url': request_url}
     return get_response_formatted(ret)

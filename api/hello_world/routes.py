@@ -2,6 +2,7 @@ from api.hello_world import blueprint
 from api import get_response_formatted
 from flask import jsonify
 
+
 @blueprint.route('/', methods=['GET'])
 def api_hello_world():
     """Returns a hello world for testing the API endpoint

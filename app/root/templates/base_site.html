@@ -24,8 +24,9 @@
     {% block navbar %}
     {% include "inc_navbar.html" %}
     {% endblock navbar %}
-
-    {% block content %}Please override the content block{% endblock %}</title>
+    <div class='wrapper'>
+        {% block content %}Please override the content block{% endblock %}
+    </div>
 
     {% block footer %}
     <footer class="bg-dark text-center text-white">
@@ -63,6 +64,7 @@
     </footer>
     {% endblock %}
     {% block javascripts %}
+        <script src="{{ url_for('static', filename='js/index.js') }}"></script>
     {% endblock %}
 </body>
 

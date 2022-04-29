@@ -16,6 +16,11 @@ See REQUIREMENTS.md for an explanation on functional requirements
     run_test.sh
 
 ## DATA STORAGE
-    - We use MongoDB as our database
-
+    We use MongoDB as our database
     Collections definitions TBD
+
+## MICROSERVICES
+    Website runs services on demand, it queries offline services with jobs to perform the different image processing tasks.
+    Those jobs will be processed by shell or python commands.
+
+    They will use a REDIS server for this purpose.

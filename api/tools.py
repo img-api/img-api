@@ -58,3 +58,9 @@ def ensure_dir(f):
             raise
 
     return None
+
+def is_api_call():
+    if 'Content-Type' in request.headers and request.headers['Content-Type'] == 'application/json':
+        return True
+
+    return False

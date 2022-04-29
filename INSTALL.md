@@ -35,6 +35,11 @@ The database of choice for this project is Mongodb since we can dynamically grow
 sudo apt-get install mongodb
 ```
 
+### Install redis
+
+Our microservices work using redis as our main platform for RPC (Remote Process Procedure)
+
+
 ### Update project dependences
 ```
 ./update.sh

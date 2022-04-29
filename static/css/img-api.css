@@ -32,15 +32,6 @@
 }
 
 
-footer {
-    position: fixed;
-    padding: 10px 10px 0px 10px;
-    bottom: 0;
-    width: 100%;
-    /* Height of the footer*/
-    height: 150px;
-    background: grey;
-}
 
 .footer_small {
     height: 75px;
@@ -62,4 +53,15 @@ footer {
 .big_image_auto {
     width: 100%;
     height: auto;
+}
+
+body {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.wrapper {
+    flex: 1;
 }

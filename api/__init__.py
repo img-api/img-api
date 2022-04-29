@@ -1,3 +1,4 @@
+import os
 import time
 import datetime
 from functools import wraps
@@ -7,6 +8,7 @@ from flask_login import current_user, login_required, login_user, logout_user
 from werkzeug.exceptions import HTTPException
 
 from api.user.models import User
+from .api_redis import init_redis
 
 API_VERSION = "0.50pa"
 
@@ -112,3 +114,42 @@ def api_key_or_login_required(func):
         return get_response_error_formatted(401, {'error_msg': "User Unauthorized, check token with admin"})
 
     return decorated_view
+
+
+def configure_media_folder(app):
+    """ Gets the media folder path from the environment or uses a local one inside the application """
+    from api.tools import ensure_dir
+
+    media_path = os.environ.get("IMGAPI_MEDIA_PATH", "")
+
+    # The media folder SHOULD not be inside the application folder.
+    if not media_path:
+        media_path = app.root_path + "/MEDIA_FILES/"
+
+        print("!-------------------------------------------------------------!")
+        print("  WARNING MEDIA PATH IS NOT BEING DEFINED ")
+        print("  PATH: " + media_path)
+        print("!-------------------------------------------------------------!")
+
+    app.config['MEDIA_PATH'] = media_path
+    ensure_dir(media_path)
+
+
+def register_api_blueprints(app):
+    """ Loads all the modules for the API """
+    from importlib import import_module
+
+    print(" API BLUE PRINTS ")
+    for module_name in (
+            'user',
+            'admin',
+            'media',
+            'hello_world',
+    ):
+        module = import_module('api.{}.routes'.format(module_name))
+        app.register_blueprint(module.blueprint)
+
+        print(" Registering API " + str(module_name))
+
+    configure_media_folder(app)
+    init_redis(app)
