@@ -18,7 +18,7 @@ fetch('/api/media/posts/' + username)
             html += `
             <div class="col-lg-4 col-md-12 mb-4">
                 <div class="bg-image hover-overlay ripple shadow-1-strong rounded">
-                <a href='/api/media/edit/${media.media_id}'>
+                <a href='/media/edit/${media.media_id}'>
                     <img src='/api/media/get/${media.media_id}' class="img-fluid img-fit-inside">
                         <div class="mask" style="background-color: rgba(57, 192, 237, 0.2)"></div>
                 </a>

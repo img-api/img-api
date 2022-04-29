@@ -12,3 +12,4 @@ bcrypt
 redis
 rq
 validators
+wand

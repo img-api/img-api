@@ -20,6 +20,7 @@ We are creating a processing engine that can perform asynchronous operations
     - Filters
     - Thumbnail creation
     - Masking
+    - Format conversion
 
 * List of images for the user
 

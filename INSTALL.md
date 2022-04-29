@@ -39,6 +39,11 @@ sudo apt-get install mongodb
 
 Our microservices work using redis as our main platform for RPC (Remote Process Procedure)
 
+### Instal imagemagick
+
+```
+sudo apt install imagemagick
+```
 
 ### Update project dependences
 ```

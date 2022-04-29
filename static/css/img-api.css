@@ -65,3 +65,10 @@ body {
 .wrapper {
     flex: 1;
 }
+
+
+.edit_image {
+    width: 50%;
+    height: auto;
+    float: left;
+}

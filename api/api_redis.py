@@ -29,3 +29,4 @@ api_rq = Remote_Task()
 def init_redis(app):
     api_rq.init(app)
 
+

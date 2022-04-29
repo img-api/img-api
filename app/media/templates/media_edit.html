@@ -1,0 +1,58 @@
+{% extends "base_site.html" %}
+{% block title %} IMG - API Where your images come to life! {% endblock title %}
+{% block body_style %}background-color: #404040; {% endblock %}
+
+{% block content %}
+<input id='media_id' class='hidden' value='{{ media_id }}'>
+
+<br>
+{% if current_user.is_anon %}
+<div class='container'>
+    <span style='color: white'> You are not registered, please consider signing up to keep access to your images.
+    </span>
+    <a class="btn btn-success pull-right" href="/create_account" role="button">Sign Up</a>
+</div>
+<hr>
+{% endif %}
+
+<div class='container'>
+    <img src='/api/media/get/{{ media_id }}' class='edit_image'>
+
+    <div class='text-white'>
+        Transformations
+        <br><br>
+
+        <div class='btn btn-primary api_btn_process' process='convert/rotate_right'>
+            <i class="fa-solid fa-rotate-right"></i> Rotate right
+        </div>
+        <div class='btn btn-primary api_btn_process' process='convert/rotate_left'>
+            <i class="fa-solid fa-rotate-left"></i> Rotate left
+        </div>
+        <br><br>
+        <div class='btn btn-primary api_btn_process' process='convert/PNG'>
+            <i class="fa-solid fa-file-arrow-down"></i> PNG
+        </div>
+        <div class='btn btn-primary api_btn_process' process='convert/JPG'>
+            <i class="fa-solid fa-file-arrow-down"></i> JPG
+        </div>
+        <br><br>
+        <div class='btn btn-primary api_btn_process' process='convert/thumbnail'>
+            <i class="fa-solid fa-file-arrow-down"></i> THUMBNAIL 128x128
+        </div>
+
+        <br><br>
+        <div class='btn btn-primary api_btn_process' process='convert/filter_blur'>
+            <i class="fa-solid fa-photo-film"></i> BLUR
+        </div>
+    </div>
+</div>
+
+{% endblock content %}
+
+{% block javascripts %}
+{{ super() }}
+<script src="{{ url_for('app_media_blueprint.static', filename='media_edit.js') }}"></script>
+{% endblock javascripts %}
+
+{% block footer %}
+{% endblock %}
