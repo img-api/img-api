@@ -71,7 +71,10 @@ def api_convert_image_to_format(operation, transformation, media_id):
         description: Something went really wrong with this job
     """
 
-    if transformation not in ["PNG", "JPG", "rotate_right", "rotate_left", "thumbnail", "blur", "flop", "median"]:
+    if transformation not in [
+            "PNG", "JPG", "rotate_right", "rotate_left", "thumbnail", "blur", "flop", "median", "thumbnail_128",
+            "thumbnail_64", "thumbnail_32"
+    ]:
         return get_response_error_formatted(500, {"error_msg": "SERVER CANNOT UNDERSTAND THIS TRANSFORMATION!"})
 
     my_file = File_Tracking.objects(pk=media_id).first()

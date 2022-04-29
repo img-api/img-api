@@ -5,7 +5,7 @@ from flask import jsonify
 
 @blueprint.route('/', methods=['GET'])
 def api_hello_world():
-    """Returns a hello world for testing the API endpoint
+    """Returns a hello world for testing the API endpoint. A developer can call this to check that they can perform API calls.
     ---
     tags:
       - test

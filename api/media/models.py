@@ -54,3 +54,14 @@ class File_Tracking(db.DynamicDocument):
         ret = super(File_Tracking, self).save(*args, **kwargs)
         ret.reload()
         return ret
+
+    def exists(self):
+        from api.media.routes import get_media_path
+
+        abs_path = get_media_path() + self.file_path
+        if not os.path.exists(abs_path):
+            print(" FILE NOT FOUND - DELETE DATABASE ENTRY ")
+            self.delete()
+            return False
+
+        return True

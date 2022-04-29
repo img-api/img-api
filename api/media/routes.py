@@ -18,6 +18,7 @@ from mongoengine.queryset.visitor import Q
 
 from wand.image import Image
 
+
 def get_media_valid_extension(file_name):
     """ Checks with the system to see if the extension provided is valid,
         You should never trust the frontend """
@@ -38,41 +39,7 @@ def get_media_path():
     return media_path
 
 
-@blueprint.route('/upload', methods=['POST'])
-@api_key_or_login_required
-def api_upload_media():
-    """Upload media files to this system
-    ---
-    tags:
-      - media
-    schemes: ['http', 'https']
-    deprecated: false
-    definitions:
-      image_file:
-        type: object
-    parameters:
-        - in: query
-          name: key
-          schema:
-            type: string
-          description: A token that you get when you register or when you ask for a token
-    responses:
-      200:
-        description: Returns if the file was successfully uploaded
-        schema:
-          id: Standard status message
-          type: object
-          properties:
-            msg:
-                type: string
-            status:
-                type: string
-            timestamp:
-                type: string
-            time:
-                type: integer
-
-    """
+def api_internal_upload_media():
     from flask_login import current_user, login_user
 
     if request.method != "POST":
@@ -149,10 +116,50 @@ def api_upload_media():
     ret = {'uploaded_files': uploaded_ft, 'username': current_user.username, 'status': 'success'}
     return get_response_formatted(ret)
 
+
 @blueprint.route('/upload_from_web', methods=['POST'])
 def api_web_upload_media():
     """ Uploads without an user or without checking a token, we use this to create new users on the fly """
-    return api_upload_media()
+    return api_internal_upload_media()
+
+
+@blueprint.route('/upload', methods=['POST'])
+@api_key_or_login_required
+def api_upload_media():
+    """Upload media files to this system
+    ---
+    tags:
+      - media
+    schemes: ['http', 'https']
+    deprecated: false
+    definitions:
+      image_file:
+        type: object
+    parameters:
+        - in: query
+          name: key
+          schema:
+            type: string
+          description: A token that you get when you register or when you ask for a token
+    responses:
+      200:
+        description: Returns if the file was successfully uploaded
+        schema:
+          id: Standard status message
+          type: object
+          properties:
+            msg:
+                type: string
+            status:
+                type: string
+            timestamp:
+                type: string
+            time:
+                type: integer
+
+    """
+    return api_internal_upload_media()
+
 
 @blueprint.route('/get/<string:media_id>', methods=['GET'])
 def api_get_media(media_id):
@@ -327,5 +334,3 @@ def api_fetch_from_url():
 
     ret = {'status': 'success', 'job_id': job.id, 'request_url': request_url}
     return get_response_formatted(ret)
-
-

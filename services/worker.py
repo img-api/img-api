@@ -53,6 +53,20 @@ def convert_image(json):
                     image.extent(width=image.width * 2)
                     image.composite(right, top=0, left=right.width)
 
+        elif operation == "generate":
+            aspect_ratio = image.height / image.width
+            if trf == "thumbnail_128":
+                image.resize(128, int(128 * aspect_ratio))
+
+            elif trf == "thumbnail_64":
+                image.resize(64, int(64 * aspect_ratio))
+
+            elif trf == "thumbnail_32":
+                image.resize(32, int(32 * aspect_ratio))
+
+            else:
+                image.resize(16, int(16 * aspect_ratio))
+
         image.save(filename=target_path)
         if os.path.exists(target_path):
             print(operation + " => " + trf + " WAS SUCCESSFUL ")

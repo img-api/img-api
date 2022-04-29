@@ -36,9 +36,17 @@
 
                     <li class="nav-item me-3 me-lg-0">
                         <a class="nav-link" href="/api/user/logout">
-                            <i class="fas fa-user"></i>
+                            <i class="fas fa-user hidden"></i>
                         </a>
                     </li>
+                    <li class="nav-item me-3 me-lg-0 text-white">
+                        <a class="btn btn-warning bg-theme mb-5" href="/api/user/logout"
+                            role="button"><i class="fas fa-user"></i>
+                            Logout
+                            {{ current_user.username }}
+                        </a>
+                    </li>
+
                     {% else %}
 
                     <li class="nav-item me-3 me-lg-0">

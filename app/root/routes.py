@@ -16,7 +16,20 @@ def root_main_render():
     from api.media.models import File_Tracking
 
     files = File_Tracking.objects(is_public=True)
-    return render_template('index.html', media_files=files)
+
+    display = []
+
+    count = 0
+    for f in reversed(files):
+        if f.exists():
+            display.append(f)
+            count += 1
+
+            # We should limit this on the File_Tracking call
+            if count > 30:
+                break
+
+    return render_template('index.html', media_files=display)
 
 
 @blueprint.route('/login', methods=['GET', 'POST'])

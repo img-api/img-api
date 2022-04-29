@@ -18,41 +18,49 @@
 <div class='container'>
     <img src='/api/media/get/{{ media_id }}' class='edit_image' id='img_edit_image'>
 
-    <div class='text-white'>
-        Transformations
-        <br><br>
+    <span>
+        <div class='text-white'>
+            Transformations
+            <br><br>
 
-        <div class='btn btn-primary api_btn_process' process='transform/rotate_right'>
-            <i class="fa-solid fa-rotate-right"></i> Rotate right
-        </div>
-        <div class='btn btn-primary api_btn_process' process='transform/rotate_left'>
-            <i class="fa-solid fa-rotate-left"></i> Rotate left
-        </div>
-        <div class='btn btn-primary api_btn_process' process='transform/flop'>
-            <i class="fa-solid fa-rotate"></i> Flop
-        </div>
+            <div class='btn btn-primary api_btn_process' process='transform/rotate_right'>
+                <i class="fa-solid fa-rotate-right"></i> Rotate right
+            </div>
+            <div class='btn btn-primary api_btn_process' process='transform/rotate_left'>
+                <i class="fa-solid fa-rotate-left"></i> Rotate left
+            </div>
+            <div class='btn btn-primary api_btn_process' process='transform/flop'>
+                <i class="fa-solid fa-rotate"></i> Flop
+            </div>
 
-        <br><br>
-        <div class='btn btn-primary api_btn_process' process='convert/PNG'>
-            <i class="fa-solid fa-file-arrow-down"></i> PNG
-        </div>
-        <div class='btn btn-primary api_btn_process' process='convert/JPG'>
-            <i class="fa-solid fa-file-arrow-down"></i> JPG
-        </div>
-        <br><br>
-        <div class='btn btn-primary api_btn_process' process='generate/thumbnail'>
-            <i class="fa-solid fa-file-arrow-down"></i> THUMBNAIL 128x128
-        </div>
+            <br><br>
+            <div class='btn btn-primary api_btn_process' process='convert/PNG'>
+                <i class="fa-solid fa-file-arrow-down"></i> PNG
+            </div>
+            <div class='btn btn-primary api_btn_process' process='convert/JPG'>
+                <i class="fa-solid fa-file-arrow-down"></i> JPG
+            </div>
+            <br><br>
+            <div class='btn btn-primary api_btn_process' process='generate/thumbnail_128'>
+                <i class="fa-solid fa-file-arrow-down"></i> THUMB 128px
+            </div>
+            <div class='btn btn-primary api_btn_process' process='generate/thumbnail_64'>
+                <i class="fa-solid fa-file-arrow-down"></i> THUMB 64px
+            </div>
+            <div class='btn btn-primary api_btn_process' process='generate/thumbnail_32'>
+                <i class="fa-solid fa-file-arrow-down"></i> THUMB 32px
+            </div>
 
-        <br><br>
-        <div class='btn btn-primary api_btn_process' process='filter/blur'>
-            <i class="fa-solid fa-photo-film"></i> BLUR
-        </div>
-        <div class='btn btn-primary api_btn_process' process='filter/median'>
-            <i class="fa-solid fa-photo-film"></i> MEDIAN
-        </div>
+            <br><br>
+            <div class='btn btn-primary api_btn_process' process='filter/blur'>
+                <i class="fa-solid fa-photo-film"></i> BLUR
+            </div>
+            <div class='btn btn-primary api_btn_process' process='filter/median'>
+                <i class="fa-solid fa-photo-film"></i> MEDIAN
+            </div>
 
-    </div>
+        </div>
+    </span>
 </div>
 
 {% endblock content %}
