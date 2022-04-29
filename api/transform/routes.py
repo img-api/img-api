@@ -1,8 +1,20 @@
+import validators
+
+from flask import abort
 from api.api_redis import api_rq
 from api.transform import blueprint
 from api.media.models import File_Tracking
 from api.media.routes import get_media_path
 from api import get_response_formatted, get_response_error_formatted
+
+def get_postfix(operation, transformation):
+    """ Checks if the name is only alphanumeric, and has hiphens or underscores """
+
+    postfix = operation + "_" + transformation
+    if not validators.slug(postfix):
+        abort(400, "Malformed operation")
+
+    return "." + postfix + ".PNG"
 
 @blueprint.route('/<string:operation>/<string:transformation>/<string:media_id>', methods=['GET', 'POST'])
 def api_convert_image_to_format(operation, transformation, media_id):
@@ -32,22 +44,25 @@ def api_convert_image_to_format(operation, transformation, media_id):
               type: string
     """
 
-    if transformation not in ["PNG", "JPG", "rotate_right", "rotate_left", "thumbnail", "filter_blur"]:
+    if transformation not in [
+            "PNG", "JPG", "rotate_right", "rotate_left", "thumbnail", "blur", "flop", "median"
+    ]:
         return get_response_error_formatted(500, {"error_msg": "SERVER CANNOT UNDERSTAND THIS TRANSFORMATION!"})
 
     my_file = File_Tracking.objects(pk=media_id).first()
     if not my_file:
         return get_response_error_formatted(404, {"error_msg": "FILE NOT FOUND"})
 
+    post_fix = get_postfix(operation, transformation)
     abs_path = get_media_path() + my_file.file_path
-    target_path = get_media_path() + my_file.file_path + "_" + transformation
 
     data = {
         'media_id': media_id,
         'media_path': abs_path,
         'operation': operation,
-        'target_path': target_path,
+        'target_path': abs_path + post_fix,
         'transformation': transformation,
+        'post_fix': post_fix
     }
 
     job = api_rq.call("worker.convert_image", data)
@@ -99,7 +114,7 @@ def api_get_job_state(job_id):
               type: string
 
     """
-    job = api_rq.fetch_job(job.id)
+    job = api_rq.fetch_job(job_id)
 
     status = job.get_status()
     if status == "failed":
