@@ -352,6 +352,10 @@ def api_fetch_from_url():
     if not validators.url(request_url):
         return get_response_error_formatted(400, {'error_msg': "Please provide a valid URL"})
 
+    # If we don't have an user, we generate a temporal one with random names
+    if not hasattr(current_user, 'username'):
+        current_user = generate_random_user()
+
     token = current_user.generate_auth_token()
     api_call = "https://img-api.com/api/media/upload?key=" + token
 
