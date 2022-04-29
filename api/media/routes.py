@@ -1,3 +1,4 @@
+import io
 import os
 import validators
 
@@ -7,7 +8,7 @@ from api.api_redis import api_rq
 from api import get_response_formatted, get_response_error_formatted, api_key_or_login_required
 from flask import jsonify, request, send_file
 
-from flask import current_app, url_for
+from flask import current_app, url_for, abort
 
 from api.tools import generate_file_md5, ensure_dir, is_api_call
 from api.user.routes import generate_random_user
@@ -161,6 +162,27 @@ def api_upload_media():
     return api_internal_upload_media()
 
 
+def api_dynamic_conversion(abs_path, extension, filename):
+    attachment_filename = filename + "." + extension
+
+    try:
+        bit_image = io.BytesIO()
+        with Image(filename=abs_path) as img:
+            print("CONVERT TO " + extension)
+
+            img.format = extension
+            img.save(file=bit_image)
+            bit_image.seek(0)
+
+    except Exception as exc:
+        return get_response_error_formatted(500, {"error_msg": "Failed to convert to format " + extension})
+
+    return send_file(bit_image,
+                     mimetype='image/' + extension,
+                     as_attachment=True,
+                     attachment_filename=attachment_filename)
+
+
 @blueprint.route('/get/<string:media_id>', methods=['GET'])
 def api_get_media(media_id):
     """Returns a media object given it's media_id.
@@ -194,6 +216,11 @@ def api_get_media(media_id):
     if hasattr(current_user, "username"):
         username = current_user.username
 
+    arr = media_id.split(".")
+    media_id = arr[0]
+
+    extension = None if (len(arr) == 1) else arr[1]
+
     my_file = File_Tracking.objects(pk=media_id).first()
     if not my_file:
         if is_api_call():
@@ -208,6 +235,10 @@ def api_get_media(media_id):
             return redirect("/static/images/placeholder_private.jpg")
 
     abs_path = get_media_path() + my_file.file_path
+
+    if extension:
+        return api_dynamic_conversion(abs_path, extension, my_file.file_name)
+
     return send_file(abs_path, attachment_filename=my_file.file_name)
 
 

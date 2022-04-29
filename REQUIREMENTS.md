@@ -13,6 +13,9 @@ We are creating a processing engine that can perform asynchronous operations
     - Direct upload
     - Download from a specific URL
 
+    - Convert the file on the fly to different formats directly on the API
+
+
 * Download / Re Image
 * Perform operation
     - Compression

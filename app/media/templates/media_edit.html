@@ -34,13 +34,6 @@
             </div>
 
             <br><br>
-            <div class='btn btn-primary api_btn_process' process='convert/PNG'>
-                <i class="fa-solid fa-file-arrow-down"></i> PNG
-            </div>
-            <div class='btn btn-primary api_btn_process' process='convert/JPG'>
-                <i class="fa-solid fa-file-arrow-down"></i> JPG
-            </div>
-            <br><br>
             <div class='btn btn-primary api_btn_process' process='generate/thumbnail_128'>
                 <i class="fa-solid fa-file-arrow-down"></i> THUMB 128px
             </div>
@@ -58,7 +51,40 @@
             <div class='btn btn-primary api_btn_process' process='filter/median'>
                 <i class="fa-solid fa-photo-film"></i> MEDIAN
             </div>
-
+            <br><br>
+            Format conversions
+            <br><br>
+            <a href='/api/media/get/{{ media_id }}.PNG'>
+                <div class='btn btn-primary'>
+                    <i class="fa-solid fa-file-arrow-down"></i> PNG
+                </div>
+            </a>
+            <a href='/api/media/get/{{ media_id }}.JPG'>
+                <div class='btn btn-primary'>
+                    <i class="fa-solid fa-file-arrow-down"></i> JPG
+                </div>
+            </a>
+            <a href='/api/media/get/{{ media_id }}.GIF'>
+                <div class='btn btn-primary'>
+                    <i class="fa-solid fa-file-arrow-down"></i> GIF
+                </div>
+            </a>
+            <br><br>
+            <a href='/api/media/get/{{ media_id }}.BMP'>
+                <div class='btn btn-primary'>
+                    <i class="fa-solid fa-file-arrow-down"></i> BMP
+                </div>
+            </a>
+            <a href='/api/media/get/{{ media_id }}.PCX'>
+                <div class='btn btn-primary'>
+                    <i class="fa-solid fa-file-arrow-down"></i> PCX
+                </div>
+            </a>
+            <a href='/api/media/get/{{ media_id }}.SVG'>
+                <div class='btn btn-primary'>
+                    <i class="fa-solid fa-file-arrow-down"></i> SVG
+                </div>
+            </a>
         </div>
     </span>
 </div>
