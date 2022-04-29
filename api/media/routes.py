@@ -95,7 +95,6 @@ def api_internal_upload_media():
                 return get_response_error_formatted(400, {"error_msg": "Image is not in a valid format!"})
 
             f_request.save(final_absolute_path)
-            uploaded_ft.append({'file_md5': md5})
 
             new_file = {
                 'info': info,
@@ -114,7 +113,10 @@ def api_internal_upload_media():
             my_file = File_Tracking(**new_file)
             my_file.save()
 
-    ret = {'uploaded_files': uploaded_ft, 'username': current_user.username, 'status': 'success'}
+            new_file['media_id'] = str(my_file.id)
+            uploaded_ft.append(new_file)
+
+    ret = {'media': uploaded_ft, 'username': current_user.username, 'status': 'success'}
     return get_response_formatted(ret)
 
 
@@ -187,6 +189,7 @@ def api_dynamic_conversion(abs_path, extension, filename):
 def api_get_media(media_id):
     """Returns a media object given it's media_id.
         The user might be rejected if the media is private
+        The user can specify an extension to the media_id file and it will be converted on the fly
     ---
     tags:
       - media
