@@ -142,9 +142,9 @@ def register_api_blueprints(app):
     print(" API BLUE PRINTS ")
     for module_name in (
             'user',
+            'jobs',
             'admin',
             'media',
-            'transform',
             'hello_world',
     ):
         module = import_module('api.{}.routes'.format(module_name))

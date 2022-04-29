@@ -8,7 +8,7 @@ function job_monitoring(job_id) {
         clearInterval(job_monitoring_interval);
 
     job_monitoring_interval = setInterval(function(job_id) {
-        let api_url = "/api/transform/job/" + job_id;
+        let api_url = "/api/jobs/job/" + job_id;
         fetch(api_url)
             .then(response => response.json())
             .then(data => {

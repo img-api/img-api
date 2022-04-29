@@ -4,7 +4,7 @@ from flask import abort, send_file
 from flask_login import current_user
 
 from api.api_redis import api_rq
-from api.transform import blueprint
+from api.jobs import blueprint
 from api.media.models import File_Tracking
 from api.media.routes import get_media_path
 from api import get_response_formatted, get_response_error_formatted
@@ -54,7 +54,7 @@ def api_convert_image_to_format(operation, transformation, media_id):
 
     responses:
       200:
-        description: Returns a job ID. You have to call /api/transform/job/{ job_id } to get when it is ready.
+        description: Returns a job ID. You have to call /api/jobs/job/{ job_id } to get when it is ready.
         schema:
           id: Job ID
           type: object

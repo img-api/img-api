@@ -10,7 +10,7 @@ function job_monitoring(job_id) {
         clearInterval(job_monitoring_interval);
 
     job_monitoring_interval = setInterval(function(job_id) {
-        let api_url = "/api/transform/job/" + job_id;
+        let api_url = "/api/jobs/job/" + job_id;
         fetch(api_url)
             .then(response => response.json())
             .then(data => {
@@ -22,7 +22,7 @@ function job_monitoring(job_id) {
                     // Cancel my interval
                     clearInterval(intervals[job_id]);
 
-                    let api_get = "/api/transform/get/" + job_id;
+                    let api_get = "/api/jobs/get/" + job_id;
                     let img = document.getElementById('img_edit_image');
                     img.src = api_get
                 }
@@ -39,7 +39,7 @@ function job_monitoring(job_id) {
 for (btn of api_btn_process) {
     btn.addEventListener('click', function(evt) {
         let process = this.getAttribute('process')
-        let api_url = '/api/transform/' + process + '/' + media_id;
+        let api_url = '/api/jobs/' + process + '/' + media_id;
 
         console.log(" Backend perform operation " + process)
         fetch(api_url, {

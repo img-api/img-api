@@ -33,7 +33,7 @@ swagger_template = dict(
     info={
         'title': LazyString(lambda: 'IMG-API API document'),
         'version': LazyString(lambda: '0.1'),
-        'description': LazyString(lambda: 'API Description to upload, convert, operate and download images and media'),
+        'description': LazyString(lambda: 'API Description to upload, convert, operate and download images and media  <style>.models {display: none !important}</style>'),
         "basePath": "/docs",  # base bash for blueprint registration
     },
     host=LazyString(lambda: request.host))
