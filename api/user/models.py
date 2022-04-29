@@ -1,4 +1,5 @@
 import os
+import shutil
 import datetime
 
 from mongoengine import *
@@ -120,3 +121,26 @@ class User(UserMixin, db.Document):
             return user
 
         return get_response_error_formatted(403, {'error_msg': 'User is not active!'})
+
+    def delete_media(self):
+        from api.media.routes import get_media_path
+        from api.media.models import File_Tracking
+
+        print(" FULL USER CLEAN UP - REMOVE FILES AND DATABASE ENTRIES ")
+
+        # Delete every file that contains me
+        File_Tracking.objects(username=self.username).delete()
+
+        # Delete the entire folder path
+        full_path = get_media_path() + self.username + "/"
+
+        if os.path.exists(full_path):
+            shutil.rmtree(full_path)
+
+    def delete(self, *args, **kwargs):
+        print("--------------------------------------------------------")
+        print(" DELETE USER " + self.username)
+        print("--------------------------------------------------------")
+
+        self.delete_media()
+        return super(User, self).delete(*args, **kwargs)

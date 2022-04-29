@@ -308,7 +308,13 @@ def api_create_user_local():
     user = User(**user_obj)
     user.save()
 
-    ret = {'username': username, 'email': email, 'status': 'success', 'msg': 'Thanks for registering'}
+    ret = {
+        'username': username,
+        'email': email,
+        'status': 'success',
+        'msg': 'Thanks for registering',
+        'token': user.generate_auth_token()
+    }
     return get_response_formatted(ret)
 
 
@@ -495,6 +501,7 @@ def api_user_logout():
         return get_response_error_formatted(401, {'error_msg': "Please login or create an account."})
 
     logout_user()
+
     if is_api_call():
         return get_response_formatted({'status': 'success', 'msg': 'user logged out'})
 
