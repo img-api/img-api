@@ -24,6 +24,7 @@ def convert_image(json):
     """
 
     trf = json['transformation']
+    media_id = json['media_id']
     operation = json['operation']
     image_path = json['media_path']
     target_path = json['target_path']
@@ -54,14 +55,14 @@ def convert_image(json):
         image.save(filename=target_path)
         if os.path.exists(target_path):
             print(operation + " => " + trf + " WAS SUCCESSFUL ")
-            return {'state': 'success', 'operation': operation, 'transformation': trf}
+            return {'state': 'success', 'operation': operation, 'transformation': trf, 'media_id': media_id}
 
     except Exception as e:
         print(str(e))
         print(operation + " => " + trf + " CRASHED ")
 
     print(operation + " => " + trf + " FAILED ")
-    return {'state': 'error', 'operation': operation, 'transformation': trf}
+    return {'state': 'error', 'operation': operation, 'transformation': trf, 'media_id': media_id}
 
 
 if __name__ == '__main__':
