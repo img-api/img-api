@@ -31,7 +31,7 @@ function job_monitoring(job_id) {
                 alert("INTERNAL SERVER ERROR");
             });
 
-    }, 1000, job_id);
+    }, 250, job_id);
 
     intervals[job_id] = job_monitoring_interval
 }

@@ -38,7 +38,7 @@ def convert_image(json):
         elif operation == "transform":
             if trf == "rotate_right":
                 image.rotate(90)
-            elif trf == "rotate_right":
+            elif trf == "rotate_left":
                 image.rotate(-90)
             elif trf == "flop":
                 image.flop()
