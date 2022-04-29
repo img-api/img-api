@@ -372,3 +372,55 @@ def api_fetch_from_url():
 
     ret = {'status': 'success', 'job_id': job.id, 'request_url': request_url}
     return get_response_formatted(ret)
+
+
+
+
+@blueprint.route('/posts/<string:media_id>/set/<string:privacy_mode>', methods=['GET'])
+def api_set_media_private_posts_json(media_id, privacy_mode):
+    """Sets a media privacy mode
+    ---
+    tags:
+      - media
+    schemes: ['http', 'https']
+    deprecated: false
+    definitions:
+      image_file:
+        type: object
+    parameters:
+        - in: query
+          name: key
+          schema:
+            type: string
+          description: A token that you get when you register or when you ask for a token
+    responses:
+      200:
+        description: Returns OK if you can set this permission
+      403:
+        description: Forbidden, user is not the owner of this image
+      404:
+        description: File is missing
+
+    """
+    from flask_login import current_user
+
+    if not hasattr(current_user, "username"):
+        return get_response_error_formatted(403, {'error_msg': "Anonymous users are not allowed."})
+
+    media_file = File_Tracking.objects(id=media_id).first()
+
+    if not media_file:
+        return get_response_error_formatted(404, {'error_msg': "Missing."})
+
+    if media_file.username != current_user.username:
+        return get_response_error_formatted(403, {'error_msg': "This user is not allowed to perform this."})
+
+    if privacy_mode == 'private':
+        media_file.is_public = False
+    else:
+        media_file.is_public = True
+
+    media_file.save()
+
+    ret = {'status': 'success', 'media_id': media_id, 'privacy_mode': privacy_mode}
+    return get_response_formatted(ret)

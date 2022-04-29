@@ -1,4 +1,12 @@
 var username = document.getElementById('user_posts').value;
+
+function set_media_private(media_id, checked) {
+    if (checked)
+        fetch('/api/media/posts/' + media_id + '/set/private')
+    else
+        fetch('/api/media/posts/' + media_id + '/set/public')
+}
+
 fetch('/api/media/posts/' + username)
     .then(response => response.json())
     .then(data => {
@@ -13,7 +21,6 @@ fetch('/api/media/posts/' + username)
 
         let media_container = document.getElementById('media_posts_container');
         let html = "";
-
 
         for (media of data.media_files) {
             let private = (media.is_public ? "" : "checked")
@@ -33,8 +40,8 @@ fetch('/api/media/posts/' + username)
                 <span class='text-white'>
                     <div class="">
                         <i class='fa fa-lock'></i>
-                        <label class="form-check-label" for="flexCheckChecked">Private</label>
-                        <input class="form-check-input" type="checkbox" value="" id="flexCheckChecked" ${private}/>
+                        <label class="form-check-label" >Private</label>
+                        <input class="form-check-input checkbox_private" type="checkbox" value="" ${private} media_id='${media.media_id}'/>
                     </div>
                 </span>
             `
@@ -45,4 +52,17 @@ fetch('/api/media/posts/' + username)
         }
 
         media_container.innerHTML = html
+
+        var api_checkbox_private = document.getElementsByClassName('checkbox_private');
+        for (checkbox of api_checkbox_private) {
+            checkbox.addEventListener('change', function(evt) {
+                if (this.checked == false) {
+                    console.log("PUBLIC");
+                    set_media_private(this.attributes.media_id.value, false)
+                } else {
+                    console.log("PRIVATE");
+                    set_media_private(this.attributes.media_id.value, true)
+                }
+            })
+        }
     });
