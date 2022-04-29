@@ -26,7 +26,7 @@ fetch('/api/media/posts/' + username)
             let private = (media.is_public ? "" : "checked")
 
             html += `
-            <div class="col-lg-4 col-md-12 mb-4">
+            <div class="col-lg-2 col-md-12 mb-2">
                 <div class="bg-image hover-overlay ripple shadow-1-strong rounded">
                 <a href='/media/edit/${media.media_id}'>
                     <img src='/api/media/get/${media.media_id}' class="img-fluid img-fit-inside">
