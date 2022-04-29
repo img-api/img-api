@@ -32,8 +32,8 @@ def convert_image(json):
     try:
         image = Image(filename=image_path)
         if operation == "convert":
-            print(" CONVERT " + image_path + " INTO " + transformation)
-            image = image.convert(transformation)
+            print(" CONVERT " + image_path + " INTO " + trf)
+            image = image.convert(trf)
 
         elif operation == "transform":
             if trf == "rotate_right":

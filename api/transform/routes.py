@@ -29,17 +29,40 @@ def api_convert_image_to_format(operation, transformation, media_id):
     schemes: ['http', 'https']
     deprecated: false
     definitions:
-      request_url:
+      job_id:
         type: object
     parameters:
         - in: query
-          name: request_url
+          name: operation
           schema:
             type: string
-          description: A valid URL that contains a file format on it.
+          description: An operation from the set ['convert', 'filter', 'transform']
+        - in: query
+          name: transformation
+          schema:
+            type: string
+          description: A service call operation/transformation pair.
+            Examples convert=['PNG', 'JPG']
+            transform=['rotate_right', 'rotate_left']
+            filter=['blur', 'median']
+            For more transformations please check the full documentation
+        - in: query
+          name: media_id
+          schema:
+            type: string
+          description: A valid media_id which belongs to this user or is PUBLIC
+
     responses:
       200:
-        description: Returns a job ID
+        description: Returns a job ID. You have to call /api/transform/job/{ job_id } to get when it is ready.
+        schema:
+          id: Job ID
+          type: object
+          properties:
+            job_id:
+              type: string
+      500:
+        description: Something went really wrong with this job
         schema:
           id: Job ID
           type: object

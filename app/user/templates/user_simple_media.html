@@ -17,7 +17,9 @@
 {% endif %}
 
 <div class='container'>
-    <img src='/api/media/get/{{ media_id }}' class='big_image_auto'>
+    <a href='/media/edit/{{ media_id }}'>
+        <img src='/api/media/get/{{ media_id }}' class='big_image_auto'>
+    </a>
 </div>
 
 <div class="row" id='media_posts_container'></div>
