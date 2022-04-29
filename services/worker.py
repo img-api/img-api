@@ -1,5 +1,6 @@
 import os
 import redis
+import requests
 from wand.image import Image
 
 # https://www.pythonpool.com/imagemagick-python/
@@ -64,6 +65,17 @@ def convert_image(json):
     print(operation + " => " + trf + " FAILED ")
     return {'state': 'error', 'operation': operation, 'transformation': trf, 'media_id': media_id}
 
+def fetch_url_image(request_url):
+    r = requests.get(request_url, allow_redirects=True)
+    content_type = r.headers.get('content-type')
+
+    print("[" + content_type + "]")
+    if not content_type.startswith('image'):
+        print("CONTENT TYPE IS NOT AN IMAGE ")
+        return {'state': 'error'}
+
+    print("Process file, check if image")
+    return {'state': 'success'}
 
 if __name__ == '__main__':
     with Connection(conn):

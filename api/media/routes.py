@@ -2,6 +2,8 @@ import os
 import validators
 
 from api.media import blueprint
+from api.api_redis import api_rq
+
 from api import get_response_formatted, get_response_error_formatted
 from flask import jsonify, request, send_file
 
@@ -246,8 +248,10 @@ def api_get_posts_json(user_id):
     return get_response_formatted(ret)
 
 
-
-@blueprint.route('/fetch', methods=['GET', 'POST',])
+@blueprint.route('/fetch', methods=[
+    'GET',
+    'POST',
+])
 def api_fetch_from_url():
     """Returns a JOB ID for the task of fetching this resource. It calls RQ to get the task done.
     ---
@@ -286,7 +290,11 @@ def api_fetch_from_url():
     if not validators.url(request_url):
         return get_response_error_formatted(400, {'error_msg': "Please provide a valid URL"})
 
-    print("REQUEST " + request_url)
+    job = api_rq.call("worker.fetch_url_image", request_url)
+    if not job:
+        return get_response_error_formatted(401, {'error_msg': "Failed reaching the services."})
 
-    ret = {'status': 'success', 'job_id': "JOB_ID_STUB" , 'request_url': request_url}
+    ret = {'status': 'success', 'job_id': job.id, 'request_url': request_url}
     return get_response_formatted(ret)
+
+
