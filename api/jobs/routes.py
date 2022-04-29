@@ -25,7 +25,7 @@ def api_convert_image_to_format(operation, transformation, media_id):
     """Returns a JOB ID for the task of fetching this resource. It calls RQ to get the task of converting the file done.
     ---
     tags:
-      - transform
+      - jobs
     schemes: ['http', 'https']
     deprecated: false
     definitions:
@@ -61,14 +61,14 @@ def api_convert_image_to_format(operation, transformation, media_id):
           properties:
             job_id:
               type: string
+      401:
+        description: Internal failure reaching our services
+
+      404:
+        description: File not found
+
       500:
         description: Something went really wrong with this job
-        schema:
-          id: Job ID
-          type: object
-          properties:
-            job_id:
-              type: string
     """
 
     if transformation not in ["PNG", "JPG", "rotate_right", "rotate_left", "thumbnail", "blur", "flop", "median"]:
@@ -104,7 +104,7 @@ def api_get_media_from_job(job_id):
     """Returns the state of a job_id and it's result
     ---
     tags:
-      - media
+      - jobs
     schemes: ['http', 'https']
     deprecated: false
     definitions:
@@ -132,13 +132,6 @@ def api_get_media_from_job(job_id):
 
       500:
         description: There was some problem performing this task
-        schema:
-          id: Job ID
-          type: object
-          properties:
-            error_msg:
-              type: string
-
     """
     job = api_rq.fetch_job(job_id)
 
@@ -157,10 +150,11 @@ def api_get_media_from_job(job_id):
 
 @blueprint.route('/get/<string:job_id>', methods=['GET'])
 def api_get_result_job(job_id):
-    """Returns the state of a job_id and it's result
+    """Returns the file result for an operation, if it is completed, otherwise it will return a status update.
+        Not to be used by the website without checking the result of the job first.
     ---
     tags:
-      - media
+      - jobs
     schemes: ['http', 'https']
     deprecated: false
     definitions:
@@ -174,7 +168,7 @@ def api_get_result_job(job_id):
           description: A valid ID for a job in the system.
     responses:
       200:
-        description: If the job has not completed it will return a json object
+        description: If the job has not completed it will return a json object, otherwise you will get a file
         schema:
           id: Job ID
           type: object
@@ -186,14 +180,11 @@ def api_get_result_job(job_id):
             job_status:
               type: string
 
+      404:
+        description: File not found internally
+
       500:
         description: There was some problem performing this task
-        schema:
-          id: Job ID
-          type: object
-          properties:
-            error_msg:
-              type: string
 
     """
     job = api_rq.fetch_job(job_id)
