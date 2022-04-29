@@ -14,3 +14,6 @@ rq
 validators
 wand
 requests
+urllib.request
+pycurl
+gzip

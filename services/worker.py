@@ -65,17 +65,45 @@ def convert_image(json):
     print(operation + " => " + trf + " FAILED ")
     return {'state': 'error', 'operation': operation, 'transformation': trf, 'media_id': media_id}
 
-def fetch_url_image(request_url):
-    r = requests.get(request_url, allow_redirects=True)
-    content_type = r.headers.get('content-type')
+
+def fetch_url_image(json):
+    """ Fetches the URL, checks if it is an image and uploads it back to the service using the user token """
+
+    from urllib.request import urlopen
+
+    user_token = json['token']
+    username = json['username']
+    request_url = json['request_url']
+    url_upload = json['api_callback']
+
+    r = urlopen(request_url)
+    content_type = r.info().get('Content-Type')
 
     print("[" + content_type + "]")
     if not content_type.startswith('image'):
         print("CONTENT TYPE IS NOT AN IMAGE ")
         return {'state': 'error'}
 
-    print("Process file, check if image")
-    return {'state': 'success'}
+    info = {}
+    try:
+        image = Image(file=r)
+        info['width'] = image.width
+        info['height'] = image.height
+
+    except Exception as e:
+        print(" CRASH on loading image " + str(e))
+        return {'state': 'error'}
+
+    print(" IMAGE INFO " + str(info))
+    print(" Upload back to " + username + " " + url_upload)
+    print(" SEND BLOB ")
+
+    files = {'image_uploaded_by_' + username + ".png": image.make_blob()}
+    values = {'image': 'new_image'}
+    requests.post(url_upload, files=files, data=values)
+
+    return {'state': 'success', 'image': info}
+
 
 if __name__ == '__main__':
     with Connection(conn):

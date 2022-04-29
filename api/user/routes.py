@@ -115,7 +115,7 @@ def api_login_user():
 
     login_user(user, remember=True)
 
-    token = current_user.generate_auth_token()
+    token = user.generate_auth_token()
     return get_response_formatted({'status': 'success', 'msg': 'hello user', 'token': token})
 
 

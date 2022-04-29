@@ -13,23 +13,24 @@ function job_monitoring(job_id) {
             .then(response => response.json())
             .then(data => {
                 if (data.status != "success") {
-                    alert("There was a problem loading this URL");
+                    clearInterval(intervals[job_id]);
+                    input_request.placeholder = "There was a problem loading this URL"
                     return
                 }
 
                 if (data.job_status == "finished") {
-                    debugger;
                     clearInterval(intervals[job_id]);
-                    input_request.placeholder = "finished"
 
                     if (data.result.state == "error") {
                         input_request.placeholder = "There was a problem loading this image. Please try a different one..."
                         return
                     }
+
+                    input_request.placeholder = "Done"
                 }
             })
             .catch((error) => {
-                alert("INTERNAL SERVER ERROR");
+                //alert("INTERNAL SERVER ERROR");
             });
 
         if (input_request.placeholder == "") {
@@ -38,7 +39,7 @@ function job_monitoring(job_id) {
             input_request.placeholder = ""
         }
 
-    }, 250, job_id);
+    }, 1000, job_id);
 
     intervals[job_id] = job_monitoring_interval
 }

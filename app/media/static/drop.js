@@ -131,7 +131,7 @@ function previewAnduploadImage(image) {
     formData.append('image', image);
 
     // upload the image
-    var uploadLocation = 'https://img-api.com/api/media/upload';
+    var uploadLocation = '/api/media/upload_from_web';
 
     var ajax = new XMLHttpRequest();
     ajax.open("POST", uploadLocation, true);

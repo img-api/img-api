@@ -4,7 +4,7 @@ import validators
 from api.media import blueprint
 from api.api_redis import api_rq
 
-from api import get_response_formatted, get_response_error_formatted
+from api import get_response_formatted, get_response_error_formatted, api_key_or_login_required
 from flask import jsonify, request, send_file
 
 from flask import current_app, url_for
@@ -16,6 +16,7 @@ from .models import File_Tracking
 from mongoengine.queryset import QuerySet
 from mongoengine.queryset.visitor import Q
 
+from wand.image import Image
 
 def get_media_valid_extension(file_name):
     """ Checks with the system to see if the extension provided is valid,
@@ -38,6 +39,7 @@ def get_media_path():
 
 
 @blueprint.route('/upload', methods=['POST'])
+@api_key_or_login_required
 def api_upload_media():
     """Upload media files to this system
     ---
@@ -111,10 +113,24 @@ def api_upload_media():
                 print(" FILE ALREADY UPLOADED ")
                 continue
 
+            info = {}
+            try:
+                image = Image(file=f_request)
+                info['width'] = image.width
+                info['height'] = image.height
+
+                # Rest request seek pointer to start so we can save it after validation
+                f_request.seek(0)
+
+            except Exception as e:
+                print(" CRASH on loading image " + str(e))
+                return get_response_error_formatted(400, {"error_msg": "Image is not in a valid format!"})
+
             f_request.save(final_absolute_path)
             uploaded_ft.append({'file_md5': md5})
 
             new_file = {
+                'info': info,
                 'file_name': file_name,
                 'file_path': relative_file_path,
                 'file_size': size,
@@ -133,6 +149,10 @@ def api_upload_media():
     ret = {'uploaded_files': uploaded_ft, 'username': current_user.username, 'status': 'success'}
     return get_response_formatted(ret)
 
+@blueprint.route('/upload_from_web', methods=['POST'])
+def api_web_upload_media():
+    """ Uploads without an user or without checking a token, we use this to create new users on the fly """
+    return api_upload_media()
 
 @blueprint.route('/get/<string:media_id>', methods=['GET'])
 def api_get_media(media_id):
@@ -278,6 +298,7 @@ def api_fetch_from_url():
             job_id:
               type: string
     """
+    from flask_login import current_user
 
     if request.method == 'POST':
         request_url = request.json['request_url']
@@ -290,7 +311,17 @@ def api_fetch_from_url():
     if not validators.url(request_url):
         return get_response_error_formatted(400, {'error_msg': "Please provide a valid URL"})
 
-    job = api_rq.call("worker.fetch_url_image", request_url)
+    token = current_user.generate_auth_token()
+    api_call = "https://img-api.com/api/media/upload?key=" + token
+
+    json = {
+        'request_url': request_url,
+        'username': current_user.username,
+        'token': token,
+        'api_callback': api_call,
+    }
+
+    job = api_rq.call("worker.fetch_url_image", json)
     if not job:
         return get_response_error_formatted(401, {'error_msg': "Failed reaching the services."})
 
