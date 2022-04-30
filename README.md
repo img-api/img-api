@@ -2,6 +2,8 @@
 
 [IMG-API.COM](https://img-api.com)
 
+[IMG-API NODE LIBRARY](https://github.com/sergioamr/img-api-node-shim)
+
 Simple API to upload and convert images built in Flask
 
 ## Documents
