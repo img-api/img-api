@@ -8,7 +8,4 @@ export IMG_API_BASE_ENDPOINT=dummy
 
 . .venv/bin/activate
 
-pip show itsdangerous
-pip show flask
-
 python -m pytest

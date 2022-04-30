@@ -12,9 +12,10 @@ def test_user(client):
     ret = client.get("/api/user/create?" + TEST_CREDENTIALS)
     assert ret.json['status'] == 'success'
 
-    # User has been already created, should return an error
+    # User has been already created, should return that is a duplicate
     ret = client.get("/api/user/create?" + TEST_CREDENTIALS)
-    assert ret.json['status'] == 'error'
+    assert ret.json['status'] == 'success'
+    assert ret.json['duplicate'] == True
 
     # Check login
     ret = client.get("/api/user/login?" + TEST_CREDENTIALS)

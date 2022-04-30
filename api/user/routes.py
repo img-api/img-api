@@ -284,16 +284,33 @@ def api_create_user_local():
     if not is_password_valid(password):
         return get_response_error_formatted(401, {'error_msg': "Invalid password"})
 
-    is_user = User.objects(Q(username=username) | Q(email=email)).first()
+    hashpass = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
 
-    if is_user:
+    user = User.objects(Q(username=username) | Q(email=email)).first()
+    if user:
+        # Our user might already been created, we check the password against the system and we return a token in case of being the same.
+        if user['email'] == email and user['username'] == username:
+            user_pass = binascii.unhexlify(user.password)
+            if bcrypt.checkpw(password.encode('utf-8'), user_pass):
+                print(" User is already on the system with this credentials, we return a token ")
+
+                ret = {
+                    'username': username,
+                    'email': email,
+                    'duplicate': True,
+                    'status': 'success',
+                    'msg': 'You were already registered, here is our token of gratitude',
+                    'token': user.generate_auth_token()
+                }
+
+            return get_response_formatted(ret)
+
         return get_response_error_formatted(401, {'error_msg': "User already on the system, would you like to login?"})
 
     email = get_validated_email(email)
     if isinstance(email, Response):
         return email
 
-    hashpass = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
     user_obj = {
         'first_name': first_name,
         'last_name': last_name,
