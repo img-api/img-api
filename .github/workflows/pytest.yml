@@ -19,7 +19,7 @@ jobs:
 
       - name: Install pipenv
         run: |
-          python -m pip install --upgrade pipenv wheel
+          python3 -m pip install --upgrade pipenv wheel
       - id: cache-pipenv
         uses: actions/cache@v1
         with:
@@ -29,7 +29,7 @@ jobs:
       - name: Install dependencies
         if: steps.cache-pipenv.outputs.cache-hit != 'true'
         run: |
-          pipenv install --deploy --dev
+          pipenv --python `which python3` install --deploy --dev
       - name: Run test suite
         run: |
-          pipenv run test -v
+          pipenv --python `which python3` run test -v
