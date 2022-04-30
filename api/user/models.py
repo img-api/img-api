@@ -9,9 +9,7 @@ from flask_login import UserMixin
 
 from imgapi_launcher import db, login_manager
 
-#from itsdangerous import TimedJSONWebSignatureSerializer as Serializer, BadSignature, SignatureExpired
-from itsdangerous import TimedJSONWebSignatureSerializer
-
+from .signature_serializer import TimedJSONWebSignatureSerializer as Serializer, BadSignature, SignatureExpired
 
 @login_manager.user_loader
 def user_loader(user_id):
