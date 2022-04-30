@@ -1,4 +1,5 @@
 var username = document.getElementById('user_posts').value;
+var current_username = document.getElementById('current_user').value;
 
 function set_media_private(media_id, checked) {
     if (checked)
@@ -35,7 +36,7 @@ fetch('/api/media/posts/' + username)
                 </div>
             `
 
-            if (media.username == username)
+            if (media.username == current_username)
                 html += `
                 <span class='text-white'>
                     <div class="">

@@ -52,7 +52,9 @@ background-color: #404040;
                 {% if media.is_anon %}
                     Anonymous
                 {% else %}
+                    <a href='/user/{{ media.username }}/posts' style='color:#aaa'>
                     {{ media.username }}
+                    </a>
                 {% endif %}
                 </div>
             </div>

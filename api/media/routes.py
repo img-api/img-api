@@ -316,7 +316,7 @@ def api_get_posts_json(user_id):
     if user_id == username:
         query = Q(username=username)
     else:
-        query = Q(username=username) | Q(is_public=True)
+        query = Q(username=user_id) & Q(is_public=True)
 
     file_list = File_Tracking.objects(query)
 

@@ -21,6 +21,7 @@
 <html>
 
 <body style="{% block body_style %}{% endblock %}">
+    <input id='current_user' class='hidden' value='{{ current_user.username }}'>
     {% block navbar %}
     {% include "inc_navbar.html" %}
     {% endblock navbar %}
