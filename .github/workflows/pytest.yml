@@ -4,8 +4,8 @@ on: push
 
 jobs:
   test:
-    runs-on: ubuntu-18.04
-    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
 
     steps:
       - name: Check out repository code
@@ -28,4 +28,5 @@ jobs:
           ./update.sh
       - name: Run test suite
         run: |
+          ./run_worker.sh &
           ./run_tests.sh

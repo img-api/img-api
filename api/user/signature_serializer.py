@@ -1,3 +1,4 @@
+""" TODO ITSDANGEROUS DEPRECATED THIS SERIALIZER, WE NEED AN ALTERNATIVE """
 import hashlib
 import time
 import warnings

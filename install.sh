@@ -18,6 +18,10 @@ source .venv/bin/activate
 echo "MONGODB INSTALL"
 sudo apt-get install mongodb-org
 
+echo "START MONGO"
+sudo systemctl start mongodb
+sudo systemctl status mongodb
+
 echo "IMAGE MAGICK"
 sudo apt install imagemagick
 
