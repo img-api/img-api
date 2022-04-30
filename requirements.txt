@@ -15,5 +15,4 @@ validators
 wand
 requests
 
-pycurl
 gzip
