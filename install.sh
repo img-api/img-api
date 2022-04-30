@@ -10,3 +10,9 @@ source .venv/bin/activate
 
 echo "MONGODB INSTALL"
 sudo apt-get install mongodb-org
+
+echo "IMAGE MAGICK"
+sudo apt install imagemagick
+
+echo "IMAGE MAGICK"
+sudo apt install redis
