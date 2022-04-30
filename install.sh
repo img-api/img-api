@@ -17,5 +17,3 @@ sudo apt install imagemagick
 echo "IMAGE MAGICK"
 sudo apt install redis
 
-pip show itsdangerous
-pip show flask
