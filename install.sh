@@ -9,4 +9,4 @@ python3 -m venv .venv
 source .venv/bin/activate
 
 echo "MONGODB INSTALL"
-sudo apt-get install mongodb
+sudo apt-get install mongodb-org
