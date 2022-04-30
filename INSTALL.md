@@ -10,6 +10,11 @@ git clone git@github.com:sergioamr/img-api.git
 
 ### Create a virtual environment to run this project
 
+You can run the installer, it is what is being use at the CI.
+```
+./install.sh
+```
+
 ```
 cd img-api
 
@@ -39,7 +44,7 @@ sudo apt-get install mongodb-org
 
 Our microservices work using redis as our main platform for RPC (Remote Process Procedure)
 
-### Instal imagemagick
+### Install imagemagick
 
 ```
 sudo apt install imagemagick
