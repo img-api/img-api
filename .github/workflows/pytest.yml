@@ -19,8 +19,7 @@ jobs:
 
       - name: Install virtualenv
         run: |
-          sudo apt-get install python3-venv
-          python3 -m venv .venv
+          ./install.sh
 
       - name: Install dependencies
         if: steps.cache-pipenv.outputs.cache-hit != 'true'
