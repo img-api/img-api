@@ -116,6 +116,36 @@ def api_key_or_login_required(func):
     return decorated_view
 
 
+def api_key_login_or_anonymous(func):
+    """
+    Decorator for views that might want to login with an api key
+    """
+
+    @wraps(func)
+    def decorated_view(*args, **kwargs):
+        token = request.args.get("key")
+        if not token:
+            if 'key' in request.form:
+                token = request.form["key"]
+
+        if not token:
+            return func(*args, **kwargs)
+
+        user = User.verify_auth_token(token)
+        if isinstance(user, User) and user.active:
+            if hasattr(current_user, "username"):
+                # Relogin the user if the key belongs to a different one
+                if current_user.username != user.username:
+                    logout_user()
+                    login_user(user, remember=True)
+
+            else:
+                login_user(user, remember=True)
+
+        return func(*args, **kwargs)
+
+    return decorated_view
+
 def configure_media_folder(app):
     """ Gets the media folder path from the environment or uses a local one inside the application """
     from api.tools import ensure_dir

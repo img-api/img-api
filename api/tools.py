@@ -60,6 +60,10 @@ def ensure_dir(f):
     return None
 
 def is_api_call():
+    """ An api call is defined either by an application/json content header or our api key """
+    if request.args.get("key"):
+        return True
+
     if 'Content-Type' in request.headers and request.headers['Content-Type'] == 'application/json':
         return True
 

@@ -5,8 +5,8 @@ import validators
 from api.media import blueprint
 from api.api_redis import api_rq
 
-from api import get_response_formatted, get_response_error_formatted, api_key_or_login_required
-from flask import jsonify, request, send_file
+from api import get_response_formatted, get_response_error_formatted, api_key_or_login_required, api_key_login_or_anonymous
+from flask import jsonify, request, send_file, redirect
 
 from flask import current_app, url_for, abort
 
@@ -208,8 +208,8 @@ def api_dynamic_conversion(abs_path, extension, filename):
                      as_attachment=True,
                      attachment_filename=attachment_filename)
 
-
 @blueprint.route('/get/<string:media_id>', methods=['GET'])
+@api_key_login_or_anonymous
 def api_get_media(media_id):
     """Returns a media object given it's media_id.
         The user might be rejected if the media is private
