@@ -78,8 +78,25 @@ def api_internal_upload_media():
 
             if os.path.exists(final_absolute_path):
                 # File already exists on disk, we just ignore it
-                print(" FILE ALREADY UPLOADED ")
-                continue
+
+                my_file = File_Tracking.objects(file_path=relative_file_path).first()
+                if my_file:
+                    new_file = {
+                        'info': my_file['info'],
+                        'file_name': my_file.file_name,
+                        'file_path': my_file.file_path,
+                        'file_size': my_file.file_size,
+                        'file_format': my_file.file_format,
+                        'checksum_md5': my_file.checksum_md5,
+                        'username': my_file.username,
+                        'media_id': str(my_file.id)
+                    }
+
+                    print(" FILE ALREADY UPLOADED WITH ID " + str(my_file.id))
+                    uploaded_ft.append(new_file)
+                    continue
+
+                print(" FILE WAS LOST - CREATE NEW")
 
             info = {}
             try:
@@ -372,8 +389,6 @@ def api_fetch_from_url():
 
     ret = {'status': 'success', 'job_id': job.id, 'request_url': request_url}
     return get_response_formatted(ret)
-
-
 
 
 @blueprint.route('/posts/<string:media_id>/set/<string:privacy_mode>', methods=['GET'])
