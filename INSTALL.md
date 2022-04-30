@@ -32,7 +32,7 @@ py -3 -m venv .venv
 The database of choice for this project is Mongodb since we can dynamically grow the project and scale it through clusters
 
 ```
-sudo apt-get install mongodb
+sudo apt-get install mongodb-org
 ```
 
 ### Install redis

@@ -1,4 +1,4 @@
-Flask
+flask
 
 flask_login
 flask_mongoengine
@@ -14,5 +14,3 @@ rq
 validators
 wand
 requests
-
-

@@ -1,0 +1,32 @@
+# .github/workflows/app.yaml
+name: PyTest
+on: push
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v2
+
+      # Setup Python (faster than using Python container)
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.x"
+
+      - name: Install virtualenv
+        run: |
+          ./install.sh
+
+      - name: Install dependencies
+        if: steps.cache-pipenv.outputs.cache-hit != 'true'
+        run: |
+          pwd
+          ./update.sh
+      - name: Run test suite
+        run: |
+          ./run_worker.sh &
+          ./run_tests.sh
