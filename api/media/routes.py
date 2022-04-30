@@ -80,6 +80,13 @@ def api_internal_upload_media():
                 # File already exists on disk, we just ignore it
 
                 my_file = File_Tracking.objects(file_path=relative_file_path).first()
+
+                # A path is defined by the MD5, if there is a duplicate, it is either a collision or someone playing with
+                # this file / user. We could check if the user has changed, but the plan is to let users upgrade from
+                # anonymous into real users, and we might not want to move the final file.
+
+                # Eventually if the project grows, files in folders like this are not ideal and all this code should get revamped
+
                 if my_file:
                     new_file = {
                         'info': my_file['info'],
