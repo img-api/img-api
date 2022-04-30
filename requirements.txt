@@ -14,5 +14,3 @@ rq
 validators
 wand
 requests
-
-gzip
