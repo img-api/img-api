@@ -1,6 +1,7 @@
-# img-api
+# IMG-API
 
-[https://img-api.com](IMG-API.COM)
+[IMG-API.COM](https://img-api.com)
+
 Simple API to upload and convert images built in Flask
 
 ## Documents
