@@ -1,5 +1,7 @@
 import io
 import os
+import time
+import datetime
 import validators
 
 from api.media import blueprint
@@ -323,10 +325,11 @@ def api_get_posts_json(user_id):
     return_list = []
     for ft in file_list:
         return_list.append({
-            'filename': str(ft.file_name),
             'media_id': str(ft.pk),
+            'is_public': ft.is_public,
             'username': str(ft.username),
-            'is_public': ft.is_public
+            'filename': str(ft.file_name),
+            'creation_date': time.mktime(ft.creation_date.timetuple()),
         })
 
     ret = {'status': 'success', 'media_files': return_list}

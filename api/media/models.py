@@ -34,7 +34,6 @@ class File_Tracking(db.DynamicDocument):
 
     def __init__(self, *args, **kwargs):
         super(File_Tracking, self).__init__(*args, **kwargs)
-        self.creation_date = datetime.datetime.now()
 
     def is_image(self):
         image_list = [".JPEG", ".JPG", ".GIF", ".GIFV", ".PNG", ".BMP", ".TGA"]
@@ -51,6 +50,9 @@ class File_Tracking(db.DynamicDocument):
         return False
 
     def save(self, *args, **kwargs):
+        if not self.creation_date:
+            self.creation_date = datetime.datetime.now()
+
         ret = super(File_Tracking, self).save(*args, **kwargs)
         ret.reload()
         return ret

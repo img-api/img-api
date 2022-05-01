@@ -25,6 +25,7 @@ fetch('/api/media/posts/' + username)
 
         for (media of data.media_files) {
             let private = (media.is_public ? "" : "checked")
+            let verbose_date = second_get_verbose_date(data.timestamp - media.creation_date);
 
             html += `
             <div class="col-lg-2 col-md-12 mb-2">
@@ -39,11 +40,14 @@ fetch('/api/media/posts/' + username)
             if (media.username == current_username)
                 html += `
                 <span class='text-white'>
-                    <div class="">
+                    <small>
+                    <span class=''> ${ verbose_date } &nbsp;&nbsp;</span>
+                    <span class="">
                         <i class='fa fa-lock'></i>
                         <label class="form-check-label" >Private</label>
                         <input class="form-check-input checkbox_private" type="checkbox" value="" ${private} media_id='${media.media_id}'/>
-                    </div>
+                    </span>
+                    </small>
                 </span>
             `
 
