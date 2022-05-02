@@ -41,33 +41,32 @@ background-color: #404040;
         <div class="">
             {% for media in media_files %}
             {% if media['info'] %}
-
-            <div class="img_gallery" style='float:left' image_count="{{ loop.index }}" >
-                <img image_count="{{ loop.index }}" image_width="{{ media['info']['width'] }}" image_height="{{ media['info']['height'] }}"
-                src="/api/media/get/{{ media.id }}.v300.JPG" class="img-row">
-
-            {% endif %}
-
-            <!--
+                <div class="img_gallery " style='float:left' image_count="{{ loop.index }}" >
                 <div class="bg-image hover-overlay ripple rounded">
                     <a href="/user/{{ media.username }}/posts/{{ media.id }}">
-                    <img image_count="{{ loop.index }}" src="/api/media/get/{{ media.id }}.v300.JPG" class="img-fluid img-fit-inside img-row">
+                        <img image_count="{{ loop.index }}" image_width="{{ media['info']['width'] }}" image_height="{{ media['info']['height'] }}"
+                            src="/api/media/get/{{ media.id }}.v300.JPG" class="img-row">
                         <div class="mask" style="background-color: rgba(57, 192, 237, 0.2)"></div>
                     </a>
                 </div>
 
-                <div class='main_username'>
-                {{ loop.index }}
                 {% if media.is_anon %}
-                    Anonymous
+
                 {% else %}
-                    <a href='/user/{{ media.username }}/posts' style='color:#aaa'>
-                    {{ media.username }}
-                    </a>
-                {% endif %}
+                <!--
+                <div style='position:relative_'>
+                    <div class='main_username'>
+                        <small>
+                            <a href='/user/{{ media.username }}/posts' style='color:#aaa'>
+                            {{ media.username }}
+                            </a>
+                        </small>
+                    </div>
                 </div>
                 -->
+                {% endif %}
             </div>
+            {% endif %}
             {% endfor %}
         </div>
     </section>
