@@ -36,7 +36,7 @@ class File_Tracking(db.DynamicDocument):
         super(File_Tracking, self).__init__(*args, **kwargs)
 
     def is_image(self):
-        image_list = [".JPEG", ".JPG", ".GIF", ".GIFV", ".PNG", ".BMP", ".TGA"]
+        image_list = [".JPEG", ".JPG", ".GIF", ".GIFV", ".PNG", ".BMP", ".TGA", ".WEBP"]
         if self.file_format in image_list:
             return True
 

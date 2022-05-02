@@ -27,7 +27,7 @@ def get_media_valid_extension(file_name):
         You should never trust the frontend """
 
     extension = os.path.splitext(file_name)[1].upper()
-    image_list = [".JPEG", ".JPG", ".GIF", ".GIFV", ".PNG", ".BMP", ".TGA"]
+    image_list = [".JPEG", ".JPG", ".GIF", ".GIFV", ".PNG", ".BMP", ".TGA", ".WEBP"]
     if extension not in image_list:
         return False
 

@@ -7,7 +7,7 @@ background-color: #404040;
 
 {% block content %}
 
-<div class='container' id='main_row'>
+<div class='container'>
     <section class="">
         <header>
             <!-- Background image -->
@@ -35,13 +35,14 @@ background-color: #404040;
             <!-- Background image -->
         </header>
     </section>
-
-    <hr>
     <section class="text-center">
-        <div class="">
+        <div class="" id='outer_row'>
+            <div id='main_row'>
+            test
+            </div>
             {% for media in media_files %}
             {% if media['info'] %}
-                <div class="img_gallery" style='float:left' image_count="{{ loop.index }}" >
+                <div class="img_gallery" style='float:left;' image_count="{{ loop.index }}" >
                 <div class="bg-image hover-overlay ripple">
                     <a href="/user/{{ media.username }}/posts/{{ media.id }}">
                         <img image_count="{{ loop.index }}" image_width="{{ media['info']['width'] }}" image_height="{{ media['info']['height'] }}"

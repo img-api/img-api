@@ -1,5 +1,4 @@
-var margin_left = 7;
-var pixel_adjust = 16;
+var margin_left = 5;
 var max_height = 300;
 
 function get_scaled_width(image) {
@@ -11,11 +10,23 @@ function get_scaled_width(image) {
 }
 
 function adjust_stack(stack, current_w, max_width) {
-    let asp = current_w / max_width;
+    let asp = current_w / (max_width - margin_left * (stack.length + 1));
+
+    let final_w = 0;
     for (let image of stack) {
-        image.height = (max_height / asp).toFixed() - pixel_adjust;
+        image.height = (max_height / asp);
+
+        if (stack.length == 1)  {
+            if (image.height < max_height) {
+                console.log(" Underflow ")
+            }
+        }
+
         removeClass(image, "hidden");
+        final_w += image.width;
     }
+
+    console.log("Final width after adjust " + final_w + "  LOST " + (max_width - final_w))
 }
 
 function adjust_images_to_row() {
@@ -29,13 +40,16 @@ function adjust_images_to_row() {
     let stack = [];
 
     for (let image of images) {
+        //debugger;
         let count = image.getAttribute("image_count");
         let image_w = get_scaled_width(image);
 
         w += image_w;
         console.log(" " + image.getAttribute("image_count") + ` (${ image_w } => ${ w }) `)
 
-        if (w > max_width && stack.length > 0) {
+        //if (count > 9) return;
+
+        if (w > max_width) { //  && stack.length > 0
             console.log("------------- Width overflow " + count + " ----------------");
             stack.push(image);
             adjust_stack(stack, w, max_width);

@@ -82,3 +82,7 @@ body {
     padding-left: 7px;
     padding-bottom: 7px;
 }
+
+#main_row {
+    padding-right: 5px;
+}
