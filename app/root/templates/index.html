@@ -7,7 +7,7 @@ background-color: #404040;
 
 {% block content %}
 
-<div class='container'>
+<div class='container' id='main_row'>
     <section class="">
         <header>
             <!-- Background image -->
@@ -40,15 +40,24 @@ background-color: #404040;
     <section class="text-center">
         <div class="">
             {% for media in media_files %}
+            {% if media['info'] %}
 
-            <div class="img_gallery" style='float:left'>
+            <div class="img_gallery" style='float:left' image_count="{{ loop.index }}" >
+                <img image_count="{{ loop.index }}" image_width="{{ media['info']['width'] }}" image_height="{{ media['info']['height'] }}"
+                src="/api/media/get/{{ media.id }}.v300.JPG" class="img-row">
+
+            {% endif %}
+
+            <!--
                 <div class="bg-image hover-overlay ripple rounded">
                     <a href="/user/{{ media.username }}/posts/{{ media.id }}">
-                    <img src="/api/media/get/{{ media.id }}.v300.JPG" class="img-fluid img-fit-inside">
+                    <img image_count="{{ loop.index }}" src="/api/media/get/{{ media.id }}.v300.JPG" class="img-fluid img-fit-inside img-row">
                         <div class="mask" style="background-color: rgba(57, 192, 237, 0.2)"></div>
                     </a>
                 </div>
+
                 <div class='main_username'>
+                {{ loop.index }}
                 {% if media.is_anon %}
                     Anonymous
                 {% else %}
@@ -57,6 +66,7 @@ background-color: #404040;
                     </a>
                 {% endif %}
                 </div>
+                -->
             </div>
             {% endfor %}
         </div>

@@ -31,8 +31,6 @@
     display: none !important;
 }
 
-
-
 .footer_small {
     height: 75px;
 }
@@ -72,7 +70,6 @@ body {
     flex: 1;
 }
 
-
 .edit_image {
     width: 50%;
     height: auto;
@@ -81,5 +78,6 @@ body {
 
 .img_gallery {
     float: left;
-    margin-left:5px;
+    padding-left: 7px;
+    padding-bottom: 7px;
 }
