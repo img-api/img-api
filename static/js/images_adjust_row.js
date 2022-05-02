@@ -10,15 +10,6 @@ function get_scaled_width(image) {
     return w;
 }
 
-function get_scaled_height(image) {
-
-    let real_w = image.getAttribute("image_width");
-    let real_h = image.getAttribute("image_height");
-    let asp = real_h / real_w;
-    let h = max_height / asp;
-    return h;
-}
-
 function adjust_stack(stack, current_w, max_width) {
     let asp = current_w / max_width;
     for (let image of stack) {
@@ -40,10 +31,10 @@ function adjust_images_to_row() {
         let count = image.getAttribute("image_count");
         let image_w = get_scaled_width(image);
 
-        w += image_w + margin_left;
+        w += image_w;
         console.log(" " + image.getAttribute("image_count") + ` (${ image_w } => ${ w }) `)
 
-        if (w > max_width) {
+        if (w > max_width && stack.length > 0) {
             console.log("------------- Width overflow " + count + " ----------------");
             stack.push(image);
             adjust_stack(stack, w, max_width);
@@ -53,6 +44,7 @@ function adjust_images_to_row() {
             continue
         }
         stack.push(image);
+        w += margin_left
     }
 }
 
