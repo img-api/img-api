@@ -64,3 +64,8 @@ background-color: #404040;
 </div>
 
 {% endblock content %}
+
+{% block javascripts %}
+{{ super() }}
+<script src="{{ url_for('static', filename='js/images_adjust_row.js') }}"></script>
+{% endblock javascripts %}

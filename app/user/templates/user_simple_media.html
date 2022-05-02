@@ -17,9 +17,11 @@
 {% endif %}
 
 <div class='container'>
-    <a href='/media/edit/{{ media_id }}'>
-        <img src='/api/media/get/{{ media_id }}' class='big_image_auto'>
-    </a>
+    <div class="imgbox">
+        <a href='/media/edit/{{ media_id }}'>
+            <img src='/api/media/get/{{ media_id }}' class='center-fit'>
+        </a>
+    </div>
 </div>
 
 <div class="row" id='media_posts_container'></div>
