@@ -55,6 +55,9 @@ def convert_image(json):
 
         elif operation == "generate":
             aspect_ratio = image.height / image.width
+            if trf == "thumbnail_256":
+                image.resize(256, int(256 * aspect_ratio))
+
             if trf == "thumbnail_128":
                 image.resize(128, int(128 * aspect_ratio))
 

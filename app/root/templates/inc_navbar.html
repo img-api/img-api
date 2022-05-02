@@ -20,7 +20,7 @@
                 <ul class="navbar-nav d-flex flex-row">
                     <!-- Icons -->
                     <li class="nav-item me-3 me-lg-0">
-                        <a class="btn btn-primary bg-theme mb-5" href="/apidocs/" role="button">API & Documentation</a>
+                        <a class="btn btn-primary bg-theme" href="/apidocs/" role="button">API & Documentation</a>
                     </li>
                     <li class="nav-item me-3 me-lg-0">
                         <a class="nav-link" href="/login">
@@ -30,7 +30,7 @@
 
                     {% if current_user.username %}
                     <li class="nav-item me-3 me-lg-0">
-                        <a class="btn btn-success bg-theme mb-5" href="/user/{{ current_user.username }}/posts"
+                        <a class="btn btn-success bg-theme" href="/user/{{ current_user.username }}/posts"
                             role="button">Browse your images</a>
                     </li>
 
@@ -40,7 +40,7 @@
                         </a>
                     </li>
                     <li class="nav-item me-3 me-lg-0 text-white">
-                        <a class="btn btn-warning bg-theme mb-5" href="/api/user/logout"
+                        <a class="btn btn-warning bg-theme" href="/api/user/logout"
                             role="button"><i class="fas fa-user"></i>
                             Logout
                             {{ current_user.username }}
@@ -50,7 +50,7 @@
                     {% else %}
 
                     <li class="nav-item me-3 me-lg-0">
-                        <a class="btn btn-primary bg-theme mb-5" href="/login" role="button">Sign In</a>
+                        <a class="btn btn-primary bg-theme" href="/login" role="button">Sign In</a>
                     </li>
                     <li class="nav-item me-3 me-lg-0">
                         <a class="nav-link" href="/login">
@@ -58,7 +58,7 @@
                         </a>
                     </li>
                     <li class="nav-item me-3 me-lg-0">
-                        <a class="btn btn-success bg-theme mb-5" href="/create_account" role="button">Sign Up</a>
+                        <a class="btn btn-success bg-theme" href="/create_account" role="button">Sign Up</a>
                     </li>
                     {% endif %}
 

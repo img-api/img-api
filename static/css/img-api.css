@@ -72,3 +72,8 @@ body {
     height: auto;
     float: left;
 }
+
+.img_gallery {
+    float: left;
+    margin-left:5px;
+}

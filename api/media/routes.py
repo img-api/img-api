@@ -190,17 +190,58 @@ def api_upload_media():
     return api_internal_upload_media()
 
 
-def api_dynamic_conversion(abs_path, extension, filename):
-    attachment_filename = filename + "." + extension
+def api_dynamic_conversion(abs_path, extension, thumbnail, filename, cache_file=True):
+    """ Converts the file dynamically into an extension, and saves the file if it was requested
+
+        The user can append an extension to convert into example .GIF
+        The user can append also request it as a image resized thumbnail to be generated .v<PIXEL SIZE>
+
+        The file can be cached or not.
+    """
+    attachment_filename = filename
+
+    if not extension:
+        extension = "PNG"
+
+    if thumbnail:
+        try:
+            # Our thumbnails adjust to ratio, we can specify
+            # It might start with V or H
+
+            if thumbnail[0] in ['v', 'h']:
+                orientation = thumbnail[0]
+                thumbnail = int(thumbnail[1:])
+            else:
+                orientation = 'h'
+                thumbnail = int(thumbnail)
+        except:
+            thumbnail = None
+            print(thumbnail + " Not a valid thumbnail definition")
+
+    extra = ""
+    if thumbnail: extra += "." + str(thumbnail)
+    if extension: extra += "." + extension
+
+    final_path = abs_path + extra
+    if cache_file and os.path.exists(final_path):
+        return send_file(final_path, attachment_filename=attachment_filename + extra)
 
     try:
         bit_image = io.BytesIO()
         with Image(filename=abs_path) as img:
-            print("CONVERT TO " + extension)
+            if thumbnail:
+                aspect_ratio = img.height / img.width
+                if orientation == 'v':
+                    img.resize(int(thumbnail / aspect_ratio), thumbnail)
+                else:
+                    img.resize(thumbnail, int(thumbnail * aspect_ratio))
 
             img.format = extension
             img.save(file=bit_image)
             bit_image.seek(0)
+
+            if cache_file:
+                img.save(filename=final_path)
 
     except Exception as exc:
         return get_response_error_formatted(500, {"error_msg": "Failed to convert to format " + extension})
@@ -208,7 +249,7 @@ def api_dynamic_conversion(abs_path, extension, filename):
     return send_file(bit_image,
                      mimetype='image/' + extension,
                      as_attachment=True,
-                     attachment_filename=attachment_filename)
+                     attachment_filename=attachment_filename + extra)
 
 @blueprint.route('/get/<string:media_id>', methods=['GET'])
 @api_key_login_or_anonymous
@@ -248,7 +289,11 @@ def api_get_media(media_id):
     arr = media_id.split(".")
     media_id = arr[0]
 
-    extension = None if (len(arr) == 1) else arr[1]
+    extension = arr[-1] if len(arr) > 1 else None
+    #if extension: print(" CONVERSION REQUEST " + extension)
+
+    thumbnail = arr[-2] if len(arr) > 2 else None
+    #if thumbnail: print(" THUMBNAIL REQUEST " + thumbnail)
 
     my_file = File_Tracking.objects(pk=media_id).first()
     if not my_file:
@@ -265,8 +310,8 @@ def api_get_media(media_id):
 
     abs_path = get_media_path() + my_file.file_path
 
-    if extension:
-        return api_dynamic_conversion(abs_path, extension, my_file.file_name)
+    if extension or thumbnail:
+        return api_dynamic_conversion(abs_path, extension, thumbnail, my_file.file_name, True)
 
     return send_file(abs_path, attachment_filename=my_file.file_name)
 
