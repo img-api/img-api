@@ -10,9 +10,12 @@ function get_scaled_width(image) {
 }
 
 function adjust_stack(stack, current_w, max_width) {
+    max_width -= 15;
+
     let asp = current_w / (max_width - margin_left * (stack.length + 1));
 
     let final_w = 0;
+    let count = 0;
     for (let image of stack) {
         image.height = (max_height / asp);
 
@@ -23,7 +26,17 @@ function adjust_stack(stack, current_w, max_width) {
         }
 
         removeClass(image, "hidden");
-        final_w += image.width;
+        final_w += image.width + margin_left;
+
+        count += 1;
+
+        let gallery = findParentClass(image, "img_gallery")
+        if (count == stack.length && count != 1) {
+            addClass(gallery, "pull-right")
+        } else {
+            removeClass(gallery, "pull-right")
+        }
+
     }
 
     console.log("Final width after adjust " + final_w + "  LOST " + (max_width - final_w))
@@ -40,7 +53,7 @@ function adjust_images_to_row() {
     let stack = [];
 
     for (let image of images) {
-        //debugger;
+
         let count = image.getAttribute("image_count");
         let image_w = get_scaled_width(image);
 

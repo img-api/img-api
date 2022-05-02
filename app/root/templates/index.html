@@ -42,7 +42,7 @@ background-color: #404040;
             </div>
             {% for media in media_files %}
             {% if media['info'] %}
-                <div class="img_gallery" style='float:left;' image_count="{{ loop.index }}" >
+                <div class="img_gallery" image_count="{{ loop.index }}" >
                 <div class="bg-image hover-overlay ripple">
                     <a href="/user/{{ media.username }}/posts/{{ media.id }}">
                         <img image_count="{{ loop.index }}" image_width="{{ media['info']['width'] }}" image_height="{{ media['info']['height'] }}"

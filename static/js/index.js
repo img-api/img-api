@@ -41,6 +41,7 @@ function second_get_verbose_date(seconds, max_day = 15) {
 }
 
 function hasClass(ele, cls) {
+    //console.log(ele.className);
     return !!ele.className.match(new RegExp('(\\s|^)' + cls + '(\\s|$)'));
 }
 
@@ -53,4 +54,12 @@ function removeClass(ele, cls) {
         var reg = new RegExp('(\\s|^)' + cls + '(\\s|$)');
         ele.className = ele.className.replace(reg, ' ');
     }
+}
+
+function findParentClass(element, class_search) {
+    while (element && !hasClass(element,class_search)) {
+        element = element.parentNode;
+    };
+
+    return element;
 }
