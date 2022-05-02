@@ -14,6 +14,7 @@ function adjust_stack(stack, current_w, max_width) {
     let asp = current_w / max_width;
     for (let image of stack) {
         image.height = (max_height / asp).toFixed() - pixel_adjust;
+        removeClass(image, "hidden");
     }
 }
 

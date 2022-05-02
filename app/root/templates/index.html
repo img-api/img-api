@@ -41,11 +41,11 @@ background-color: #404040;
         <div class="">
             {% for media in media_files %}
             {% if media['info'] %}
-                <div class="img_gallery " style='float:left' image_count="{{ loop.index }}" >
-                <div class="bg-image hover-overlay ripple rounded">
+                <div class="img_gallery" style='float:left' image_count="{{ loop.index }}" >
+                <div class="bg-image hover-overlay ripple">
                     <a href="/user/{{ media.username }}/posts/{{ media.id }}">
                         <img image_count="{{ loop.index }}" image_width="{{ media['info']['width'] }}" image_height="{{ media['info']['height'] }}"
-                            src="/api/media/get/{{ media.id }}.v300.JPG" class="img-row">
+                            src="/api/media/get/{{ media.id }}.v300.JPG" class="img-row hidden">
                         <div class="mask" style="background-color: rgba(57, 192, 237, 0.2)"></div>
                     </a>
                 </div>
