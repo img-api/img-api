@@ -27,7 +27,8 @@ background-color: #404040;
                             </h1>
 
                             <h4 class="mb-3">Where your images come to life!</h4>
-                            <a class="btn btn-outline-light btn-lg" href="/media/upload" role="button">Upload an image</a>
+                            <a class="btn btn-outline-light btn-lg" href="/media/upload" role="button">Upload an
+                                image</a>
                         </div>
                     </div>
                 </div>
@@ -35,18 +36,18 @@ background-color: #404040;
             <!-- Background image -->
         </header>
     </section>
-    <section class="text-center">
-        <div class="" id='outer_row'>
-            <div id='main_row'>
-            test
-            </div>
+    <section class="">
+
+        <div id='main_row' style=''>
+            <hr>
             {% for media in media_files %}
             {% if media['info'] %}
-                <div class="img_gallery" image_count="{{ loop.index }}" >
+            <div class="img_gallery" image_count="{{ loop.index }}">
                 <div class="bg-image hover-overlay ripple">
                     <a href="/user/{{ media.username }}/posts/{{ media.id }}">
-                        <img image_count="{{ loop.index }}" image_width="{{ media['info']['width'] }}" image_height="{{ media['info']['height'] }}"
-                            src="/api/media/get/{{ media.id }}.v300.JPG" class="img-row hidden">
+                        <img image_count="{{ loop.index }}" image_width="{{ media['info']['width'] }}"
+                            image_height="{{ media['info']['height'] }}" src="/api/media/get/{{ media.id }}.v300.JPG"
+                            class="img-row hidden">
                         <div class="mask" style="background-color: rgba(57, 192, 237, 0.2)"></div>
                     </a>
                 </div>
@@ -55,20 +56,21 @@ background-color: #404040;
 
                 {% else %}
                 <!--
-                <div style='position:relative_'>
-                    <div class='main_username'>
-                        <small>
-                            <a href='/user/{{ media.username }}/posts' style='color:#aaa'>
-                            {{ media.username }}
-                            </a>
-                        </small>
+                    <div style='position:relative_'>
+                        <div class='main_username'>
+                            <small>
+                                <a href='/user/{{ media.username }}/posts' style='color:#aaa'>
+                                {{ media.username }}
+                                </a>
+                            </small>
+                        </div>
                     </div>
-                </div>
-                -->
+                    -->
                 {% endif %}
             </div>
             {% endif %}
             {% endfor %}
+_
         </div>
     </section>
 </div>

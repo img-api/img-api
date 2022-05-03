@@ -86,7 +86,7 @@ function handleFiles(files) {
 
 function validateImage(image) {
     // check the type
-    var validTypes = ['image/jpeg', 'image/png', 'image/gif'];
+    var validTypes = ['image/jpeg', 'image/png', 'image/gif']; // TODO: Compile wand with support 'image/webp'
     if (validTypes.indexOf(image.type) === -1) {
         alert("Invalid File Type");
         return false;

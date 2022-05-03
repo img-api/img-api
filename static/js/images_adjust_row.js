@@ -1,4 +1,4 @@
-var margin_left = 5;
+var margin_right = 7;
 var max_height = 300;
 
 function get_scaled_width(image) {
@@ -10,9 +10,13 @@ function get_scaled_width(image) {
 }
 
 function adjust_stack(stack, current_w, max_width) {
-    max_width -= 15;
 
-    let asp = current_w / (max_width - margin_left * (stack.length + 1));
+    let asp = 0;
+
+    if (stack.length == 1)
+        asp = current_w / max_width;
+    else
+        asp = current_w / (max_width - margin_right * (stack.length - 1));
 
     let final_w = 0;
     let count = 0;
@@ -26,12 +30,12 @@ function adjust_stack(stack, current_w, max_width) {
         }
 
         removeClass(image, "hidden");
-        final_w += image.width + margin_left;
+        final_w += image.width + margin_right;
 
         count += 1;
 
         let gallery = findParentClass(image, "img_gallery")
-        if (count == stack.length && count != 1) {
+        if (stack.length > 1 && count == stack.length && count != 1) {
             addClass(gallery, "pull-right")
         } else {
             removeClass(gallery, "pull-right")
@@ -60,7 +64,7 @@ function adjust_images_to_row() {
         w += image_w;
         console.log(" " + image.getAttribute("image_count") + ` (${ image_w } => ${ w }) `)
 
-        //if (count > 9) return;
+        //if (count > 5) return;
 
         if (w > max_width) { //  && stack.length > 0
             console.log("------------- Width overflow " + count + " ----------------");
@@ -71,8 +75,11 @@ function adjust_images_to_row() {
             stack = []
             continue
         }
+
+        if (stack.length > 1)
+            w += margin_right
+
         stack.push(image);
-        w += margin_left
     }
 }
 

@@ -26,7 +26,7 @@ def root_main_render():
             count += 1
 
             # We should limit this on the File_Tracking call
-            if count > 30:
+            if count > 150:
                 break
 
     return render_template('index.html', media_files=display)
