@@ -23,37 +23,50 @@ fetch('/api/media/posts/' + username)
         let media_container = document.getElementById('media_posts_container');
         let html = "";
 
+        let count = 0;
         for (media of data.media_files) {
+            count += 1;
             let private = (media.is_public ? "" : "checked")
             let verbose_date = second_get_verbose_date(data.timestamp - media.creation_date);
 
-            html += `
-            <div class="col-lg-2 col-md-12 mb-2">
-                <div class="bg-image hover-overlay ripple shadow-1-strong rounded">
-                <a href='/media/edit/${media.media_id}'>
-                    <img src='/api/media/get/${media.media_id}' class="img-fluid img-fit-inside">
-                        <div class="mask" style="background-color: rgba(57, 192, 237, 0.2)"></div>
-                </a>
-                </div>
-            `
-
-            if (media.username == current_username)
+            if (media.file_format == ".MP4") {
                 html += `
-                <span class='text-white'>
-                    <small>
-                    <span class=''> ${ verbose_date } &nbsp;&nbsp;</span>
-                    <span class="">
-                        <i class='fa fa-lock'></i>
-                        <label class="form-check-label" >Private</label>
-                        <input class="form-check-input checkbox_private" type="checkbox" value="" ${private} media_id='${media.media_id}'/>
-                    </span>
-                    </small>
-                </span>
-            `
+                <div class="col-lg-4 col-md-12 mb-4">
+                    <video controls="" width="80%" loop="true" preload="none" poster="/api/media/get/${media.media_id}.thumb.jpg" id="video_${ count++ }" allowfullscreen="">
+                        <source src="/api/media/get/${media.media_id}" type="video/mp4">
+                        Sorry, your browser doesn't support embedded videos.
+                    </video>
+                </div>
+                `;
 
-            html += `
-            </div>
-            `;
+            } else {
+
+                html += `
+                    <div class="col-lg-2 col-md-12 mb-2">
+                        <div class="bg-image hover-overlay ripple shadow-1-strong rounded">
+                        <a href='/media/edit/${media.media_id}'>
+                            <img src='/api/media/get/${media.media_id}' class="img-fluid img-fit-inside">
+                                <div class="mask" style="background-color: rgba(57, 192, 237, 0.2)"></div>
+                        </a>
+                    </div>
+                `;
+
+                if (media.username == current_username)
+                    html += `
+                        <span class='text-white'>
+                            <small>
+                            <span class=''> ${ verbose_date } &nbsp;&nbsp;</span>
+                            <span class="">
+                                <i class='fa fa-lock'></i>
+                                <label class="form-check-label" >Private</label>
+                                <input class="form-check-input checkbox_private" type="checkbox" value="" ${private} media_id='${media.media_id}'/>
+                            </span>
+                            </small>
+                        </span>
+                    `;
+
+                    html += `</div>`;
+            }
         }
 
         media_container.innerHTML = html

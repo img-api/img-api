@@ -27,7 +27,7 @@ def get_media_valid_extension(file_name):
         You should never trust the frontend """
 
     extension = os.path.splitext(file_name)[1].upper()
-    image_list = [".JPEG", ".JPG", ".GIF", ".GIFV", ".PNG", ".BMP", ".TGA", ".WEBP"]
+    image_list = [".JPEG", ".JPG", ".GIF", ".GIFV", ".PNG", ".BMP", ".TGA", ".WEBP", ".MP4"]
     if extension not in image_list:
         return False
 
@@ -64,7 +64,7 @@ def api_internal_upload_media():
         full_path = media_path + user_space_path
         ensure_dir(full_path)
 
-        if key.startswith("image"):
+        if key in ["image", "video"]:
             file_name = f_request.filename
 
             md5, size = generate_file_md5(f_request)
@@ -108,17 +108,22 @@ def api_internal_upload_media():
                 print(" FILE WAS LOST - CREATE NEW")
 
             info = {}
-            try:
-                image = Image(file=f_request)
-                info['width'] = image.width
-                info['height'] = image.height
 
-                # Rest request seek pointer to start so we can save it after validation
-                f_request.seek(0)
+            if key == "image":
+                try:
+                    image = Image(file=f_request)
+                    info['width'] = image.width
+                    info['height'] = image.height
 
-            except Exception as e:
-                print(" CRASH on loading image " + str(e))
-                return get_response_error_formatted(400, {"error_msg": "Image is not in a valid format!"})
+                    # Rest request seek pointer to start so we can save it after validation
+                    f_request.seek(0)
+
+                except Exception as e:
+                    print(" CRASH on loading image " + str(e))
+                    return get_response_error_formatted(400, {"error_msg": "Image is not in a valid format!"})
+
+            if key == "video":
+                print("Check video file")
 
             f_request.save(final_absolute_path)
 
@@ -374,6 +379,7 @@ def api_get_posts_json(user_id):
             'is_public': ft.is_public,
             'username': str(ft.username),
             'filename': str(ft.file_name),
+            'file_format': str(ft.file_format),
             'creation_date': time.mktime(ft.creation_date.timetuple()),
         })
 

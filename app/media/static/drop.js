@@ -79,21 +79,22 @@ dropRegion.addEventListener('drop', handleDrop, false);
 
 function handleFiles(files) {
     for (var i = 0, len = files.length; i < len; i++) {
-        if (validateImage(files[i]))
-            previewAnduploadImage(files[i]);
+        if (validateMedia(files[i]))
+            previewAnduploadMedia(files[i]);
     }
 }
 
-function validateImage(image) {
+function validateMedia(image) {
     // check the type
-    var validTypes = ['image/jpeg', 'image/png', 'image/gif']; // TODO: Compile wand with support 'image/webp'
+    debugger;
+    var validTypes = ['image/jpeg', 'image/png', 'image/gif', 'video/mp4']; // TODO: Compile wand with support 'image/webp'
     if (validTypes.indexOf(image.type) === -1) {
         alert("Invalid File Type");
         return false;
     }
 
     // check the size
-    var maxSizeInBytes = 10e6; // 10MB
+    var maxSizeInBytes = 64*10e6;
     if (image.size > maxSizeInBytes) {
         alert("File too large");
         return false;
@@ -102,7 +103,7 @@ function validateImage(image) {
     return true;
 }
 
-function previewAnduploadImage(image) {
+function previewAnduploadMedia(media) {
 
     // container
     var imgView = document.createElement("div");
@@ -124,13 +125,15 @@ function previewAnduploadImage(image) {
     reader.onload = function(e) {
         img.src = e.target.result;
     }
-    reader.readAsDataURL(image);
+    reader.readAsDataURL(media);
 
     // create FormData
     var formData = new FormData();
-    formData.append('image', image);
 
-    // upload the image
+    let media_type = media.type.split("/")[0]
+    formData.append(media_type, media);
+
+    // upload the media
     var uploadLocation = '/api/media/upload_from_web';
 
     var ajax = new XMLHttpRequest();

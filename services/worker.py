@@ -1,6 +1,8 @@
 import os
 import redis
+import ffmpeg
 import requests
+
 from wand.image import Image
 
 # https://www.pythonpool.com/imagemagick-python/
@@ -17,6 +19,26 @@ conn = redis.from_url(redis_url)
 def is_worker_alive(msg):
     print("I AM ALIVE " + msg)
     return msg
+
+
+def convert_video(json):
+
+    media_id = json['media_id']
+    image_path = json['media_path']
+    target_path = json['target_path']
+
+    probe = ffmpeg.probe(image_path)
+
+    video_stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'video'), None)
+    width = int(video_stream['width'])
+    height = int(video_stream['height'])
+
+    time = 10
+    ffmpeg.input(in_filename, ss=time).filter('scale', width, -1).output(target_path, vframes=1).run()
+
+    if os.path.exists(target_path):
+        print(operation + " => " + trf + " WAS SUCCESSFUL ")
+        return {'state': 'success', 'width': width, 'height': height, 'media_id': media_id}
 
 
 def convert_image(json):
