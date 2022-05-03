@@ -22,7 +22,11 @@ def is_worker_alive(msg):
 
 
 def convert_video(json):
+    """
+        Ground work for video https://github.com/kkroening/ffmpeg-python/blob/master/examples/README.md#generate-thumbnail-for-video
+    """
 
+    time = 1
     media_id = json['media_id']
     image_path = json['media_path']
     target_path = json['target_path']
@@ -33,7 +37,6 @@ def convert_video(json):
     width = int(video_stream['width'])
     height = int(video_stream['height'])
 
-    time = 10
     ffmpeg.input(in_filename, ss=time).filter('scale', width, -1).output(target_path, vframes=1).run()
 
     if os.path.exists(target_path):
