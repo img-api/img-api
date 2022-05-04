@@ -28,14 +28,19 @@
 
     {% else %}
 
-        <div class="imgbox">
-            <a href='/media/edit/{{ media_id }}'>
-                <img src='/api/media/get/{{ media_id }}' class='center-fit'>
-            </a>
-        </div>
-        <br>
         {% if media.file_format != ".GIF" %}
+            <div class="imgbox">
+                <a href='/media/edit/{{ media_id }}'>
+                    <img src='/api/media/get/{{ media_id }}' class='center-fit'>
+                </a>
+            </div>
+            <br>
             <a class="btn btn-primary bg-theme" href='/media/edit/{{ media_id }}' role="button">Edit</a>
+        {% else %}
+            <div class="imgbox">
+                <img src='/api/media/get/{{ media_id }}' class='center-fit'>
+            </div>
+            <br>
         {% endif %}
 
     {% endif %}
