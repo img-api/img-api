@@ -26,16 +26,13 @@ def get_user_from_request():
 
         email = form['email']
         if 'username' in form:
-            username = form['username'].strip()
+            username = form['username']
 
         password = form['password']
     else:
         email = request.args.get("email")
-        username = request.args.get("username").strip()
+        username = request.args.get("username")
         password = request.args.get("password")
-
-    if not validators.slug(username):
-        return get_response_error_formatted(401, {'error_msg': "Sorry, please contact an admin."})
 
     if not password:
         return get_response_error_formatted(401, {'error_msg': "Please provide a password."})
@@ -44,8 +41,17 @@ def get_user_from_request():
         return get_response_error_formatted(401, {'error_msg': "Please provide an email."})
 
     if username:
+        # Users tend to add extra spaces, frontend should take care of it, but the user calling the API might not write the username properly.
+        username = username.strip()
+        if not validators.slug(username):
+            return get_response_error_formatted(401, {'error_msg': "Sorry, please contact an admin."})
+
         user = User.objects(username=username).first()
     else:
+        email = email.strip()
+        if not validators.email(email):
+            return get_response_error_formatted(401, {'error_msg': "Sorry, please contact an admin."})
+
         user = User.objects(email=email).first()
 
     if not user:
@@ -288,7 +294,7 @@ def api_create_user_local():
     if last_name: last_name = last_name.strip()
 
     if not validators.slug(username):
-        return get_response_error_formatted(401, {'error_msg': "Sorry, please contact an admin."})
+        return get_response_error_formatted(401, {'error_msg': "Your username has non valid characters"})
 
     if not is_password_valid(password):
         return get_response_error_formatted(401, {'error_msg': "Invalid password"})
