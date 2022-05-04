@@ -29,7 +29,7 @@ fetch('/api/media/posts/' + username)
             let private = (media.is_public ? "" : "checked")
             let verbose_date = second_get_verbose_date(data.timestamp - media.creation_date);
 
-            html += ` <div class="col-lg-4 col-md-12 mb-4 media-container"> `;
+            html += ` <div class="col-lg-3 col-md-12 mb-3 media-container"> `;
 
             if (media.file_format == ".MP4") {
                 html += `

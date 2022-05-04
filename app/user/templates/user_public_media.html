@@ -3,6 +3,7 @@
 {% block body_style %}background-color: #404040; {% endblock %}
 
 {% block content %}
+{% include "inc_header_upload.html" %}
 <h2 class='text-white'>{{ username }}</h2>
 <div class='container-fluid'>
     <input id='user_posts' class='hidden' value='{{ username}}'>
