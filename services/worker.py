@@ -26,22 +26,38 @@ def convert_video(json):
         Ground work for video https://github.com/kkroening/ffmpeg-python/blob/master/examples/README.md#generate-thumbnail-for-video
     """
 
-    time = 1
-    media_id = json['media_id']
-    image_path = json['media_path']
-    target_path = json['target_path']
+    try:
+        time = 1
+        media_id = json['media_id']
+        image_path = json['media_path']
+        target_path = json['target_path']
+        url_upload = json['api_callback']
 
-    probe = ffmpeg.probe(image_path)
+        probe = ffmpeg.probe(image_path)
 
-    video_stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'video'), None)
-    width = int(video_stream['width'])
-    height = int(video_stream['height'])
+        video_stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'video'), None)
+        width = int(video_stream['width'])
+        height = int(video_stream['height'])
 
-    ffmpeg.input(in_filename, ss=time).filter('scale', width, -1).output(target_path, vframes=1).run()
+        ffmpeg.input(in_filename, ss=time).filter('scale', width, -1).output(target_path, vframes=1).run()
 
-    if os.path.exists(target_path):
-        print(operation + " => " + trf + " WAS SUCCESSFUL ")
-        return {'state': 'success', 'width': width, 'height': height, 'media_id': media_id}
+        if not os.path.exists(target_path):
+            return {'state': 'error', 'width': width, 'height': height, 'media_id': media_id}
+
+    except Exception as e:
+        return {'state': 'error', 'error_msg': 'failed processing', 'media_id': media_id}
+
+    print(operation + " => " + trf + " WAS SUCCESSFUL ")
+    values = {
+        'media_id': media_id,
+        'info': {
+            'width': width,
+            'height': height
+        }
+    }
+    requests.post(url_upload, data=values)
+
+    return {'state': 'success', 'width': width, 'height': height, 'media_id': media_id}
 
 
 def convert_image(json):

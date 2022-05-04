@@ -16,6 +16,7 @@ class File_Tracking(db.DynamicDocument):
 
     file_name = db.StringField()
     file_path = db.StringField()
+    file_type = db.StringField(default='image')
     file_size = db.LongField()
 
     checksum_md5 = db.StringField()
@@ -50,6 +51,8 @@ class File_Tracking(db.DynamicDocument):
         return False
 
     def save(self, *args, **kwargs):
+        from api.media.routes import get_media_path
+
         if not self.creation_date:
             self.creation_date = datetime.datetime.now()
 
@@ -57,9 +60,17 @@ class File_Tracking(db.DynamicDocument):
         ret.reload()
         return ret
 
-    def exists(self):
+    def delete(self, *args, **kwargs):
         from api.media.routes import get_media_path
 
+        abs_path = get_media_path() + self.file_path
+        if os.path.exists(abs_path):
+            os.remove(abs_path)
+
+        print(" FILE DELETED ")
+        return super(File_Tracking, self).delete(*args, **kwargs)
+
+    def exists(self):
         abs_path = get_media_path() + self.file_path
         if not os.path.exists(abs_path):
             print(" FILE NOT FOUND - DELETE DATABASE ENTRY ")
@@ -67,3 +78,18 @@ class File_Tracking(db.DynamicDocument):
             return False
 
         return True
+
+    def serialize(self):
+        serialized_file = {
+            'info': self['info'],
+            'file_name': self.file_name,
+            'file_path': self.file_path,
+            'file_size': self.file_size,
+            'file_type': self.file_type,
+            'file_format': self.file_format,
+            'checksum_md5': self.checksum_md5,
+            'username': self.username,
+            'media_id': str(self.id)
+        }
+
+        return serialized_file

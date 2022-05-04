@@ -90,19 +90,8 @@ def api_internal_upload_media():
                 # Eventually if the project grows, files in folders like this are not ideal and all this code should get revamped
 
                 if my_file:
-                    new_file = {
-                        'info': my_file['info'],
-                        'file_name': my_file.file_name,
-                        'file_path': my_file.file_path,
-                        'file_size': my_file.file_size,
-                        'file_format': my_file.file_format,
-                        'checksum_md5': my_file.checksum_md5,
-                        'username': my_file.username,
-                        'media_id': str(my_file.id)
-                    }
-
                     print(" FILE ALREADY UPLOADED WITH ID " + str(my_file.id))
-                    uploaded_ft.append(new_file)
+                    uploaded_ft.append(my_file.serialize())
                     continue
 
                 print(" FILE WAS LOST - CREATE NEW")
@@ -131,6 +120,7 @@ def api_internal_upload_media():
                 'info': info,
                 'file_name': file_name,
                 'file_path': relative_file_path,
+                'file_type': key,
                 'file_size': size,
                 'file_format': extension,
                 'checksum_md5': md5,
@@ -499,4 +489,49 @@ def api_set_media_private_posts_json(media_id, privacy_mode):
     media_file.save()
 
     ret = {'status': 'success', 'media_id': media_id, 'privacy_mode': privacy_mode}
+    return get_response_formatted(ret)
+
+
+@blueprint.route('/remove/<string:media_id>', methods=['GET'])
+def api_remove_self_media(media_id):
+    """Removes a media file
+    ---
+    tags:
+      - media
+    schemes: ['http', 'https']
+    deprecated: false
+    definitions:
+      image_file:
+        type: object
+    parameters:
+        - in: query
+          name: key
+          schema:
+            type: string
+          description: A token that you get when you register or when you ask for a token
+    responses:
+      200:
+        description: Returns OK if you can remove this file and it has been removed
+      403:
+        description: Forbidden, user is not the owner of this image
+      404:
+        description: File is missing
+
+    """
+    from flask_login import current_user
+
+    if not hasattr(current_user, "username"):
+        return get_response_error_formatted(403, {'error_msg': "Anonymous users are not allowed."})
+
+    media_file = File_Tracking.objects(id=media_id).first()
+
+    if not media_file:
+        return get_response_error_formatted(404, {'error_msg': "Missing."})
+
+    if media_file.username != current_user.username:
+        return get_response_error_formatted(403, {'error_msg': "This user is not allowed to perform this."})
+
+    media_file.delete()
+
+    ret = {'status': 'success', 'media_id': media_id, 'deleted': True}
     return get_response_formatted(ret)

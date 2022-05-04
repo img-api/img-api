@@ -29,10 +29,12 @@ fetch('/api/media/posts/' + username)
             let private = (media.is_public ? "" : "checked")
             let verbose_date = second_get_verbose_date(data.timestamp - media.creation_date);
 
+            html += ` <div class="col-lg-4 col-md-12 mb-4 media-container"> `;
+
             if (media.file_format == ".MP4") {
                 html += `
-                <div class="col-lg-4 col-md-12 mb-4">
-                    <video controls="" width="80%" loop="true" preload="none" poster="/api/media/get/${media.media_id}.thumb.jpg" id="video_${ count++ }" allowfullscreen="">
+                <div class="bg-image hover-overlay ripple shadow-1-strong rounded">
+                    <video controls="" width="80%" loop="true" preload="none" poster="/api/media/get/${media.media_id}.300.PNG" id="video_${ count++ }" allowfullscreen="">
                         <source src="/api/media/get/${media.media_id}" type="video/mp4">
                         Sorry, your browser doesn't support embedded videos.
                     </video>
@@ -42,31 +44,31 @@ fetch('/api/media/posts/' + username)
             } else {
 
                 html += `
-                    <div class="col-lg-2 col-md-12 mb-2">
-                        <div class="bg-image hover-overlay ripple shadow-1-strong rounded">
+                    <div class="bg-image hover-overlay ripple shadow-1-strong rounded">
                         <a href='/media/edit/${media.media_id}'>
                             <img src='/api/media/get/${media.media_id}' class="img-fluid img-fit-inside">
                                 <div class="mask" style="background-color: rgba(57, 192, 237, 0.2)"></div>
                         </a>
                     </div>
                 `;
+            }
 
-                if (media.username == current_username)
-                    html += `
-                        <span class='text-white'>
-                            <small>
+            if (media.username == current_username)
+                html += `
+                    <span class='text-white'>
+                        <small>
+                            <div class='pull-right'><button class='btn_delete' api_call='/api/media/remove/${media.media_id}'>Delete <i class='fa fa-lg fa-times'></i></button></div>
                             <span class=''> ${ verbose_date } &nbsp;&nbsp;</span>
                             <span class="">
                                 <i class='fa fa-lock'></i>
                                 <label class="form-check-label" >Private</label>
                                 <input class="form-check-input checkbox_private" type="checkbox" value="" ${private} media_id='${media.media_id}'/>
                             </span>
-                            </small>
-                        </span>
-                    `;
+                        </small>
+                    </span>
+                `;
 
-                    html += `</div>`;
-            }
+            html += `</div>`;
         }
 
         media_container.innerHTML = html
@@ -81,6 +83,28 @@ fetch('/api/media/posts/' + username)
                     console.log("PRIVATE");
                     set_media_private(this.attributes.media_id.value, true)
                 }
+            })
+        }
+
+        var api_delete_files = document.getElementsByClassName('btn_delete');
+        for (btn_delete of api_delete_files) {
+            btn_delete.addEventListener('click', function(evt) {
+                var url = this.getAttribute("api_call");
+                fetch(url)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status != "success") {
+                            document.getElementById('system_message').innerHTML = " Could not download the files list for user " + username;
+                            return
+                        } else {
+                            let media_view = findParentClass(btn_delete, "media-container")
+                            addClass(media_view, "hidden")
+                        }
+                    })
+                    .catch(error => {
+                        document.getElementById('system_message').innerHTML = " Failed " + error;
+                        throw (error);
+                    })
             })
         }
     });

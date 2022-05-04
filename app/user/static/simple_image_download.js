@@ -17,8 +17,6 @@ fetch('/api/media/get/' + media_id)
 
         let count = 0;
         for (media of data.media_files) {
-
-            debugger;
             if (media.file_format == ".MP4") {
                 html += `
                 <div class="col-lg-4 col-md-12 mb-4">
