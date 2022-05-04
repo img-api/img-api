@@ -92,3 +92,8 @@ body {
     margin:0px;
     width:100%;
 }
+
+.img-small-display {
+    width:400px;
+    height:300px;
+}

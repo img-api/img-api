@@ -34,21 +34,13 @@ def get_media_valid_extension(file_name):
     return extension
 
 
-def get_media_path():
-    media_path = current_app.config.get('MEDIA_PATH')
-    if not media_path:
-        abort(500, "Internal error, application MEDIA_PATH is not configured!")
-
-    return media_path
-
-
 def api_internal_upload_media():
     from flask_login import current_user, login_user
 
     if request.method != "POST":
         return get_response_error_formatted(404, {"error_msg": "No files to upload!"})
 
-    media_path = get_media_path()
+    media_path = File_Tracking.get_media_path()
 
     # If we don't have an user, we generate a temporal one with random names
     if not hasattr(current_user, 'username'):
@@ -303,7 +295,7 @@ def api_get_media(media_id):
         else:
             return redirect("/static/images/placeholder_private.jpg")
 
-    abs_path = get_media_path() + my_file.file_path
+    abs_path = File_Tracking.get_media_path() + my_file.file_path
 
     if extension or thumbnail:
         return api_dynamic_conversion(abs_path, extension, thumbnail, my_file.file_name, True)

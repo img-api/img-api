@@ -5,6 +5,7 @@ from mongoengine import *
 
 from imgapi_launcher import db
 
+from flask import current_app
 
 class File_Tracking(db.DynamicDocument):
     meta = {
@@ -33,6 +34,14 @@ class File_Tracking(db.DynamicDocument):
 
     comments = db.ListField(db.StringField())
 
+    @staticmethod
+    def get_media_path():
+        media_path = current_app.config.get('MEDIA_PATH')
+        if not media_path:
+            abort(500, "Internal error, application MEDIA_PATH is not configured!")
+
+        return media_path
+
     def __init__(self, *args, **kwargs):
         super(File_Tracking, self).__init__(*args, **kwargs)
 
@@ -51,8 +60,6 @@ class File_Tracking(db.DynamicDocument):
         return False
 
     def save(self, *args, **kwargs):
-        from api.media.routes import get_media_path
-
         if not self.creation_date:
             self.creation_date = datetime.datetime.now()
 
@@ -61,9 +68,7 @@ class File_Tracking(db.DynamicDocument):
         return ret
 
     def delete(self, *args, **kwargs):
-        from api.media.routes import get_media_path
-
-        abs_path = get_media_path() + self.file_path
+        abs_path = self.get_media_path() + self.file_path
         if os.path.exists(abs_path):
             os.remove(abs_path)
 
@@ -71,7 +76,7 @@ class File_Tracking(db.DynamicDocument):
         return super(File_Tracking, self).delete(*args, **kwargs)
 
     def exists(self):
-        abs_path = get_media_path() + self.file_path
+        abs_path = self.get_media_path() + self.file_path
         if not os.path.exists(abs_path):
             print(" FILE NOT FOUND - DELETE DATABASE ENTRY ")
             self.delete()

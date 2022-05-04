@@ -6,7 +6,7 @@ from flask_login import current_user
 from api.api_redis import api_rq
 from api.jobs import blueprint
 from api.media.models import File_Tracking
-from api.media.routes import get_media_path
+
 from api import get_response_formatted, get_response_error_formatted
 
 
@@ -82,7 +82,7 @@ def api_convert_image_to_format(operation, transformation, media_id):
         return get_response_error_formatted(404, {"error_msg": "FILE NOT FOUND"})
 
     post_fix = get_postfix(operation, transformation)
-    abs_path = get_media_path() + my_file.file_path
+    abs_path = File_Tracking.get_media_path() + my_file.file_path
 
     data = {
         'media_id': media_id,
@@ -224,5 +224,5 @@ def api_get_result_job(job_id):
             return redirect("/static/images/placeholder_private.jpg")
 
     post_fix = get_postfix(res['operation'], res['transformation'])
-    abs_path = get_media_path() + my_file.file_path + post_fix
+    abs_path = File_Tracking.get_media_path() + my_file.file_path + post_fix
     return send_file(abs_path, attachment_filename=my_file.file_name + post_fix)
