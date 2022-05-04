@@ -39,7 +39,7 @@ background-color: #404040;
 
                         {% else %}
                             <div style="position: absolute; bottom:2px; left:5px;">
-                                <div class='click_user' href='/user/{{ media.username }}/posts' style='color:#fff'>
+                                <div id="user_{{ loop.index }}" class='click_user' href='/user/{{ media.username }}/posts' style='color:#fff'>
                                 <small>
                                     {{ media.username }}
                                 </small>
@@ -66,9 +66,10 @@ background-color: #404040;
     var click_users = document.getElementsByClassName('click_user');
     for (user of click_users) {
         user.addEventListener('click', function(evt) {
-            debugger;
-            evt.preventDefault()
-            window.location.href = user.getAttribute('href');
+            evt.preventDefault();
+            var href = this.getAttribute('href');
+            console.log(" Redirect to user " + href + " " + this.id);
+            window.location.href = href;
         })
     }
 
