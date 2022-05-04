@@ -474,19 +474,19 @@ def generate_random_name():
     """
 
     random_name = str(datetime.datetime.now())
-    return bcrypt.hashpw(random_name.encode('utf-8'), bcrypt.gensalt())
-
+    #
+    return random_name
 
 def generate_random_user():
     """ We generate a random user for files which are going to be anonymous
         The user will be able to modify the files until they delete their cookies
     """
 
-    random_name = generate_random_name().hex()
+    random_name = generate_random_name()
     user_obj = {
-        'password': random_name,
-        'username': random_name[:16],
-        'email': random_name[:16] + "@img-api.com",
+        'password': bcrypt.hashpw(random_name.encode('utf-8'), bcrypt.gensalt()).hex(),
+        'username': random_name,
+        'email': random_name[:24] + "@img-api.com",
         'is_anon': True,
         'active': True,
     }
