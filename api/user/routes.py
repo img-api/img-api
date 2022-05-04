@@ -26,13 +26,16 @@ def get_user_from_request():
 
         email = form['email']
         if 'username' in form:
-            username = form['username']
+            username = form['username'].strip()
 
         password = form['password']
     else:
         email = request.args.get("email")
-        username = request.args.get("username")
+        username = request.args.get("username").strip()
         password = request.args.get("password")
+
+    if not validators.slug(username):
+        return get_response_error_formatted(401, {'error_msg': "Sorry, please contact an admin."})
 
     if not password:
         return get_response_error_formatted(401, {'error_msg': "Please provide a password."})
@@ -271,15 +274,21 @@ def api_create_user_local():
         last_name = form['last_name']
 
         email = form['email']
-        username = form['username']
+        username = form['username'].strip()
         password = form['password']
     else:
         first_name = request.args.get("first_name")
         last_name = request.args.get("last_name")
 
         email = request.args.get("email")
-        username = request.args.get("username")
+        username = request.args.get("username").strip()
         password = request.args.get("password")
+
+    if first_name: first_name = first_name.strip()
+    if last_name: last_name = last_name.strip()
+
+    if not validators.slug(username):
+        return get_response_error_formatted(401, {'error_msg': "Sorry, please contact an admin."})
 
     if not is_password_valid(password):
         return get_response_error_formatted(401, {'error_msg': "Invalid password"})

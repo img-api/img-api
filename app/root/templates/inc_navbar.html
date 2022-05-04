@@ -46,7 +46,7 @@
                         <a class="btn btn-warning bg-theme" href="/api/user/logout"
                             role="button"><i class="fas fa-user"></i>
                             Logout
-                            {{ current_user.username }}
+                            {{ current_user.username[:16] }}
                         </a>
                     </li>
 
