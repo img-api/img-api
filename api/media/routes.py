@@ -289,10 +289,21 @@ def api_get_media(media_id):
         type: object
     parameters:
         - in: query
+          name: thumbnail
+          schema:
+            type: string
+          description: You can specify a Thumbnail size that will correct the aspect ratio Examples .v256.PNG or .h128.GIF
+        - in: query
+          name: extension
+          schema:
+            type: string
+          description: Extend the URL with a valid extension and it will convert on the fly for you without going through the RQ Examples .PNG .GIF
+        - in: query
           name: key
           schema:
             type: string
           description: A token that you get when you register or when you ask for a token
+
     responses:
       200:
         description: Returns a file or a generic placeholder for the file
