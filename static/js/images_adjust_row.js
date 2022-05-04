@@ -87,7 +87,7 @@ function adjust_images_to_row() {
 var adjust_interval = setInterval(() => {
     console.log(" Adjust interval ");
     adjust_images_to_row()
-}, 100);
+}, 150);
 
 window.addEventListener('load', function() {
     console.log('All assets are loaded')
@@ -97,7 +97,10 @@ window.addEventListener('load', function() {
         // CSS
         console.log('Post transitions clear interval')
         clearInterval(adjust_interval);
+        adjust_images_to_row();
     }, 250);
+
+    adjust_images_to_row();
 })
 
 window.addEventListener('resize', function(event) {
