@@ -88,12 +88,13 @@ body {
     /*
     background-color:#000;
     */
-    padding:0px;
-    margin:0px;
-    width:100%;
+    padding: 0px;
+    margin: 0px;
+    width: 100%;
 }
 
 .img-small-display {
-    width:400px;
-    height:300px;
+    width: 400px;
+    height: 300px;
 }
+
