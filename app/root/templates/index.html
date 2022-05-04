@@ -15,13 +15,14 @@ background-color: #404040;
             {% for media in media_files %}
             {% if media['info'] %}
             <div class="img_gallery" image_count="{{ loop.index }}">
-                <div class="bg-image hover-overlay ripple">
-                    <a href="/user/{{ media.username }}/posts/{{ media.id }}" {% if media['file_type'] == "video" %} class="video_player" video_id="{{ loop.index }}" {% endif %} ">
-                        <img id="image_{{ loop.index }}" class="img-row"
+                <div class="bg-image hover-overlay ripple"  style="background-color: rgba(32, 32, 32, 0.2)">
+                    <a href="/user/{{ media.username }}/posts/{{ media.id }}" {% if media['file_type'] == "video" %} class="video_player" video_id="{{ loop.index }}" {% endif %}>
+                        <img id="image_{{ loop.index }}" class="img-row fade-in hidden"
                             image_count="{{ loop.index }}"
                             image_width="{{ media['info']['width'] }}"
                             image_height="{{ media['info']['height'] }}"
-                            src="/api/media/get/{{ media.id }}.v300.JPG">
+                            src_="/api/media/get/{{ media.id }}.v300.JPG"
+                            src="/static/images/loader.png">
 
                         {% if media['file_type'] == "video" %}
                             <div style="position: absolute; top:0px; left:0px; overflow: visible; display:none"

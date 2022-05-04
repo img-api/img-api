@@ -22,7 +22,8 @@ function adjust_stack(stack, current_w, max_width) {
     let final_w = 0;
     let count = 0;
     for (let image of stack) {
-        image.height = (max_height / asp);
+        let image_w = get_scaled_width(image) / asp;
+        let image_h = (max_height / asp);
 
         if (stack.length == 1)  {
             if (image.height < max_height) {
@@ -30,7 +31,17 @@ function adjust_stack(stack, current_w, max_width) {
             }
         }
 
-        removeClass(image, "hidden");
+        removeClass(image, 'hidden');
+
+        var isLoaded = image.complete && image.naturalHeight !== 0;
+        if (isLoaded) {
+            addClass(image, "fade-in");
+        }
+
+        image.width = image_w
+        image.height = image_h
+        image.src = image.getAttribute("src_");
+
         final_w += image.width + margin_right;
 
         count += 1;
