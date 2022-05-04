@@ -34,7 +34,7 @@ fetch('/api/media/posts/' + username)
             if (media.file_format == ".MP4") {
                 html += `
                 <div class="bg-image hover-overlay ripple shadow-1-strong rounded">
-                    <video controls="" width="400" height="300" loop="true" preload="none" poster="/api/media/get/${media.media_id}.300.PNG" id="video_${ count++ }" allowfullscreen="">
+                    <video controls="" width="100%" height="300" loop="true" preload="none" poster="/api/media/get/${media.media_id}.300.PNG" id="video_${ count++ }" allowfullscreen="">
                         <source src="/api/media/get/${media.media_id}" type="video/mp4">
                         Sorry, your browser doesn't support embedded videos.
                     </video>

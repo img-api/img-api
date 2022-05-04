@@ -1,6 +1,7 @@
 import io
 import os
 import time
+import ffmpeg
 import datetime
 import validators
 
@@ -98,15 +99,38 @@ def api_internal_upload_media():
 
                     # Rest request seek pointer to start so we can save it after validation
                     f_request.seek(0)
+                    f_request.save(final_absolute_path)
 
                 except Exception as e:
                     print(" CRASH on loading image " + str(e))
                     return get_response_error_formatted(400, {"error_msg": "Image is not in a valid format!"})
 
-            if key == "video":
-                print("Check video file")
 
-            f_request.save(final_absolute_path)
+            if key == "video":
+                try:
+                    thumb_time = 1
+
+                    f_request.save(final_absolute_path)
+                    probe = ffmpeg.probe(final_absolute_path)
+
+                    video_stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'video'), None)
+                    width = info['width'] = int(video_stream['width'])
+                    height = info['height'] = int(video_stream['height'])
+                    duration = info['duration'] = float(video_stream['duration'])
+
+                    target_path = final_absolute_path + ".PREVIEW.PNG"
+
+                    thumb_time = duration / 3
+
+                    if os.path.exists(target_path):
+                        os.remove(target_path)
+
+                    ffmpeg.input(final_absolute_path, ss=thumb_time).filter('scale', width, -1).output(target_path, vframes=1).run()
+
+                except Exception as e:
+                    print(" CRASH on loading image " + str(e))
+                    os.remove(final_absolute_path)
+                    return get_response_error_formatted(400, {"error_msg": "Image is not in a valid format!"})
 
             new_file = {
                 'info': info,
@@ -177,7 +201,7 @@ def api_upload_media():
     return api_internal_upload_media()
 
 
-def api_dynamic_conversion(abs_path, extension, thumbnail, filename, cache_file=True):
+def api_dynamic_conversion(my_file, abs_path, extension, thumbnail, filename, cache_file=True):
     """ Converts the file dynamically into an extension, and saves the file if it was requested
 
         The user can append an extension to convert into example .GIF
@@ -298,7 +322,11 @@ def api_get_media(media_id):
     abs_path = File_Tracking.get_media_path() + my_file.file_path
 
     if extension or thumbnail:
-        return api_dynamic_conversion(abs_path, extension, thumbnail, my_file.file_name, True)
+        # If it is a video we want to use the video preview
+        if my_file.file_type == "video":
+            abs_path += ".PREVIEW.PNG"
+
+        return api_dynamic_conversion(my_file, abs_path, extension, thumbnail, my_file.file_name, True)
 
     return send_file(abs_path, attachment_filename=my_file.file_name)
 
