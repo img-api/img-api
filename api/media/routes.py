@@ -59,6 +59,8 @@ def api_internal_upload_media():
 
         if key in ["image", "video"]:
             file_name = f_request.filename
+            if file_name == "image":
+                file_name = "image_generated_by_" + current_user.username + ".PNG"
 
             md5, size = generate_file_md5(f_request)
             if size == 0:
