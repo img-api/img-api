@@ -1,6 +1,8 @@
 import os
 import redis
+import ffmpeg
 import requests
+
 from wand.image import Image
 
 # https://www.pythonpool.com/imagemagick-python/
@@ -17,6 +19,45 @@ conn = redis.from_url(redis_url)
 def is_worker_alive(msg):
     print("I AM ALIVE " + msg)
     return msg
+
+
+def convert_video(json):
+    """
+        Ground work for video https://github.com/kkroening/ffmpeg-python/blob/master/examples/README.md#generate-thumbnail-for-video
+    """
+
+    try:
+        time = 1
+        media_id = json['media_id']
+        image_path = json['media_path']
+        target_path = json['target_path']
+        url_upload = json['api_callback']
+
+        probe = ffmpeg.probe(image_path)
+
+        video_stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'video'), None)
+        width = int(video_stream['width'])
+        height = int(video_stream['height'])
+
+        ffmpeg.input(in_filename, ss=time).filter('scale', width, -1).output(target_path, vframes=1).run()
+
+        if not os.path.exists(target_path):
+            return {'state': 'error', 'width': width, 'height': height, 'media_id': media_id}
+
+    except Exception as e:
+        return {'state': 'error', 'error_msg': 'failed processing', 'media_id': media_id}
+
+    print(operation + " => " + trf + " WAS SUCCESSFUL ")
+    values = {
+        'media_id': media_id,
+        'info': {
+            'width': width,
+            'height': height
+        }
+    }
+    requests.post(url_upload, data=values)
+
+    return {'state': 'success', 'width': width, 'height': height, 'media_id': media_id}
 
 
 def convert_image(json):

@@ -17,13 +17,26 @@
 {% endif %}
 
 <div class='container'>
-    <div class="imgbox">
-        <a href='/media/edit/{{ media_id }}'>
-            <img src='/api/media/get/{{ media_id }}' class='center-fit'>
-        </a>
-    </div>
-    <br>
-    <a class="btn btn-primary bg-theme" href='/media/edit/{{ media_id }}' role="button">Edit</a>
+    {% if media.file_type == "video" %}
+
+        <div class="bg-image hover-overlay ripple shadow-1-strong rounded">
+            <video controls="" class='video_player' width="100%" loop="true" preload="none" poster="/api/media/get/{{ media_id }}.300.PNG" id="video_player" allowfullscreen="">
+                <source src="/api/media/get/{{ media_id }}" type="video/mp4">
+                Sorry, your browser doesn't support embedded videos.
+            </video>
+        </div>
+
+    {% else %}
+
+        <div class="imgbox">
+            <a href='/media/edit/{{ media_id }}'>
+                <img src='/api/media/get/{{ media_id }}' class='center-fit'>
+            </a>
+        </div>
+        <br>
+        <a class="btn btn-primary bg-theme" href='/media/edit/{{ media_id }}' role="button">Edit</a>
+
+    {% endif %}
 </div>
 
 <div class="row" id='media_posts_container'></div>

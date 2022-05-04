@@ -85,7 +85,17 @@ function adjust_images_to_row() {
 
 window.addEventListener('load', function() {
     console.log('All assets are loaded')
-    adjust_images_to_row()
+    setTimeout(() => {
+        // We wait for the transition to load
+        adjust_images_to_row()
+    }, 100);
+
+    setTimeout(() => {
+        // Finished adjusting the divs, we will have a different size for the div, since media might have change the sizes with a slight delay
+        // CSS
+        console.log('Post transitions resize')
+        adjust_images_to_row()
+    }, 250);
 })
 
 window.addEventListener('resize', function(event) {

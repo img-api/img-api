@@ -1,6 +1,7 @@
 import io
 import os
 import time
+import ffmpeg
 import datetime
 import validators
 
@@ -27,19 +28,11 @@ def get_media_valid_extension(file_name):
         You should never trust the frontend """
 
     extension = os.path.splitext(file_name)[1].upper()
-    image_list = [".JPEG", ".JPG", ".GIF", ".GIFV", ".PNG", ".BMP", ".TGA", ".WEBP"]
+    image_list = [".JPEG", ".JPG", ".GIF", ".GIFV", ".PNG", ".BMP", ".TGA", ".WEBP", ".MP4"]
     if extension not in image_list:
         return False
 
     return extension
-
-
-def get_media_path():
-    media_path = current_app.config.get('MEDIA_PATH')
-    if not media_path:
-        abort(500, "Internal error, application MEDIA_PATH is not configured!")
-
-    return media_path
 
 
 def api_internal_upload_media():
@@ -48,7 +41,7 @@ def api_internal_upload_media():
     if request.method != "POST":
         return get_response_error_formatted(404, {"error_msg": "No files to upload!"})
 
-    media_path = get_media_path()
+    media_path = File_Tracking.get_media_path()
 
     # If we don't have an user, we generate a temporal one with random names
     if not hasattr(current_user, 'username'):
@@ -64,7 +57,7 @@ def api_internal_upload_media():
         full_path = media_path + user_space_path
         ensure_dir(full_path)
 
-        if key.startswith("image"):
+        if key in ["image", "video"]:
             file_name = f_request.filename
 
             md5, size = generate_file_md5(f_request)
@@ -90,42 +83,60 @@ def api_internal_upload_media():
                 # Eventually if the project grows, files in folders like this are not ideal and all this code should get revamped
 
                 if my_file:
-                    new_file = {
-                        'info': my_file['info'],
-                        'file_name': my_file.file_name,
-                        'file_path': my_file.file_path,
-                        'file_size': my_file.file_size,
-                        'file_format': my_file.file_format,
-                        'checksum_md5': my_file.checksum_md5,
-                        'username': my_file.username,
-                        'media_id': str(my_file.id)
-                    }
-
                     print(" FILE ALREADY UPLOADED WITH ID " + str(my_file.id))
-                    uploaded_ft.append(new_file)
+                    uploaded_ft.append(my_file.serialize())
                     continue
 
                 print(" FILE WAS LOST - CREATE NEW")
 
             info = {}
-            try:
-                image = Image(file=f_request)
-                info['width'] = image.width
-                info['height'] = image.height
 
-                # Rest request seek pointer to start so we can save it after validation
-                f_request.seek(0)
+            if key == "image":
+                try:
+                    image = Image(file=f_request)
+                    info['width'] = image.width
+                    info['height'] = image.height
 
-            except Exception as e:
-                print(" CRASH on loading image " + str(e))
-                return get_response_error_formatted(400, {"error_msg": "Image is not in a valid format!"})
+                    # Rest request seek pointer to start so we can save it after validation
+                    f_request.seek(0)
+                    f_request.save(final_absolute_path)
 
-            f_request.save(final_absolute_path)
+                except Exception as e:
+                    print(" CRASH on loading image " + str(e))
+                    return get_response_error_formatted(400, {"error_msg": "Image is not in a valid format!"})
+
+
+            if key == "video":
+                try:
+                    thumb_time = 1
+
+                    f_request.save(final_absolute_path)
+                    probe = ffmpeg.probe(final_absolute_path)
+
+                    video_stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'video'), None)
+                    width = info['width'] = int(video_stream['width'])
+                    height = info['height'] = int(video_stream['height'])
+                    duration = info['duration'] = float(video_stream['duration'])
+
+                    target_path = final_absolute_path + ".PREVIEW.PNG"
+
+                    thumb_time = duration / 3
+
+                    if os.path.exists(target_path):
+                        os.remove(target_path)
+
+                    ffmpeg.input(final_absolute_path, ss=thumb_time).filter('scale', width, -1).output(target_path, vframes=1).run()
+
+                except Exception as e:
+                    print(" CRASH on loading image " + str(e))
+                    os.remove(final_absolute_path)
+                    return get_response_error_formatted(400, {"error_msg": "Image is not in a valid format!"})
 
             new_file = {
                 'info': info,
                 'file_name': file_name,
                 'file_path': relative_file_path,
+                'file_type': key,
                 'file_size': size,
                 'file_format': extension,
                 'checksum_md5': md5,
@@ -190,7 +201,7 @@ def api_upload_media():
     return api_internal_upload_media()
 
 
-def api_dynamic_conversion(abs_path, extension, thumbnail, filename, cache_file=True):
+def api_dynamic_conversion(my_file, abs_path, extension, thumbnail, filename, cache_file=True):
     """ Converts the file dynamically into an extension, and saves the file if it was requested
 
         The user can append an extension to convert into example .GIF
@@ -308,10 +319,14 @@ def api_get_media(media_id):
         else:
             return redirect("/static/images/placeholder_private.jpg")
 
-    abs_path = get_media_path() + my_file.file_path
+    abs_path = File_Tracking.get_media_path() + my_file.file_path
 
     if extension or thumbnail:
-        return api_dynamic_conversion(abs_path, extension, thumbnail, my_file.file_name, True)
+        # If it is a video we want to use the video preview
+        if my_file.file_type == "video":
+            abs_path += ".PREVIEW.PNG"
+
+        return api_dynamic_conversion(my_file, abs_path, extension, thumbnail, my_file.file_name, True)
 
     return send_file(abs_path, attachment_filename=my_file.file_name)
 
@@ -374,6 +389,7 @@ def api_get_posts_json(user_id):
             'is_public': ft.is_public,
             'username': str(ft.username),
             'filename': str(ft.file_name),
+            'file_format': str(ft.file_format),
             'creation_date': time.mktime(ft.creation_date.timetuple()),
         })
 
@@ -493,4 +509,49 @@ def api_set_media_private_posts_json(media_id, privacy_mode):
     media_file.save()
 
     ret = {'status': 'success', 'media_id': media_id, 'privacy_mode': privacy_mode}
+    return get_response_formatted(ret)
+
+
+@blueprint.route('/remove/<string:media_id>', methods=['GET'])
+def api_remove_self_media(media_id):
+    """Removes a media file
+    ---
+    tags:
+      - media
+    schemes: ['http', 'https']
+    deprecated: false
+    definitions:
+      image_file:
+        type: object
+    parameters:
+        - in: query
+          name: key
+          schema:
+            type: string
+          description: A token that you get when you register or when you ask for a token
+    responses:
+      200:
+        description: Returns OK if you can remove this file and it has been removed
+      403:
+        description: Forbidden, user is not the owner of this image
+      404:
+        description: File is missing
+
+    """
+    from flask_login import current_user
+
+    if not hasattr(current_user, "username"):
+        return get_response_error_formatted(403, {'error_msg': "Anonymous users are not allowed."})
+
+    media_file = File_Tracking.objects(id=media_id).first()
+
+    if not media_file:
+        return get_response_error_formatted(404, {'error_msg': "Missing."})
+
+    if media_file.username != current_user.username:
+        return get_response_error_formatted(403, {'error_msg': "This user is not allowed to perform this."})
+
+    media_file.delete()
+
+    ret = {'status': 'success', 'media_id': media_id, 'deleted': True}
     return get_response_formatted(ret)

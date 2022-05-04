@@ -6,47 +6,20 @@ background-color: #404040;
 {% endblock %}
 
 {% block content %}
-
-<div class='container'>
-    <section class="">
-        <header>
-            <!-- Background image -->
-            <div class="p-5 text-center bg-image" style="
-                  background-image: url('/static/images/background.webp');
-                  height: 200px; ">
-                <div class="mask" style="background-color: rgba(0, 0, 0, 0.6)">
-                    <div class="d-flex justify-content-center align-items-center h-100">
-                        <div class="text-white">
-
-                            <h1 class="mb-3">
-                                <center>
-                                    <a class="sticky-logo" href="/">
-                                        <h1 style='color:white'><span>IMG</span>API</h1>
-                                    </a>
-                                </center>
-                            </h1>
-
-                            <h4 class="mb-3">Where your images come to life!</h4>
-                            <a class="btn btn-outline-light btn-lg" href="/media/upload" role="button">Upload an
-                                image</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <!-- Background image -->
-        </header>
-    </section>
+{% include "inc_header_upload.html" %}
+<div class='container-fluid'>
     <section class="">
 
         <div id='main_row' style=''>
-            <hr>
+            <div style='margin-top: 7px'></div>
             {% for media in media_files %}
             {% if media['info'] %}
             <div class="img_gallery" image_count="{{ loop.index }}">
                 <div class="bg-image hover-overlay ripple">
                     <a href="/user/{{ media.username }}/posts/{{ media.id }}">
                         <img image_count="{{ loop.index }}" image_width="{{ media['info']['width'] }}"
-                            image_height="{{ media['info']['height'] }}" src="/api/media/get/{{ media.id }}.v300.JPG"
+                            image_height="{{ media['info']['height'] }}"
+                            src="/api/media/get/{{ media.id }}.v300.JPG"
                             class="img-row hidden">
                         <div class="mask" style="background-color: rgba(57, 192, 237, 0.2)"></div>
                     </a>
@@ -70,7 +43,7 @@ background-color: #404040;
             </div>
             {% endif %}
             {% endfor %}
-_
+            _
         </div>
     </section>
 </div>
@@ -80,4 +53,16 @@ _
 {% block javascripts %}
 {{ super() }}
 <script src="{{ url_for('static', filename='js/images_adjust_row.js') }}"></script>
+<script>
+    var api_video = document.getElementsByClassName('video_player');
+    for (video of api_video) {
+        video.addEventListener('click', function(evt) {
+            video.play();
+
+            // Display controls
+            video.setAttribute("controls", "");
+        })
+    }
+</script>
+
 {% endblock javascripts %}
