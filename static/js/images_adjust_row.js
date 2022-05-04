@@ -1,5 +1,6 @@
 var margin_right = 7;
 var max_height = 300;
+var d_ = false;
 
 function get_scaled_width(image) {
     let real_w = image.getAttribute("image_width");
@@ -25,7 +26,7 @@ function adjust_stack(stack, current_w, max_width) {
 
         if (stack.length == 1)  {
             if (image.height < max_height) {
-                console.log(" Underflow ")
+                if (d_) console.log(" Underflow ")
             }
         }
 
@@ -43,12 +44,12 @@ function adjust_stack(stack, current_w, max_width) {
 
     }
 
-    console.log("Final width after adjust " + final_w + "  LOST " + (max_width - final_w))
+    if (d_) console.log("Final width after adjust " + final_w + "  LOST " + (max_width - final_w))
 }
 
 function adjust_images_to_row() {
     var main_row = document.getElementById('main_row');
-    console.log("MAX WIDTH " + main_row.clientWidth);
+    if (d_) console.log("MAX WIDTH " + main_row.clientWidth);
 
     let max_width = main_row.clientWidth;
     var images = document.getElementsByClassName('img-row');
@@ -62,12 +63,12 @@ function adjust_images_to_row() {
         let image_w = get_scaled_width(image);
 
         w += image_w;
-        console.log(" " + image.getAttribute("image_count") + ` (${ image_w } => ${ w }) `)
+        if (d_) console.log(" " + image.getAttribute("image_count") + ` (${ image_w } => ${ w }) `)
 
         //if (count > 5) return;
 
         if (w > max_width) { //  && stack.length > 0
-            console.log("------------- Width overflow " + count + " ----------------");
+            if (d_) console.log("------------- Width overflow " + count + " ----------------");
             stack.push(image);
             adjust_stack(stack, w, max_width);
 
@@ -83,18 +84,19 @@ function adjust_images_to_row() {
     }
 }
 
+var adjust_interval = setInterval(() => {
+    console.log(" Adjust interval ");
+    adjust_images_to_row()
+}, 100);
+
 window.addEventListener('load', function() {
     console.log('All assets are loaded')
-    setTimeout(() => {
-        // We wait for the transition to load
-        adjust_images_to_row()
-    }, 100);
 
     setTimeout(() => {
         // Finished adjusting the divs, we will have a different size for the div, since media might have change the sizes with a slight delay
         // CSS
-        console.log('Post transitions resize')
-        adjust_images_to_row()
+        console.log('Post transitions clear interval')
+        clearInterval(adjust_interval);
     }, 250);
 })
 

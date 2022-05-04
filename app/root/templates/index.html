@@ -20,26 +20,32 @@ background-color: #404040;
                         <img image_count="{{ loop.index }}" image_width="{{ media['info']['width'] }}"
                             image_height="{{ media['info']['height'] }}"
                             src="/api/media/get/{{ media.id }}.v300.JPG"
-                            class="img-row hidden">
+                            class="img-row">
+
                         <div class="mask" style="background-color: rgba(57, 192, 237, 0.2)"></div>
+                        <div style="position: absolute; bottom:2px; right:5px;"><img border="0" id="play_icon_29286" src="/static/images/play_icon.png" width="16" height="16"></div>
+
+                        {% if media.is_anon %}
+
+                        {% else %}
+
+                            <div style="position: absolute; bottom:2px; left:5px;">
+                                <div class='click_user' href='/user/{{ media.username }}/posts' style='color:#fff'>
+                                    {{ media.username }}
+                                </div>
+                            </div>
+                        <!--
+                            <div style='position:relative_'>
+                                <div class='main_username'>
+                                    <small>
+                                    </small>
+                                </div>
+                            </div>
+                            -->
+                        {% endif %}
                     </a>
                 </div>
 
-                {% if media.is_anon %}
-
-                {% else %}
-                <!--
-                    <div style='position:relative_'>
-                        <div class='main_username'>
-                            <small>
-                                <a href='/user/{{ media.username }}/posts' style='color:#aaa'>
-                                {{ media.username }}
-                                </a>
-                            </small>
-                        </div>
-                    </div>
-                    -->
-                {% endif %}
             </div>
             {% endif %}
             {% endfor %}
@@ -61,6 +67,15 @@ background-color: #404040;
 
             // Display controls
             video.setAttribute("controls", "");
+        })
+    }
+
+    var click_users = document.getElementsByClassName('click_user');
+    for (user of click_users) {
+        user.addEventListener('click', function(evt) {
+            debugger;
+            evt.preventDefault()
+            window.location.href = user.getAttribute('href');
         })
     }
 </script>
