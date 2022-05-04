@@ -18,7 +18,8 @@ background-color: #404040;
                 <div class="bg-image hover-overlay ripple">
                     <a href="/user/{{ media.username }}/posts/{{ media.id }}">
                         <img image_count="{{ loop.index }}" image_width="{{ media['info']['width'] }}"
-                            image_height="{{ media['info']['height'] }}" src="/api/media/get/{{ media.id }}.v300.JPG"
+                            image_height="{{ media['info']['height'] }}"
+                            src="/api/media/get/{{ media.id }}.v300.JPG"
                             class="img-row hidden">
                         <div class="mask" style="background-color: rgba(57, 192, 237, 0.2)"></div>
                     </a>
@@ -42,7 +43,7 @@ background-color: #404040;
             </div>
             {% endif %}
             {% endfor %}
-_
+            _
         </div>
     </section>
 </div>
@@ -52,4 +53,16 @@ _
 {% block javascripts %}
 {{ super() }}
 <script src="{{ url_for('static', filename='js/images_adjust_row.js') }}"></script>
+<script>
+    var api_video = document.getElementsByClassName('video_player');
+    for (video of api_video) {
+        video.addEventListener('click', function(evt) {
+            video.play();
+
+            // Display controls
+            video.setAttribute("controls", "");
+        })
+    }
+</script>
+
 {% endblock javascripts %}

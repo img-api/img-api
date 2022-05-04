@@ -34,7 +34,7 @@ fetch('/api/media/posts/' + username)
             if (media.file_format == ".MP4") {
                 html += `
                 <div class="bg-image hover-overlay ripple shadow-1-strong rounded">
-                    <video controls="" width="100%" height="300" loop="true" preload="none" poster="/api/media/get/${media.media_id}.300.PNG" id="video_${ count++ }" allowfullscreen="">
+                    <video class='video_player' width="100%" height="300" loop="true" preload="none" poster="/api/media/get/${media.media_id}.300.PNG" id="video_${ count++ }" allowfullscreen="">
                         <source src="/api/media/get/${media.media_id}" type="video/mp4">
                         Sorry, your browser doesn't support embedded videos.
                     </video>
@@ -83,6 +83,14 @@ fetch('/api/media/posts/' + username)
                     console.log("PRIVATE");
                     set_media_private(this.attributes.media_id.value, true)
                 }
+            })
+        }
+
+        var api_video = document.getElementsByClassName('video_player');
+        for (video of api_video) {
+            video.addEventListener('click', function(evt) {
+                video.play();
+                video.setAttribute("controls", "");
             })
         }
 
