@@ -97,8 +97,16 @@ def api_internal_upload_media():
             if key == "image":
                 try:
                     image = Image(file=f_request)
-                    info['width'] = image.width
-                    info['height'] = image.height
+
+                    print(" Image orientation " + str(image.orientation))
+                    # Image is rotated internally, we have to invert our dimensions
+                    if image.orientation in ['right_top', 'top_right', 'right_bottom', 'bottom_right']:
+                        print(" Rotate Image ")
+                        info['width'] = image.height
+                        info['height'] = image.width
+                    else:
+                        info['width'] = image.width
+                        info['height'] = image.height
 
                     # Rest request seek pointer to start so we can save it after validation
                     f_request.seek(0)
