@@ -80,7 +80,7 @@ body {
 
 .img_gallery {
     float: left;
-    margin-right: 7px;
+    /* margin-right: 7px; */
     padding-bottom: 7px;
 }
 

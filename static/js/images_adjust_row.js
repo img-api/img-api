@@ -53,10 +53,19 @@ function adjust_stack(stack, current_w, max_width) {
         let gallery = findParentClass(image, "img_gallery")
         if (stack.length > 1 && count == stack.length && count != 1) {
             addClass(gallery, "pull-right")
+
+            // We don't add margin on the right
+            gallery.style['margin-left'] = "";
         } else {
+
+            // We don't add margin on the left
+            if (count == 1)
+                gallery.style['margin-left'] = "";
+            else
+                gallery.style['margin-left'] = "7px";
+
             removeClass(gallery, "pull-right")
         }
-
     }
 
     if (d_) console.log("Final width after adjust " + final_w + "  LOST " + (max_width - final_w))
