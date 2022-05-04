@@ -33,14 +33,18 @@ function adjust_stack(stack, current_w, max_width) {
 
         removeClass(image, 'hidden');
 
-        var isLoaded = image.complete && image.naturalHeight !== 0;
-        if (isLoaded) {
-            addClass(image, "fade-in");
-        }
-
         image.width = image_w
         image.height = image_h
         image.src = image.getAttribute("src_");
+
+        var isLoaded = image.complete && image.naturalHeight !== 0;
+        if (isLoaded) {
+            addClass(image, "fade-in");
+        } else {
+            image.onload = () => {
+                addClass(image, "fade-in");
+            };
+        }
 
         final_w += image.width + margin_right;
 

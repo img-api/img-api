@@ -29,7 +29,7 @@ background-color: #404040;
                             src="/static/images/loader.png">
 
                         {% if media.file_format == ".GIF" %}
-                            <div style="position: absolute; bottom:2px; right:5px;"><img border="0" id="play_icon_{{ loop.index }}" src="/static/images/play_icon.png" width="16" height="16"></div>
+                            <div style="position: absolute; bottom:2px; right:5px;"><img border="0" class='play_icon' id="play_icon_{{ loop.index }}" src="/static/images/gif_icon.png" width="35" height="18"></div>
                         {% endif %}
 
                         {% if media['file_type'] == "video" %}
@@ -88,6 +88,9 @@ background-color: #404040;
             evt.preventDefault();
             let img = this.querySelector('.media_format_GIF');
             img.src= img.getAttribute('src_media');
+
+            let icon = this.querySelector(".play_icon");
+            addClass(icon, "hidden");
         })
     }
 

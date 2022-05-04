@@ -10,7 +10,7 @@ git clone git@github.com:sergioamr/img-api.git
 
 ### Create a virtual environment to run this project
 
-You can run the installer, it is what is being use at the CI.
+You can run the installer, it is what is being used by the CI.
 ```
 ./install.sh
 ```
@@ -40,7 +40,7 @@ The database of choice for this project is Mongodb since we can dynamically grow
 sudo apt-get install mongodb-org
 ```
 
-### Install redis
+### Install redis 
 
 Our microservices work using redis as our main platform for RPC (Remote Process Procedure)
 
