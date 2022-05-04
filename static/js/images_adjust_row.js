@@ -97,6 +97,8 @@ function adjust_images_to_row() {
 
         stack.push(image);
     }
+
+    adjust_stack(stack, w, max_width);
 }
 
 var adjust_interval = setInterval(() => {
