@@ -14,6 +14,5 @@ rq
 validators
 wand
 requests
-./up
 
 ffmpeg-python
