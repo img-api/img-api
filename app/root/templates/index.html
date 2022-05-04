@@ -16,30 +16,39 @@ background-color: #404040;
             {% if media['info'] %}
             <div class="img_gallery" image_count="{{ loop.index }}">
                 <div class="bg-image hover-overlay ripple">
-                    <a href="/user/{{ media.username }}/posts/{{ media.id }}">
-                        <img image_count="{{ loop.index }}" image_width="{{ media['info']['width'] }}"
+                    <a href="/user/{{ media.username }}/posts/{{ media.id }}" {% if media['file_type'] == "video" %} class="video_player" video_id="{{ loop.index }}" {% endif %} ">
+                        <img id="image_{{ loop.index }}" class="img-row"
+                            image_count="{{ loop.index }}"
+                            image_width="{{ media['info']['width'] }}"
                             image_height="{{ media['info']['height'] }}"
-                            src="/api/media/get/{{ media.id }}.v300.JPG"
-                            class="img-row hidden">
-                        <div class="mask" style="background-color: rgba(57, 192, 237, 0.2)"></div>
+                            src="/api/media/get/{{ media.id }}.v300.JPG">
+
+                        {% if media['file_type'] == "video" %}
+                            <div style="position: absolute; top:0px; left:0px; overflow: visible; display:none"
+                                    id="video_div_{{ loop.index }}"><video loop="true" preload="none" poster="/api/media/get/{{ media.id }}.v300.JPG" id="video_player_{{ loop.index }}" allowfullscreen="">
+                                    <source src="/api/media/get/{{ media.id }}" type="video/mp4">
+                                    Sorry, your browser doesn't support embedded videos.
+                                </video></div>
+
+                            <div style="position: absolute; bottom:2px; right:5px;"><img border="0" id="play_icon_{{ loop.index }}" src="/static/images/play_icon.png" width="16" height="16"></div>
+                        {% else %}
+                            <div class="mask" style="background-color: rgba(57, 192, 237, 0.2)"></div>
+                        {% endif %}
+
+                        {% if media.is_anon %}
+
+                        {% else %}
+                            <div style="position: absolute; bottom:2px; left:5px;">
+                                <div id="user_{{ loop.index }}" class='click_user' href='/user/{{ media.username }}/posts' style='color:#fff'>
+                                <small>
+                                    {{ media.username }}
+                                </small>
+                                </div>
+                            </div>
+                        {% endif %}
                     </a>
                 </div>
 
-                {% if media.is_anon %}
-
-                {% else %}
-                <!--
-                    <div style='position:relative_'>
-                        <div class='main_username'>
-                            <small>
-                                <a href='/user/{{ media.username }}/posts' style='color:#aaa'>
-                                {{ media.username }}
-                                </a>
-                            </small>
-                        </div>
-                    </div>
-                    -->
-                {% endif %}
             </div>
             {% endif %}
             {% endfor %}
@@ -54,14 +63,52 @@ background-color: #404040;
 {{ super() }}
 <script src="{{ url_for('static', filename='js/images_adjust_row.js') }}"></script>
 <script>
-    var api_video = document.getElementsByClassName('video_player');
-    for (video of api_video) {
-        video.addEventListener('click', function(evt) {
-            video.play();
-
-            // Display controls
-            video.setAttribute("controls", "");
+    var click_users = document.getElementsByClassName('click_user');
+    for (user of click_users) {
+        user.addEventListener('click', function(evt) {
+            evt.preventDefault();
+            var href = this.getAttribute('href');
+            console.log(" Redirect to user " + href + " " + this.id);
+            window.location.href = href;
         })
+    }
+
+    var video_players = document.getElementsByClassName('video_player');
+    for (video of video_players) {
+        video.addEventListener('click', function(evt) {
+            evt.preventDefault();
+            display_video(this.getAttribute('video_id'))
+        })
+
+        video.addEventListener('dblclick', function(evt) {
+            evt.preventDefault();
+            console.log(" Redirect to video ");
+            var player = findParentClass(this, "video_player");
+            window.location.href = player.getAttribute('href');
+        })
+    }
+
+    function display_video(video_id) {
+        var element = document.getElementById("video_div_" + video_id);
+        var media = document.getElementById("video_player_" + video_id);
+        var icon = document.getElementById("play_icon_" + video_id);
+        var image = document.getElementById("image_" + video_id);
+
+        if (image.height) {
+            media.width = image.width;
+            media.height = image.height;
+        }
+
+        if (element.style.display == "") {
+            element.style.display = "none";
+            icon.style.display = null;
+            media.pause();
+            media.currentTime = 0;
+        } else {
+            element.style.display = null;
+            icon.style.display = "none";
+            media.play();
+        }
     }
 </script>
 
