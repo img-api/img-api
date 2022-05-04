@@ -1,3 +1,5 @@
+import time
+import random
 import bcrypt
 import binascii
 import datetime
@@ -487,9 +489,28 @@ def generate_random_name():
     """ Generates a random name so we can use it for the anonymous user.
         This name should come from a dictionary like 3words
     """
+    from services.my_dictionary import words
 
-    random_name = "USER " + str(datetime.datetime.now())
-    return random_name
+    l = len(words)
+
+    random.seed(time.clock())
+
+    my_user_name = ""
+    while not my_user_name:
+        for i in range(0, 3):
+            r = random.randint(0, l - 1)
+            if i != 0:
+                my_user_name += "_"
+
+            my_user_name += words[r]
+
+        if User.objects(username=my_user_name).first():
+            print("Found collision " + my_user_name)
+            my_user_name = ""
+
+    print("Your user name " + my_user_name)
+    return my_user_name.upper()
+
 
 def generate_random_user():
     """ We generate a random user for files which are going to be anonymous
@@ -497,10 +518,11 @@ def generate_random_user():
     """
 
     random_name = generate_random_name()
+    password = random_name + str(datetime.datetime.now())
     user_obj = {
-        'password': bcrypt.hashpw(random_name.encode('utf-8'), bcrypt.gensalt()).hex(),
+        'password': bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).hex(),
         'username': random_name,
-        'email': random_name[:24] + "@img-api.com",
+        'email': random_name + "@img-api.com",
         'is_anon': True,
         'active': True,
     }

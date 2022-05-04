@@ -133,3 +133,6 @@ node_modules
 # Application files
 MEDIA_FILES/
 MEDIA_FILES
+
+# Dictionary to create names
+services/dictionary_alpha_arrays.json
