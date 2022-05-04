@@ -17,7 +17,7 @@ function adjust_stack(stack, current_w, max_width) {
     if (stack.length == 1)
         asp = current_w / max_width;
     else
-        asp = current_w / (max_width - margin_right * (stack.length - 1));
+        asp = current_w / (max_width - margin_right * (stack.length - 1.5));
 
     let final_w = 0;
     let count = 0;
