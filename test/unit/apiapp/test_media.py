@@ -1,4 +1,5 @@
 import io
+import os
 import math
 import requests
 
@@ -66,8 +67,17 @@ def test_media(client):
     response = client.get("/api/media/get/" + test_media['media_id'] + ".JPG")
     assert response.content_type == "image/JPG"
 
-    # Real upload online
-    # files = {'image_uploaded_by_test.png': bit_image}
-    # requests.post(url_upload, files=files)
+    # Upload image from disk with a different orientation than normal so we need to get a rotated width and height
+    abs_path = os.path.dirname(__file__)
+    with open(abs_path + "/testing_images/wrong_orientation.jpg", 'rb') as fp:
+        data = dict(image=(fp, "image_uploaded_wrong_orientation.jpg"), )
+        response = client.post(url_upload, content_type='multipart/form-data', data=data)
+        assert response.json['status'] == 'success'
 
+        test_media = response.json['media'][0]
+
+        assert test_media['file_size'] == 190684
+        assert test_media['info']['width'] == 480
+        assert test_media['info']['height'] == 800
+        assert test_media['checksum_md5'] == "7d2ff2b65e707b5fbedd4c5f72fa9687"
 
