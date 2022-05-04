@@ -156,7 +156,7 @@ def fetch_url_image(json):
     print(" Upload back to " + username + " " + url_upload)
     print(" SEND BLOB ")
 
-    files = {'image': image.make_blob()}
+    files = {'image_uploaded_by_' + username + ".png": image.make_blob()}
     values = {'image': 'new_image'}
     requests.post(url_upload, files=files, data=values)
 
