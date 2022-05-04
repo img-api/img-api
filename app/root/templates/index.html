@@ -23,25 +23,21 @@ background-color: #404040;
                             class="img-row">
 
                         <div class="mask" style="background-color: rgba(57, 192, 237, 0.2)"></div>
+
+                        {% if media['file_type'] == "video" %}
                         <div style="position: absolute; bottom:2px; right:5px;"><img border="0" id="play_icon_29286" src="/static/images/play_icon.png" width="16" height="16"></div>
+                        {% endif %}
 
                         {% if media.is_anon %}
 
                         {% else %}
-
                             <div style="position: absolute; bottom:2px; left:5px;">
                                 <div class='click_user' href='/user/{{ media.username }}/posts' style='color:#fff'>
+                                <small>
                                     {{ media.username }}
+                                </small>
                                 </div>
                             </div>
-                        <!--
-                            <div style='position:relative_'>
-                                <div class='main_username'>
-                                    <small>
-                                    </small>
-                                </div>
-                            </div>
-                            -->
                         {% endif %}
                     </a>
                 </div>
