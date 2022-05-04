@@ -81,3 +81,7 @@ def test_media(client):
         assert test_media['info']['height'] == 800
         assert test_media['checksum_md5'] == "7d2ff2b65e707b5fbedd4c5f72fa9687"
 
+    # Delete the file on disk
+    response = client.get("/api/media/remove/" + test_media['media_id'])
+    assert response.json['status'] == "success"
+    assert response.json['deleted'] == True
