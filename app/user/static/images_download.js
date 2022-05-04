@@ -98,6 +98,7 @@ fetch('/api/media/posts/' + username)
         for (btn_delete of api_delete_files) {
             btn_delete.addEventListener('click', function(evt) {
                 var url = this.getAttribute("api_call");
+                var obj = this;
                 fetch(url)
                     .then(response => response.json())
                     .then(data => {
@@ -105,7 +106,7 @@ fetch('/api/media/posts/' + username)
                             document.getElementById('system_message').innerHTML = " Could not download the files list for user " + username;
                             return
                         } else {
-                            let media_view = findParentClass(btn_delete, "media-container")
+                            let media_view = findParentClass(obj, "media-container")
                             addClass(media_view, "hidden")
                         }
                     })

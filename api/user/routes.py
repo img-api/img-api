@@ -473,8 +473,7 @@ def generate_random_name():
         This name should come from a dictionary like 3words
     """
 
-    random_name = str(datetime.datetime.now())
-    #
+    random_name = "USER " + str(datetime.datetime.now())
     return random_name
 
 def generate_random_user():
