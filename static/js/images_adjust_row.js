@@ -14,13 +14,7 @@ function adjust_stack(stack, current_w, max_width) {
 
     let asp = 0;
 
-    // [BUG] This is the right calculation for the right aspect ratio to adjust the image sizes.
-    // It works properly on a phone display.
-
-    // max_width -= margin_right * (stack.length - 1)
-    // Something is wrong on how I get the screen width.
-
-    max_width -= margin_right * (stack.length + 1)
+    max_width -= margin_right * (stack.length - 1)
     asp = current_w / max_width;
 
     let final_w = 0;
@@ -81,8 +75,10 @@ function adjust_images_to_row() {
 
     let max_width = main_row.clientWidth;
 
-    max_width = window.innerWidth - 13 * 2;
-    if (d_) console.log(" Window Real Width " + max_width);
+    // Window inner width without the scroll bar
+    max_width = document.body.clientWidth - 13 * 2 + 1
+
+    console.log(" Real Width " + max_width + " vs " + main_row.clientWidth);
 
     var images = document.getElementsByClassName('img-row');
 
