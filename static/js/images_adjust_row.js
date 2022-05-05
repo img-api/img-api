@@ -7,29 +7,29 @@ function get_scaled_width(image) {
     let real_h = image.getAttribute("image_height");
     let asp = real_w / real_h;
     let w = max_height * asp;
-    return w;
+    return Math.floor(w);
 }
 
 function adjust_stack(stack, current_w, max_width) {
 
     let asp = 0;
 
-    if (stack.length == 1)
-        asp = current_w / max_width;
-    else
-        asp = current_w / (max_width - margin_right * (stack.length - 1.5));
+    // [BUG] This is the right calculation for the right aspect ratio to adjust the image sizes.
+    // It works properly on a phone display.
+
+    // max_width -= margin_right * (stack.length - 1)
+    // Something is wrong on how I get the screen width.
+
+    max_width -= margin_right * (stack.length + 1)
+    asp = current_w / max_width;
 
     let final_w = 0;
     let count = 0;
     for (let image of stack) {
-        let image_w = get_scaled_width(image) / asp;
-        let image_h = (max_height / asp);
+        let image_w = Math.floor(get_scaled_width(image) / asp);
+        let image_h = Math.floor((max_height / asp));
 
-        if (stack.length == 1)  {
-            if (image.height < max_height) {
-                if (d_) console.log(" Underflow ")
-            }
-        }
+        if (d_) console.log("Real " + count + ` ${ image_w } , ${ image_h } `)
 
         removeClass(image, 'hidden');
 
@@ -46,11 +46,13 @@ function adjust_stack(stack, current_w, max_width) {
             };
         }
 
-        final_w += image.width + margin_right;
+        final_w += image.width;
 
         count += 1;
 
         let gallery = findParentClass(image, "img_gallery")
+
+        // We let the one on the right to float so we can adjust to the DIV to counter half pixel calculations
         if (stack.length > 1 && count == stack.length && count != 1) {
             addClass(gallery, "pull-right")
 
@@ -61,8 +63,10 @@ function adjust_stack(stack, current_w, max_width) {
             // We don't add margin on the left
             if (count == 1)
                 gallery.style['margin-left'] = "";
-            else
+            else {
                 gallery.style['margin-left'] = "7px";
+                final_w += margin_right;
+            }
 
             removeClass(gallery, "pull-right")
         }
@@ -76,6 +80,10 @@ function adjust_images_to_row() {
     if (d_) console.log("MAX WIDTH " + main_row.clientWidth);
 
     let max_width = main_row.clientWidth;
+
+    max_width = window.innerWidth - 13 * 2;
+    if (d_) console.log(" Window Real Width " + max_width);
+
     var images = document.getElementsByClassName('img-row');
 
     let w = 0;
@@ -100,9 +108,6 @@ function adjust_images_to_row() {
             stack = []
             continue
         }
-
-        if (stack.length > 1)
-            w += margin_right
 
         stack.push(image);
     }
