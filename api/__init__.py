@@ -24,6 +24,10 @@ def get_response_formatted(content, pretty=True):
 
     content = json.dumps(content).encode('utf8')
     response = Response(content, mimetype='application/json')
+
+    # We are a public API, we return that we enable everything (Overrides Cors)
+    response.headers.add('Access-Control-Allow-Origin', '*')
+
     return response
 
 
@@ -45,7 +49,12 @@ def get_response_error_formatted(status, content, is_warning=False):
     content['time'] = str(datetime.datetime.now())
     content['timestamp'] = int(time.time())
 
-    return Response(json.dumps(content, sort_keys=True, indent=4), status=status, mimetype='application/json')
+    response = Response(json.dumps(content, sort_keys=True, indent=4), status=status, mimetype='application/json')
+
+    # We are a public API, we return that we enable everything (Overrides Cors)
+    response.headers.add('Access-Control-Allow-Origin', '*')
+
+    return response
 
 
 def api_key_or_login_required(func):

@@ -7,8 +7,12 @@ from importlib import import_module
 
 from flask_login import current_user, LoginManager
 from flask_mongoengine import MongoEngine, MongoEngineSessionInterface
+from flask_cors import CORS
 
 app = Flask(__name__)
+#cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
+# Enable CORS on the entire application
+CORS(app)
 
 MONGODB_SETTINGS = {'host': 'localhost', 'port': 27017}
 

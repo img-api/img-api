@@ -16,3 +16,4 @@ wand
 requests
 
 ffmpeg-python
+flask-cors
