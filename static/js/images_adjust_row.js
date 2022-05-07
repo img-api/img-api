@@ -76,9 +76,8 @@ function adjust_images_to_row() {
     let max_width = main_row.clientWidth;
 
     // Window inner width without the scroll bar
-    max_width = document.body.clientWidth - 13 * 2 + 1
-
-    console.log(" Real Width " + max_width + " vs " + main_row.clientWidth);
+    // max_width = document.body.clientWidth - 13 * 2
+    // console.log(" Real Width " + max_width + " vs " + main_row.clientWidth);
 
     var images = document.getElementsByClassName('img-row');
 
