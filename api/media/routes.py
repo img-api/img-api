@@ -273,6 +273,55 @@ def api_dynamic_conversion(my_file, abs_path, extension, thumbnail, filename, ca
                      as_attachment=True,
                      attachment_filename=attachment_filename + extra)
 
+@blueprint.route('/category/<string:media_category>', methods=['GET'])
+@api_key_login_or_anonymous
+def api_fetch_media_with_media_category(media_category):
+    """Returns a list of media objects to display.
+
+    This API is only for public media
+    ---
+    tags:
+      - media
+    schemes: ['http', 'https']
+    deprecated: false
+    definitions:
+      image_file:
+        type: object
+    parameters:
+        - in: query
+          name: media_category
+          schema:
+            type: string
+          description: Just specify from the list of media categories
+    responses:
+      200:
+        description: Returns a list of media files
+      401:
+        description: User doesn't have access to this resource.
+      404:
+        description: Category doesn't exist anymore on the system
+
+    """
+    from api.media.models import File_Tracking
+
+    files = File_Tracking.objects(is_public=True)
+
+    return_list = []
+
+    count = 0
+    for f in reversed(files):
+        if f.exists():
+            return_list.append(f.serialize())
+            count += 1
+
+            # We should limit this on the File_Tracking call
+            if count > 150:
+                break
+
+    ret = {'status': 'success', 'media_files': return_list}
+    return get_response_formatted(ret)
+
+
 @blueprint.route('/get/<string:media_id>', methods=['GET'])
 @api_key_login_or_anonymous
 def api_get_media(media_id):

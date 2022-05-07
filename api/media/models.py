@@ -85,8 +85,8 @@ class File_Tracking(db.DynamicDocument):
         return True
 
     def serialize(self):
+        """ Cleanup version of the media file so don't release confidential information """
         serialized_file = {
-            'info': self['info'],
             'file_name': self.file_name,
             'file_path': self.file_path,
             'file_size': self.file_size,
@@ -96,5 +96,8 @@ class File_Tracking(db.DynamicDocument):
             'username': self.username,
             'media_id': str(self.id)
         }
+
+        if 'info' in self:
+            serialized_file['info'] = self['info']
 
         return serialized_file
