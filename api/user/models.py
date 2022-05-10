@@ -8,6 +8,7 @@ from flask import current_app
 from flask_login import UserMixin
 
 from imgapi_launcher import db, login_manager
+from api.query_helper import mongo_to_dict_helper
 
 from .signature_serializer import TimedJSONWebSignatureSerializer as Serializer, BadSignature, SignatureExpired
 
@@ -65,21 +66,19 @@ class User(UserMixin, db.Document):
 
     username = db.StringField(unique=True)
     email = db.StringField(unique=True)
+    password = db.StringField()
 
     first_name = db.StringField(default="")
     last_name = db.StringField(default="")
 
     profile_img = db.StringField(default="")
 
-    password = db.StringField()
-    lang = db.StringField()
+    lang = db.StringField(default="EN")
 
     active = db.BooleanField(default=False)
-
     is_anon = db.BooleanField(default=False)
 
     settings = db.EmbeddedDocumentField(DB_UserSettings, default=DB_UserSettings())
-
     list_subscriptions = db.EmbeddedDocumentListField(DB_UserSubscription, default=[])
 
     def serialize(self):
@@ -87,8 +86,6 @@ class User(UserMixin, db.Document):
             We could return the object after a filter, but on this case,
             it is safer to never return from that source and convert directly into an object
         """
-        from api.query_helper import mongo_to_dict_helper
-        settings = mongo_to_dict_helper(self.settings)
 
         return {
             'username': self.username,
@@ -97,7 +94,7 @@ class User(UserMixin, db.Document):
             'profile_img': self.profile_img,
             'lang': self.lang,
             'is_anon': self.is_anon,
-            'settings': settings
+            'settings': mongo_to_dict_helper(self.settings)
         }
 
     # Tokens are valid for ~12 Months
