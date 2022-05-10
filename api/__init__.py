@@ -27,6 +27,8 @@ def get_response_formatted(content, pretty=True):
 
     # We are a public API, we return that we enable everything (Overrides Cors)
     response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Credentials', 'true')
+    response.headers.add('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept')
 
     return response
 
@@ -53,6 +55,8 @@ def get_response_error_formatted(status, content, is_warning=False):
 
     # We are a public API, we return that we enable everything (Overrides Cors)
     response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Credentials', 'true')
+    response.headers.add('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept')
 
     return response
 
