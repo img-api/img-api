@@ -11,6 +11,22 @@ from imgapi_launcher import db, login_manager
 
 from .signature_serializer import TimedJSONWebSignatureSerializer as Serializer, BadSignature, SignatureExpired
 
+class DB_UserSubscription(db.EmbeddedDocument):
+    meta = {
+        'strict': False,
+    }
+
+    category_id = db.StringField()
+    update_date = db.DateTimeField()
+
+
+class DB_UserSettings(db.DynamicEmbeddedDocument):
+    meta = {
+        'strict': False,
+    }
+
+    send_email = db.BooleanField(default=False)
+
 @login_manager.user_loader
 def user_loader(user_id):
     """ API for the  flask load manager to be able to search for our user in MongoDB """
@@ -53,12 +69,36 @@ class User(UserMixin, db.Document):
     first_name = db.StringField(default="")
     last_name = db.StringField(default="")
 
+    profile_img = db.StringField(default="")
+
     password = db.StringField()
     lang = db.StringField()
 
     active = db.BooleanField(default=False)
 
     is_anon = db.BooleanField(default=False)
+
+    settings = db.EmbeddedDocumentField(DB_UserSettings, default=DB_UserSettings())
+
+    list_subscriptions = db.EmbeddedDocumentListField(DB_UserSubscription, default=[])
+
+    def serialize(self):
+        """ Returns a clean version of the user name so we have to explicitely add variables here
+            We could return the object after a filter, but on this case,
+            it is safer to never return from that source and convert directly into an object
+        """
+        from api.query_helper import mongo_to_dict_helper
+        settings = mongo_to_dict_helper(self.settings)
+
+        return {
+            'username': self.username,
+            'first_name': self.first_name,
+            'last_name': self.last_name,
+            'profile_img': self.profile_img,
+            'lang': self.lang,
+            'is_anon': self.is_anon,
+            'settings': settings
+        }
 
     # Tokens are valid for ~12 Months
     def generate_auth_token(self, expiration=(12 * 31 * 24 * 60 * 60), extra={}):

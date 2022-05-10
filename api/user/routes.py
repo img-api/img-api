@@ -430,14 +430,14 @@ def get_auth_token():
     token = request.args.get("key")
     if not token:
         token = current_user.generate_auth_token()
-        return get_response_formatted({'token': token})
+        return get_response_formatted({'token': token, 'username': current_user.username})
 
     user = User.verify_auth_token(token)
     if isinstance(user, Response):
         return user
 
     login_user(user, remember=True)
-    return get_response_formatted({'token': token, 'user': user.username, 'status': 'success'})
+    return get_response_formatted({'token': token, 'username': user.username, 'status': 'success'})
 
 
 @blueprint.route('/get', methods=['GET'])
@@ -482,7 +482,7 @@ def api_get_current_user():
     if not current_user or not current_user.username:
         return get_response_error_formatted(401, {'error_msg': "Please create an account."})
 
-    return get_response_formatted({'user': current_user.username})
+    return get_response_formatted({'user': current_user.serialize()})
 
 
 def generate_random_name():

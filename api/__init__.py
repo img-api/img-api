@@ -8,7 +8,9 @@ from flask_login import current_user, login_required, login_user, logout_user
 from werkzeug.exceptions import HTTPException
 
 from api.user.models import User
+
 from .api_redis import init_redis
+from .print_helper import *
 
 API_VERSION = "0.50pa"
 
@@ -22,13 +24,11 @@ def get_response_formatted(content, pretty=True):
     content['time'] = str(datetime.datetime.now())
     content['timestamp'] = int(time.time())
 
+    if 'status' not in content:
+        content['status'] = "success"
+
     content = json.dumps(content).encode('utf8')
     response = Response(content, mimetype='application/json')
-
-    # We are a public API, we return that we enable everything (Overrides Cors)
-    response.headers.add('Access-Control-Allow-Origin', '*')
-    response.headers.add('Access-Control-Allow-Credentials', 'true')
-    response.headers.add('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept')
 
     return response
 
@@ -52,11 +52,6 @@ def get_response_error_formatted(status, content, is_warning=False):
     content['timestamp'] = int(time.time())
 
     response = Response(json.dumps(content, sort_keys=True, indent=4), status=status, mimetype='application/json')
-
-    # We are a public API, we return that we enable everything (Overrides Cors)
-    response.headers.add('Access-Control-Allow-Origin', '*')
-    response.headers.add('Access-Control-Allow-Credentials', 'true')
-    response.headers.add('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept')
 
     return response
 
@@ -182,7 +177,7 @@ def register_api_blueprints(app):
     """ Loads all the modules for the API """
     from importlib import import_module
 
-    print(" API BLUE PRINTS ")
+    print_b(" API BLUE PRINTS ")
     for module_name in (
             'user',
             'jobs',

@@ -17,3 +17,5 @@ requests
 
 ffmpeg-python
 flask-cors
+
+prompt_toolkit

@@ -10,9 +10,9 @@ from flask_mongoengine import MongoEngine, MongoEngineSessionInterface
 from flask_cors import CORS
 
 app = Flask(__name__)
-#cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
-# Enable CORS on the entire application
 CORS(app)
+
+# Enable CORS on the entire application
 
 MONGODB_SETTINGS = {'host': 'localhost', 'port': 27017}
 
@@ -35,10 +35,17 @@ app.config['SWAGGER'] = {'title': 'IMG API', 'DEFAULT_MODEL_DEPTH': -1}
 
 swagger_template = dict(
     info={
-        'title': LazyString(lambda: 'IMG-API API document'),
-        'version': LazyString(lambda: '0.1'),
-        'description': LazyString(lambda: 'API Description to upload, convert, operate and download images and media  <style>.models {display: none !important}</style>'),
-        "basePath": "/docs",  # base bash for blueprint registration
+        'title':
+        LazyString(lambda: 'IMG-API API document'),
+        'version':
+        LazyString(lambda: '0.1'),
+        'description':
+        LazyString(
+            lambda:
+            'API Description to upload, convert, operate and download images and media  <style>.models {display: none !important}</style>'
+        ),
+        "basePath":
+        "/docs",  # base bash for blueprint registration
     },
     host=LazyString(lambda: request.host))
 
@@ -68,3 +75,15 @@ from api import register_api_blueprints
 register_api_blueprints(app)
 register_app_blueprints(app)
 
+
+@app.after_request
+def after_request(response):
+    """ We are a public API, we return that we enable everything (Overrides Cors) """
+
+    # Using CORS for this part of the credentials
+    #origin = request.environ.get('HTTP_ORIGIN', '*')
+    #response.headers.add('Access-Control-Allow-Origin', origin)
+
+    response.headers.add('Access-Control-Allow-Credentials', 'true')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+    return response

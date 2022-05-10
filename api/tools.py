@@ -2,7 +2,7 @@ import os
 import hashlib
 import traceback
 
-from flask import jsonify, request
+from flask import jsonify, request, json
 from api import get_response_formatted, get_response_error_formatted
 
 
@@ -68,3 +68,13 @@ def is_api_call():
         return True
 
     return False
+
+def json_clean(obj):
+    """ Returns the same object, but it ignores all the serialization problems """
+    return json.loads(json.dumps(obj, default=lambda o: '<not serializable>'))
+
+
+def get_timestamp():
+    d = datetime.datetime.now()
+    unixtime = time.mktime(d.timetuple())
+    return int(unixtime)

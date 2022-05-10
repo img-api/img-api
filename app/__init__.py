@@ -1,10 +1,10 @@
+from api.print_helper import *
+from importlib import import_module
 
 def register_app_blueprints(app):
     """ Loads all the modules for the website APP """
 
-    from importlib import import_module
-
-    print(" APP BLUE PRINTS ")
+    print_b(" APP BLUE PRINTS ")
     for module_name in (
             'root',
             'user',
