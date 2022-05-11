@@ -281,14 +281,14 @@ def api_create_user_local():
         first_name = form['first_name']
         last_name = form['last_name']
 
-        email = form['email']
-        username = form['username'].strip()
+        email = form['email'].strip().lower()
+        username = form['username'].strip().lower()
         password = form['password']
     else:
         first_name = request.args.get("first_name")
         last_name = request.args.get("last_name")
 
-        email = request.args.get("email")
+        email = request.args.get("email").strip().lower()
         username = request.args.get("username").strip()
         password = request.args.get("password")
 
@@ -303,7 +303,7 @@ def api_create_user_local():
 
     hashpass = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
 
-    user = User.objects(Q(username=username) | Q(email=email)).first()
+    user = User.objects(Q(username__iexact=username) | Q(email__iexact=email)).first()
     if user:
         # Our user might already been created, we check the password against the system and we return a token in case of being the same.
         if user['email'] == email and user['username'] == username:
