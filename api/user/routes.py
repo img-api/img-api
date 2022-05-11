@@ -26,14 +26,14 @@ def get_user_from_request():
     if request.method == 'POST':
         form = request.json
 
-        email = form['email']
+        email = form['email'].strip()
         if 'username' in form:
-            username = form['username']
+            username = form['username'].strip()
 
         password = form['password']
     else:
-        email = request.args.get("email")
-        username = request.args.get("username")
+        email = request.args.get("email").strip()
+        username = request.args.get("username").strip()
         password = request.args.get("password")
 
     if not password:
@@ -48,13 +48,13 @@ def get_user_from_request():
         if not validators.slug(username):
             return get_response_error_formatted(401, {'error_msg': "Sorry, please contact an admin."})
 
-        user = User.objects(username=username).first()
+        user = User.objects(username__iexact=username).first()
     else:
         email = email.strip()
         if not validators.email(email):
             return get_response_error_formatted(401, {'error_msg': "Sorry, please contact an admin."})
 
-        user = User.objects(email=email).first()
+        user = User.objects(email__iexact=email).first()
 
     if not user:
         return get_response_error_formatted(401, {'error_msg': "Please create an account."})
