@@ -57,7 +57,7 @@ def get_user_from_request():
         user = User.objects(email__iexact=email).first()
 
     if not user:
-        return get_response_error_formatted(401, {'error_msg': "Please create an account."})
+        return get_response_error_formatted(401, {'error_msg': "Account not found!"})
 
     user_pass = binascii.unhexlify(user.password)
     if not bcrypt.checkpw(password.encode('utf-8'), user_pass):
@@ -480,7 +480,7 @@ def api_get_current_user():
         return get_response_error_formatted(401, {'error_msg': "Please login or create an account."})
 
     if not current_user or not current_user.username:
-        return get_response_error_formatted(401, {'error_msg': "Please create an account."})
+        return get_response_error_formatted(401, {'error_msg': "Account not found."})
 
     return get_response_formatted({'user': current_user.serialize()})
 

@@ -94,6 +94,7 @@ class User(UserMixin, db.Document):
             'profile_img': self.profile_img,
             'lang': self.lang,
             'is_anon': self.is_anon,
+            'date_creation': self.date_creation,
             'settings': mongo_to_dict_helper(self.settings)
         }
 
