@@ -1,8 +1,10 @@
 import os
+import time
 import shutil
 import datetime
 
 from mongoengine import *
+from api.print_helper import *
 
 from flask import current_app
 from flask_login import UserMixin
@@ -81,6 +83,25 @@ class User(UserMixin, db.Document):
     settings = db.EmbeddedDocumentField(DB_UserSettings, default=DB_UserSettings())
     list_subscriptions = db.EmbeddedDocumentListField(DB_UserSubscription, default=[])
 
+    def check_in_usage(self):
+        from datetime import datetime
+        try:
+            elapsed = datetime.utcnow() - self.last_access_date if self.last_access_date else None
+            if not elapsed or elapsed.total_seconds() > 1200:
+                if elapsed:
+                    print_h1("SAVE USER UPDATE - ELAPSED " + str(elapsed.total_seconds()))
+
+                if not self.date_creation:
+                    self.date_creation = datetime.utcnow()
+
+                self.last_access_date = datetime.utcnow()
+                self.save(validate=False)
+
+        except Exception as err:
+            print_e(" CRASH saving last access " + str(err))
+
+        return True
+
     def serialize(self):
         """ Returns a clean version of the user name so we have to explicitely add variables here
             We could return the object after a filter, but on this case,
@@ -94,7 +115,7 @@ class User(UserMixin, db.Document):
             'profile_img': self.profile_img,
             'lang': self.lang,
             'is_anon': self.is_anon,
-            'date_creation': self.date_creation,
+            'date_creation': time.mktime(self.date_creation.timetuple()),
             'settings': mongo_to_dict_helper(self.settings)
         }
 

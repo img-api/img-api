@@ -482,6 +482,7 @@ def api_get_current_user():
     if not current_user or not current_user.username:
         return get_response_error_formatted(401, {'error_msg': "Account not found."})
 
+    current_user.check_in_usage()
     return get_response_formatted({'user': current_user.serialize()})
 
 
