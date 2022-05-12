@@ -382,13 +382,13 @@ def api_get_media(media_id):
         if is_api_call():
             return get_response_error_formatted(404, {"error_msg": "FILE NOT FOUND"})
         else:
-            return redirect("/static/images/placeholder.jpg")
+            return redirect("/static/img-api/images/placeholder.jpg")
 
     if not my_file.is_public and my_file.username != username:
         if is_api_call():
             return get_response_error_formatted(401, {"error_msg": "FILE IS PRIVATE!"})
         else:
-            return redirect("/static/images/placeholder_private.jpg")
+            return redirect("/static/img-api/images/placeholder_private.jpg")
 
     abs_path = File_Tracking.get_media_path() + my_file.file_path
 

@@ -26,10 +26,10 @@ background-color: #000000;
                             src_="/api/media/get/{{ media.id }}.v300.JPG"
                             src_media="/api/media/get/{{ media.id }}"
                             media_format="{{ media.file_format }}"
-                            src="/static/images/loader.png">
+                            src="/static/img-api/images/loader.png">
 
                         {% if media.file_format == ".GIF" %}
-                            <div style="position: absolute; bottom:2px; right:5px;"><img border="0" class='play_icon' id="play_icon_{{ loop.index }}" src="/static/images/gif_icon.png" width="35" height="18"></div>
+                            <div style="position: absolute; bottom:2px; right:5px;"><img border="0" class='play_icon' id="play_icon_{{ loop.index }}" src="/static/img-api/images/gif_icon.png" width="35" height="18"></div>
                         {% endif %}
 
                         {% if media['file_type'] == "video" %}
@@ -39,7 +39,7 @@ background-color: #000000;
                                     Sorry, your browser doesn't support embedded videos.
                                 </video></div>
 
-                            <div style="position: absolute; bottom:2px; right:5px;"><img border="0" id="play_icon_{{ loop.index }}" src="/static/images/play_icon.png" width="16" height="16"></div>
+                            <div style="position: absolute; bottom:2px; right:5px;"><img border="0" id="play_icon_{{ loop.index }}" src="/static/img-api/images/play_icon.png" width="16" height="16"></div>
                         {% else %}
                             <div class="mask" style="background-color: rgba(57, 192, 237, 0.2)"></div>
                         {% endif %}
@@ -70,7 +70,7 @@ background-color: #000000;
 
 {% block javascripts %}
 {{ super() }}
-<script src="{{ url_for('static', filename='js/images_adjust_row.js') }}"></script>
+<script src="{{ url_for('static', filename='img-api/js/images_adjust_row.js') }}"></script>
 <script>
     var click_users = document.getElementsByClassName('click_user');
     for (user of click_users) {

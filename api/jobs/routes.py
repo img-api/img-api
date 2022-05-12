@@ -198,13 +198,13 @@ def api_get_result_job(job_id):
             return get_response_error_formatted(
                 500, {'error_msg': "There was some problem performing this task, please contact an administrator."})
         else:
-            return redirect("/static/images/placeholder.jpg")
+            return redirect("/static/img-api/images/placeholder.jpg")
 
     if status != "finished":
         if is_api_call():
             return get_response_formatted({'status': 'success', 'job_id': job_id, 'job_status': status})
         else:
-            return redirect("/static/images/placeholder.jpg")
+            return redirect("/static/img-api/images/placeholder.jpg")
 
         return (ret)
 
@@ -215,13 +215,13 @@ def api_get_result_job(job_id):
         if is_api_call():
             return get_response_error_formatted(404, {"error_msg": "FILE NOT FOUND"})
         else:
-            return redirect("/static/images/placeholder.jpg")
+            return redirect("/static/img-api/images/placeholder.jpg")
 
     if not my_file.is_public and my_file.username != current_user.username:
         if is_api_call():
             return get_response_error_formatted(401, {"error_msg": "FILE IS PRIVATE!"})
         else:
-            return redirect("/static/images/placeholder_private.jpg")
+            return redirect("/static/img-api/images/placeholder_private.jpg")
 
     post_fix = get_postfix(res['operation'], res['transformation'])
     abs_path = File_Tracking.get_media_path() + my_file.file_path + post_fix
