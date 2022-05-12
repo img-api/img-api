@@ -455,14 +455,7 @@ def api_get_posts_json(user_id):
 
     return_list = []
     for ft in file_list:
-        return_list.append({
-            'media_id': str(ft.pk),
-            'is_public': ft.is_public,
-            'username': str(ft.username),
-            'filename': str(ft.file_name),
-            'file_format': str(ft.file_format),
-            'creation_date': time.mktime(ft.creation_date.timetuple()),
-        })
+        return_list.append(ft.serialize())
 
     ret = {'status': 'success', 'media_files': return_list}
     return get_response_formatted(ret)

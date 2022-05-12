@@ -1,4 +1,5 @@
 import os
+import time
 import datetime
 
 from mongoengine import *
@@ -6,6 +7,7 @@ from mongoengine import *
 from imgapi_launcher import db
 
 from flask import current_app
+from flask_login import current_user
 
 class File_Tracking(db.DynamicDocument):
     meta = {
@@ -87,15 +89,21 @@ class File_Tracking(db.DynamicDocument):
     def serialize(self):
         """ Cleanup version of the media file so don't release confidential information """
         serialized_file = {
-            'file_name': self.file_name,
-            'file_path': self.file_path,
+            'is_public': self.is_public,
             'file_size': self.file_size,
             'file_type': self.file_type,
             'file_format': self.file_format,
-            'checksum_md5': self.checksum_md5,
             'username': self.username,
-            'media_id': str(self.id)
+            'media_id': str(self.id),
+            'creation_date': time.mktime(self.creation_date.timetuple()),
         }
+
+        if hasattr(current_user, "username") and self.username == current_user.username:
+            serialized_file.update({
+                'file_name': self.file_name,
+                'file_path': self.file_path,
+                'checksum_md5': self.checksum_md5,
+            })
 
         if 'info' in self:
             serialized_file['info'] = self['info']

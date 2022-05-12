@@ -63,7 +63,7 @@ class User(UserMixin, db.Document):
         print(" is_anonymous ")
         return False
 
-    date_creation = db.DateTimeField()
+    creation_date = db.DateTimeField()
     last_access_date = db.DateTimeField()
 
     username = db.StringField(unique=True)
@@ -91,8 +91,8 @@ class User(UserMixin, db.Document):
                 if elapsed:
                     print_h1("SAVE USER UPDATE - ELAPSED " + str(elapsed.total_seconds()))
 
-                if not self.date_creation:
-                    self.date_creation = datetime.utcnow()
+                if not self.creation_date:
+                    self.creation_date = datetime.utcnow()
 
                 self.last_access_date = datetime.utcnow()
                 self.save(validate=False)
@@ -115,7 +115,7 @@ class User(UserMixin, db.Document):
             'profile_img': self.profile_img,
             'lang': self.lang,
             'is_anon': self.is_anon,
-            'date_creation': time.mktime(self.date_creation.timetuple()),
+            'creation_date': time.mktime(self.creation_date.timetuple()),
             'settings': mongo_to_dict_helper(self.settings)
         }
 
