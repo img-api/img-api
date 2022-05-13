@@ -8,7 +8,7 @@ function set_media_private(media_id, checked) {
         fetch('/api/media/posts/' + media_id + '/set/public')
 }
 
-fetch('/api/media/posts/' + username)
+fetch('/api/media/stream/' + username)
     .then(response => response.json())
     .then(data => {
 

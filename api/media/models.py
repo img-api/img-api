@@ -9,6 +9,7 @@ from imgapi_launcher import db
 from flask import current_app
 from flask_login import current_user
 
+
 class File_Tracking(db.DynamicDocument):
     meta = {
         'strict': False,
@@ -86,6 +87,20 @@ class File_Tracking(db.DynamicDocument):
 
         return True
 
+    def is_private(self):
+        """ Lexical helper """
+        return not self.is_public
+
+    def is_current_user(self):
+        """ Returns if this media belongs to this user, so when we serialize we don't include confidential data """
+        if not hasattr(current_user, "username"):
+            return False
+
+        if self.username == current_user.username:
+            return True
+
+        return False
+
     def serialize(self):
         """ Cleanup version of the media file so don't release confidential information """
         serialized_file = {
@@ -98,14 +113,14 @@ class File_Tracking(db.DynamicDocument):
             'creation_date': time.mktime(self.creation_date.timetuple()),
         }
 
-        if hasattr(current_user, "username") and self.username == current_user.username:
+        if 'info' in self:
+            serialized_file['info'] = self['info']
+
+        if self.is_current_user():
             serialized_file.update({
                 'file_name': self.file_name,
                 'file_path': self.file_path,
                 'checksum_md5': self.checksum_md5,
             })
-
-        if 'info' in self:
-            serialized_file['info'] = self['info']
 
         return serialized_file

@@ -7,12 +7,13 @@ from mongoengine import *
 from api.print_helper import *
 
 from flask import current_app
-from flask_login import UserMixin
+from flask_login import UserMixin, current_user
 
 from imgapi_launcher import db, login_manager
 from api.query_helper import mongo_to_dict_helper
 
 from .signature_serializer import TimedJSONWebSignatureSerializer as Serializer, BadSignature, SignatureExpired
+
 
 class DB_UserSubscription(db.EmbeddedDocument):
     meta = {
@@ -29,6 +30,7 @@ class DB_UserSettings(db.DynamicEmbeddedDocument):
     }
 
     send_email = db.BooleanField(default=False)
+
 
 @login_manager.user_loader
 def user_loader(user_id):
@@ -107,8 +109,11 @@ class User(UserMixin, db.Document):
             We could return the object after a filter, but on this case,
             it is safer to never return from that source and convert directly into an object
         """
+        if not self.creation_date:
+            self.creation_date = datetime.datetime.utcnow()
+            self.update(**{ "creation_date": self.creation_date})
 
-        return {
+        ret = {
             'username': self.username,
             'first_name': self.first_name,
             'last_name': self.last_name,
@@ -116,8 +121,14 @@ class User(UserMixin, db.Document):
             'lang': self.lang,
             'is_anon': self.is_anon,
             'creation_date': time.mktime(self.creation_date.timetuple()),
-            'settings': mongo_to_dict_helper(self.settings)
         }
+
+        # Confidential information only for the current user
+        if hasattr(current_user, "username"):
+            if current_user.username == self.username:
+                ret['settings'] = mongo_to_dict_helper(self.settings)
+
+        return ret
 
     # Tokens are valid for ~12 Months
     def generate_auth_token(self, expiration=(12 * 31 * 24 * 60 * 60), extra={}):

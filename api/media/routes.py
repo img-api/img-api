@@ -116,7 +116,6 @@ def api_internal_upload_media():
                     print(" CRASH on loading image " + str(e))
                     return get_response_error_formatted(400, {"error_msg": "Image is not in a valid format!"})
 
-
             if key == "video":
                 try:
                     thumb_time = 1
@@ -124,7 +123,8 @@ def api_internal_upload_media():
                     f_request.save(final_absolute_path)
                     probe = ffmpeg.probe(final_absolute_path)
 
-                    video_stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'video'), None)
+                    video_stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'video'),
+                                        None)
                     width = info['width'] = int(video_stream['width'])
                     height = info['height'] = int(video_stream['height'])
                     duration = info['duration'] = float(video_stream['duration'])
@@ -136,7 +136,8 @@ def api_internal_upload_media():
                     if os.path.exists(target_path):
                         os.remove(target_path)
 
-                    ffmpeg.input(final_absolute_path, ss=thumb_time).filter('scale', width, -1).output(target_path, vframes=1).run()
+                    ffmpeg.input(final_absolute_path, ss=thumb_time).filter('scale', width, -1).output(target_path,
+                                                                                                       vframes=1).run()
 
                 except Exception as e:
                     print(" CRASH on loading image " + str(e))
@@ -273,6 +274,7 @@ def api_dynamic_conversion(my_file, abs_path, extension, thumbnail, filename, ca
                      as_attachment=True,
                      attachment_filename=attachment_filename + extra)
 
+
 @blueprint.route('/category/<string:media_category>', methods=['GET'])
 @api_key_login_or_anonymous
 def api_fetch_media_with_media_category(media_category):
@@ -402,7 +404,7 @@ def api_get_media(media_id):
     return send_file(abs_path, attachment_filename=my_file.file_name)
 
 
-@blueprint.route('/posts/<string:user_id>', methods=['GET'])
+@blueprint.route('/stream/<string:user_id>', methods=['GET'])
 def api_get_posts_json(user_id):
     """Returns a json object with a list of media objects owned by this user.
     ---
@@ -524,6 +526,22 @@ def api_fetch_from_url():
 
     ret = {'status': 'success', 'job_id': job.id, 'request_url': request_url}
     return get_response_formatted(ret)
+
+
+@blueprint.route('/posts/<string:media_id>/get', methods=['GET'])
+def api_get_media_post(media_id):
+
+    ret = {'status': 'success', 'media_id': media_id}
+    media_file = File_Tracking.objects(id=media_id).first()
+
+    if not media_file:
+        return get_response_error_formatted(404, {'error_msg': "Media not found."})
+
+    if media_file.is_private() and not media_file.is_current_user():
+        return get_response_error_formatted(401, {'error_msg': "Media is private."})
+
+    return_list = [media_file.serialize()]
+    return get_response_formatted({'status': 'success', "media_files": return_list})
 
 
 @blueprint.route('/posts/<string:media_id>/set/<string:privacy_mode>', methods=['GET'])

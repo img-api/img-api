@@ -10,7 +10,6 @@ from api.user import blueprint
 from api import get_response_formatted, get_response_error_formatted, api_key_or_login_required
 
 from flask import jsonify, request, Response, redirect
-from flask_login import current_user, login_user, logout_user
 from api.tools import generate_file_md5, ensure_dir, is_api_call
 
 from .models import User
@@ -18,6 +17,7 @@ from .models import User
 from mongoengine.queryset import QuerySet
 from mongoengine.queryset.visitor import Q
 
+from flask_login import current_user, login_user, logout_user
 
 def get_user_from_request():
     user = None
@@ -440,18 +440,21 @@ def get_auth_token():
     return get_response_formatted({'token': token, 'username': user.username, 'status': 'success'})
 
 
-@blueprint.route('/get', methods=['GET'])
+@blueprint.route('/get/<string:user_id>', methods=['GET'])
 @api_key_or_login_required
-def api_get_current_user():
+def api_get_user_by_username(user_id):
     """ Returns the current user being logged in
     ---
     tags:
       - user
     schemes: ['http', 'https']
     deprecated: false
-    definitions:
-      user:
-        type: object
+    parameters:
+        - in: query
+          name: username
+          schema:
+            type: string
+          description: Username, you can use no user name, that would be you. Or an alias called "me" that will also be you.
     definitions:
       user_file:
         type: object
@@ -476,14 +479,26 @@ def api_get_current_user():
                 type: string
     """
 
-    if not hasattr(current_user, 'username'):
-        return get_response_error_formatted(401, {'error_msg': "Please login or create an account."})
+    if not user_id or user_id == "me":
+        if not hasattr(current_user, 'username'):
+            return get_response_error_formatted(401, {'error_msg': "Please login or create an account."})
 
-    if not current_user or not current_user.username:
+        if not current_user or not current_user.username:
+            return get_response_error_formatted(401, {'error_msg': "Account not found."})
+
+        current_user.check_in_usage()
+        return get_response_formatted({'user': current_user.serialize()})
+
+    user = User.objects(username__iexact=user_id).first()
+    if not user or not user.username:
         return get_response_error_formatted(401, {'error_msg': "Account not found."})
 
-    current_user.check_in_usage()
-    return get_response_formatted({'user': current_user.serialize()})
+    return get_response_formatted({'user': user.serialize()})
+
+
+@blueprint.route('/get', methods=['GET'])
+def api_get_current_user():
+    return api_get_user_by_username(None)
 
 
 def generate_random_name():
