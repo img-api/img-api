@@ -14,21 +14,15 @@ from api.query_helper import mongo_to_dict_helper
 
 from .signature_serializer import TimedJSONWebSignatureSerializer as Serializer, BadSignature, SignatureExpired
 
+from .interactions import DB_UserInteractions
 
-class DB_UserSubscription(db.EmbeddedDocument):
-    meta = {
-        'strict': False,
-    }
 
+class DB_UserSubscription(db.DynamicEmbeddedDocument):
     category_id = db.StringField()
     update_date = db.DateTimeField()
 
 
 class DB_UserSettings(db.DynamicEmbeddedDocument):
-    meta = {
-        'strict': False,
-    }
-
     send_email = db.BooleanField(default=False)
 
 
@@ -54,16 +48,8 @@ class User(UserMixin, db.Document):
         if value:
             self._authenticated = True
 
-    def is_authenticated(self):
-        print(" is_authenticated ")
-        return self._authenticated
-
     def is_active(self):
         return self.active
-
-    def is_anonymous(self):
-        print(" is_anonymous ")
-        return False
 
     creation_date = db.DateTimeField()
     last_access_date = db.DateTimeField()
@@ -83,6 +69,8 @@ class User(UserMixin, db.Document):
     is_anon = db.BooleanField(default=False)
 
     settings = db.EmbeddedDocumentField(DB_UserSettings, default=DB_UserSettings())
+    interactions = db.EmbeddedDocumentField(DB_UserInteractions, default=DB_UserInteractions())
+
     list_subscriptions = db.EmbeddedDocumentListField(DB_UserSubscription, default=[])
 
     def check_in_usage(self):
@@ -111,7 +99,7 @@ class User(UserMixin, db.Document):
         """
         if not self.creation_date:
             self.creation_date = datetime.datetime.utcnow()
-            self.update(**{ "creation_date": self.creation_date})
+            self.update(**{"creation_date": self.creation_date})
 
         ret = {
             'username': self.username,
@@ -124,7 +112,7 @@ class User(UserMixin, db.Document):
         }
 
         # Confidential information only for the current user
-        if hasattr(current_user, "username"):
+        if current_user.is_authenticated:
             if current_user.username == self.username:
                 ret['settings'] = mongo_to_dict_helper(self.settings)
 
@@ -213,3 +201,7 @@ class User(UserMixin, db.Document):
 
         self.delete_media()
         return super(User, self).delete(*args, **kwargs)
+
+    def populate_media(self, media_list):
+        """ Appends all the information from this user into the media files on the list """
+        self.interactions.populate(media_list)

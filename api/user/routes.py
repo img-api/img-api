@@ -480,7 +480,7 @@ def api_get_user_by_username(user_id):
     """
 
     if not user_id or user_id == "me":
-        if not hasattr(current_user, 'username'):
+        if not current_user.is_authenticated:
             return get_response_error_formatted(401, {'error_msg': "Please login or create an account."})
 
         if not current_user or not current_user.username:
@@ -566,7 +566,7 @@ def api_user_logout():
         description: Just logs out the user
     """
 
-    if not hasattr(current_user, 'username'):
+    if not current_user.is_authenticated:
         return get_response_error_formatted(401, {'error_msg': "Please login or create an account."})
 
     logout_user()

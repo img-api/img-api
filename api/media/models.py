@@ -93,7 +93,7 @@ class File_Tracking(db.DynamicDocument):
 
     def is_current_user(self):
         """ Returns if this media belongs to this user, so when we serialize we don't include confidential data """
-        if not hasattr(current_user, "username"):
+        if not current_user.is_authenticated:
             return False
 
         if self.username == current_user.username:

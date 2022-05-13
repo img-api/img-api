@@ -107,7 +107,7 @@ def api_key_or_login_required(func):
             print("\n------------ API LOGIN --------------")
 
             # The user might be already logged in
-            if hasattr(current_user, "username"):
+            if current_user.is_authenticated:
                 # We logout the user if the key belongs to a different user.
                 if current_user.username != user.username:
                     logout_user()
@@ -141,7 +141,7 @@ def api_key_login_or_anonymous(func):
 
         user = User.verify_auth_token(token)
         if isinstance(user, User) and user.active:
-            if hasattr(current_user, "username"):
+            if current_user.is_authenticated:
                 # Relogin the user if the key belongs to a different one
                 if current_user.username != user.username:
                     logout_user()

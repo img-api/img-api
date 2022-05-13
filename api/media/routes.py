@@ -21,6 +21,7 @@ from mongoengine.queryset import QuerySet
 from mongoengine.queryset.visitor import Q
 
 from wand.image import Image
+from flask_login import current_user
 
 
 def get_media_valid_extension(file_name):
@@ -36,15 +37,13 @@ def get_media_valid_extension(file_name):
 
 
 def api_internal_upload_media():
-    from flask_login import current_user, login_user
-
     if request.method != "POST":
         return get_response_error_formatted(404, {"error_msg": "No files to upload!"})
 
     media_path = File_Tracking.get_media_path()
 
     # If we don't have an user, we generate a temporal one with random names
-    if not hasattr(current_user, 'username'):
+    if not current_user.is_authenticated:
         current_user = generate_random_user()
 
     print(" User to upload files " + current_user.username)
@@ -320,6 +319,9 @@ def api_fetch_media_with_media_category(media_category):
             if count > 150:
                 break
 
+    if current_user.is_authenticated:
+        current_user.populate_media(return_list)
+
     ret = {'status': 'success', 'media_files': return_list}
     return get_response_formatted(ret)
 
@@ -364,10 +366,9 @@ def api_get_media(media_id):
         description: File doesn't exist anymore on the system
 
     """
-    from flask_login import current_user, login_user
 
     username = None
-    if hasattr(current_user, "username"):
+    if current_user.is_authenticated:
         username = current_user.username
 
     arr = media_id.split(".")
@@ -442,10 +443,9 @@ def api_get_posts_json(user_id):
                   is_public:
                       type: boolean
     """
-    from flask_login import current_user, login_user
 
     username = None
-    if hasattr(current_user, "username"):
+    if current_user.is_authenticated:
         username = current_user.username
 
     if user_id == username:
@@ -458,6 +458,9 @@ def api_get_posts_json(user_id):
     return_list = []
     for ft in file_list:
         return_list.append(ft.serialize())
+
+    if current_user.is_authenticated:
+        current_user.populate_media(return_list)
 
     ret = {'status': 'success', 'media_files': return_list}
     return get_response_formatted(ret)
@@ -493,7 +496,6 @@ def api_fetch_from_url():
             job_id:
               type: string
     """
-    from flask_login import current_user
 
     if request.method == 'POST':
         request_url = request.json['request_url']
@@ -507,7 +509,7 @@ def api_fetch_from_url():
         return get_response_error_formatted(400, {'error_msg': "Please provide a valid URL"})
 
     # If we don't have an user, we generate a temporal one with random names
-    if not hasattr(current_user, 'username'):
+    if not current_user.is_authenticated:
         current_user = generate_random_user()
 
     token = current_user.generate_auth_token()
@@ -530,6 +532,30 @@ def api_fetch_from_url():
 
 @blueprint.route('/posts/<string:media_id>/get', methods=['GET'])
 def api_get_media_post(media_id):
+    """Returns an individual post information
+    ---
+    tags:
+      - media
+    schemes: ['http', 'https']
+    deprecated: false
+    definitions:
+      image_file:
+        type: object
+    parameters:
+        - in: query
+          name: media_id
+          schema:
+            type: string
+          description: Just a media id
+    responses:
+      200:
+        description: Returns OK if you can set this permission
+      403:
+        description: Forbidden, user is not the owner of this image
+      404:
+        description: File Media is missing
+
+    """
 
     ret = {'status': 'success', 'media_id': media_id}
     media_file = File_Tracking.objects(id=media_id).first()
@@ -538,9 +564,13 @@ def api_get_media_post(media_id):
         return get_response_error_formatted(404, {'error_msg': "Media not found."})
 
     if media_file.is_private() and not media_file.is_current_user():
-        return get_response_error_formatted(401, {'error_msg': "Media is private."})
+        return get_response_error_formatted(403, {'error_msg': "Media is private."})
 
     return_list = [media_file.serialize()]
+
+    if current_user.is_authenticated:
+        current_user.populate_media(return_list)
+
     return get_response_formatted({'status': 'success', "media_files": return_list})
 
 
@@ -570,9 +600,8 @@ def api_set_media_private_posts_json(media_id, privacy_mode):
         description: File is missing
 
     """
-    from flask_login import current_user
 
-    if not hasattr(current_user, "username"):
+    if not current_user.is_authenticated:
         return get_response_error_formatted(403, {'error_msg': "Anonymous users are not allowed."})
 
     media_file = File_Tracking.objects(id=media_id).first()
@@ -620,9 +649,8 @@ def api_remove_self_media(media_id):
         description: File is missing
 
     """
-    from flask_login import current_user
 
-    if not hasattr(current_user, "username"):
+    if not current_user.is_authenticated:
         return get_response_error_formatted(403, {'error_msg': "Anonymous users are not allowed."})
 
     media_file = File_Tracking.objects(id=media_id).first()
