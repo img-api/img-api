@@ -105,6 +105,7 @@ class File_Tracking(db.DynamicDocument):
         """ Cleanup version of the media file so don't release confidential information """
         serialized_file = {
             'is_public': self.is_public,
+            'is_anon': self.is_anon,
             'file_size': self.file_size,
             'file_type': self.file_type,
             'file_format': self.file_format,
