@@ -205,3 +205,12 @@ class User(UserMixin, db.Document):
     def populate_media(self, media_list):
         """ Appends all the information from this user into the media files on the list """
         self.interactions.populate(media_list)
+
+    def action_on_list(self, media_id, action, media_list_short_name):
+        """ Performs an interaction on a media list """
+        update, ret = self.interactions.perform(media_id, action, media_list_short_name)
+
+        if update:
+            self.save()
+
+        return ret

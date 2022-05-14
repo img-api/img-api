@@ -19,6 +19,7 @@ from mongoengine.queryset.visitor import Q
 
 from flask_login import current_user, login_user, logout_user
 
+
 def get_user_from_request():
     user = None
     username = None
@@ -460,7 +461,7 @@ def api_get_user_by_username(user_id):
         type: object
     responses:
       200:
-        description: Returns if the file was successfully uploaded
+        description: Returns the username in a message in a serialized form
         schema:
           id: Standard status message
           type: object
@@ -575,3 +576,78 @@ def api_user_logout():
         return get_response_formatted({'status': 'success', 'msg': 'user logged out'})
 
     return redirect("/")
+
+
+@blueprint.route('/media/<string:media_id>/<string:action>/<string:my_list>', methods=['GET'])
+@api_key_or_login_required
+def api_set_this_media_into_an_action(media_id, action, my_list):
+    """ Performs an action for a particular media in a list.
+        This can be, add it to favourites, or likes, dislikes, add it to a playlist...
+    ---
+    tags:
+      - user
+    schemes: ['http', 'https']
+    deprecated: false
+    parameters:
+        - in: query
+          name: media_id
+          schema:
+            type: string
+          description: The media
+
+        - in: query
+          name: action
+          schema:
+            type: string
+          description: append, remove, toggle
+
+        - in: query
+          name: my_list
+          schema:
+            type: string
+          description: Internal media list
+
+    definitions:
+      user_file:
+        type: object
+    """
+
+    ret = current_user.action_on_list(media_id, action, my_list)
+    return get_response_formatted(ret)
+
+
+@blueprint.route('/list/<string:list_id>/<string:action>', methods=['GET', 'DELETE'])
+@api_key_or_login_required
+def api_actions_on_list(list_id, action):
+    """ Performs an action for a list
+    ---
+    tags:
+      - user
+    schemes: ['http', 'https']
+    deprecated: false
+    parameters:
+        - in: query
+          name: list_id
+          schema:
+            type: string
+          description: The media
+
+        - in: query
+          name: action
+          schema:
+            type: string
+          description: create, remove, get
+
+    definitions:
+      user_file:
+        type: object
+    """
+
+    ret = {}
+    if action == 'remove':
+        ret = current_user.interactions.media_list_remove(list_id)
+
+    elif action == 'get':
+        ret = current_user.interactions.media_list_get(list_id)
+
+    return get_response_formatted(ret)
