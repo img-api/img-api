@@ -79,7 +79,6 @@ class DB_MediaList(db.Document):
         return True
 
 
-
 class DB_UserInteractions(db.DynamicEmbeddedDocument):
     """ User interaction is every item that the user wants to store as a collection
         User stores media lists, which are just lists of IDs and media with special information.
@@ -172,11 +171,13 @@ class DB_UserInteractions(db.DynamicEmbeddedDocument):
 
     def get_list_id(self, name_or_id):
         if len(name_or_id) != 24:
-            name = "list_" + name_or_id + "_id"
-            if not name in self:
+            if not name_or_id.startswith("list_"):
+                name_or_id = "list_" + name_or_id + "_id"
+
+            if not name_or_id in self:
                 return abort(404, "Not found")
 
-            return self[name]
+            return self[name_or_id]
 
         return name_or_id
 
@@ -198,3 +199,18 @@ class DB_UserInteractions(db.DynamicEmbeddedDocument):
 
         ret = mongo_to_dict_helper(my_list)
         return ret
+
+    def get_every_media_list(self):
+        ret = mongo_to_dict_helper(self)
+        return ret
+
+    def clear_all(self):
+        """ Deletes every media list for this object """
+
+        lists = self.get_every_media_list()
+        for list_id in lists:
+            try:
+                my_list = DB_MediaList.objects(pk=list_id).first()
+                my_list.check_permissions()
+            except Exception as e:
+                print_exception(e, "Crashed cleaning user data ")

@@ -631,7 +631,7 @@ def api_set_media_private_posts_json(media_id, privacy_mode):
     return get_response_formatted(ret)
 
 
-@blueprint.route('/remove/<string:media_id>', methods=['GET'])
+@blueprint.route('/remove/<string:media_id>', methods=['GET', 'DELETE'])
 def api_remove_self_media(media_id):
     """Removes a media file
     ---

@@ -353,7 +353,7 @@ def api_create_user_local():
     return get_response_formatted(ret)
 
 
-@blueprint.route('/remove', methods=['GET', 'POST'])
+@blueprint.route('/remove', methods=['GET', 'POST', 'DELETE'])
 def api_remove_user_local():
     """ An user can delete its account
     ---
@@ -650,4 +650,21 @@ def api_actions_on_list(list_id, action):
     elif action == 'get':
         ret = current_user.interactions.media_list_get(list_id)
 
+    return get_response_formatted(ret)
+
+@blueprint.route('/list/get', methods=['GET'])
+@api_key_or_login_required
+def api_get_all_the_lists():
+    """ Gets all the list of media lists this user has. It is a private call for this user
+    ---
+    tags:
+      - user
+    schemes: ['http', 'https']
+    deprecated: false
+    definitions:
+      user_file:
+        type: object
+    """
+
+    ret = current_user.interactions.get_every_media_list()
     return get_response_formatted(ret)

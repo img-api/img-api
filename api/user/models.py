@@ -200,6 +200,8 @@ class User(UserMixin, db.Document):
         print("--------------------------------------------------------")
 
         self.delete_media()
+        self.interactions.clear_all()
+
         return super(User, self).delete(*args, **kwargs)
 
     def populate_media(self, media_list):
