@@ -622,14 +622,26 @@ def api_set_media_private_posts_json(media_id, privacy_mode):
         return get_response_error_formatted(404, {'error_msg': "Missing."})
 
     if media_file.username != current_user.username:
-        return get_response_error_formatted(403, {'error_msg': "This user is not allowed to perform this."})
+        return get_response_error_formatted(403, {'error_msg': "This user is not allowed to perform this action."})
 
-    if privacy_mode == 'private':
+    if privacy_mode == 'toggle':
+        media_file.is_public = not media_file.is_public
+
+    elif privacy_mode == 'private':
         media_file.is_public = False
     else:
         media_file.is_public = True
 
-    media_file.save()
+    media_file.update(**{
+        'is_public': media_file.is_public
+    })
+
+    if media_file.is_public:
+        privacy_mode = "public"
+    else:
+        privacy_mode = "private"
+
+    print(" New privacy " + privacy_mode)
 
     ret = {'status': 'success', 'media_id': media_id, 'privacy_mode': privacy_mode}
     return get_response_formatted(ret)

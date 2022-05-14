@@ -611,6 +611,10 @@ def api_set_this_media_into_an_action(media_id, action, my_list):
       user_file:
         type: object
     """
+    from api.media.routes import api_set_media_private_posts_json
+
+    if action == "toggle" and my_list == "is_public":
+        return api_set_media_private_posts_json(media_id, action)
 
     ret = current_user.action_on_list(media_id, action, my_list)
     return get_response_formatted(ret)
