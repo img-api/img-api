@@ -684,7 +684,7 @@ def api_delete_all_the_lists():
         type: object
     """
 
-    ret = current_user.interactions.clear_all()
+    ret = current_user.interactions.clear_all(current_user.username)
     current_user.save()
     return get_response_formatted(ret)
 

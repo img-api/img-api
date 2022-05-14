@@ -200,7 +200,7 @@ class User(UserMixin, db.Document):
         print("--------------------------------------------------------")
 
         self.delete_media()
-        self.interactions.clear_all()
+        self.interactions.clear_all(self.username)
 
         return super(User, self).delete(*args, **kwargs)
 

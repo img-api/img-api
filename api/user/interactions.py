@@ -73,6 +73,8 @@ class DB_MediaList(db.Document):
         return True
 
     def check_permissions(self):
+        from flask_login import current_user
+
         if not self.is_public and self.username != current_user.username:
             return abort(401, "Unauthorized")
 
@@ -204,9 +206,8 @@ class DB_UserInteractions(db.DynamicEmbeddedDocument):
         ret = mongo_to_dict_helper(self)
         return ret
 
-    def clear_all(self):
+    def clear_all(self, username):
         """ Deletes every media list for this object """
-
         for list_id in self:
             if not self[list_id]:
                 continue
@@ -217,14 +218,14 @@ class DB_UserInteractions(db.DynamicEmbeddedDocument):
                     continue
 
                 self[list_id] = None
-                if my_list.username != current_user.username:
-                    print_r(" We can only delete our own collections ")
+                if my_list.username != username:
+                    print_r(" We can only permanently delete our own collections")
                     continue
 
             except Exception as e:
                 print_exception(e, "Crashed cleaning user data ")
 
-        my_list = DB_MediaList.objects(username=current_user.username)
+        my_list = DB_MediaList.objects(username=username)
         my_list.delete()
 
         return self.get_every_media_list()
