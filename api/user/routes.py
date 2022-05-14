@@ -7,7 +7,7 @@ import validators
 
 from api.user import blueprint
 
-from api import get_response_formatted, get_response_error_formatted, api_key_or_login_required
+from api import get_response_formatted, get_response_error_formatted, api_key_or_login_required, api_key_login_or_anonymous
 
 from flask import jsonify, request, Response, redirect
 from api.tools import generate_file_md5, ensure_dir, is_api_call
@@ -442,7 +442,7 @@ def get_auth_token():
 
 
 @blueprint.route('/get/<string:user_id>', methods=['GET'])
-@api_key_or_login_required
+@api_key_login_or_anonymous
 def api_get_user_by_username(user_id):
     """ Returns the current user being logged in
     ---
