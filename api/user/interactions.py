@@ -149,7 +149,7 @@ class DB_UserInteractions(db.DynamicEmbeddedDocument):
         if action in ['append', 'remove', 'toggle']:
             name_id = "list_" + media_list_short_name + "_id"
 
-            if name_id in self or hasattr(self, name_id):
+            if (name_id in self or hasattr(self, name_id)) and self[name_id]:
                 media_list = self.get_media_list(self[name_id])
             else:
                 media_list = DB_MediaList(**{"username": current_user.username, "list_type": media_list_short_name})
@@ -207,10 +207,24 @@ class DB_UserInteractions(db.DynamicEmbeddedDocument):
     def clear_all(self):
         """ Deletes every media list for this object """
 
-        lists = self.get_every_media_list()
-        for list_id in lists:
+        for list_id in self:
+            if not self[list_id]:
+                continue
+
             try:
-                my_list = DB_MediaList.objects(pk=list_id).first()
-                my_list.check_permissions()
+                my_list = DB_MediaList.objects(pk=self[list_id]).first()
+                if not my_list:
+                    continue
+
+                self[list_id] = None
+                if my_list.username != current_user.username:
+                    print_r(" We can only delete our own collections ")
+                    continue
+
             except Exception as e:
                 print_exception(e, "Crashed cleaning user data ")
+
+        my_list = DB_MediaList.objects(username=current_user.username)
+        my_list.delete()
+
+        return self.get_every_media_list()

@@ -668,3 +668,23 @@ def api_get_all_the_lists():
 
     ret = current_user.interactions.get_every_media_list()
     return get_response_formatted(ret)
+
+
+@blueprint.route('/list/clear', methods=['GET', 'DELETE'])
+@api_key_or_login_required
+def api_delete_all_the_lists():
+    """ Deletes every list that this user has. Mainly for testing purposes
+    ---
+    tags:
+      - user
+    schemes: ['http', 'https']
+    deprecated: false
+    definitions:
+      user_file:
+        type: object
+    """
+
+    ret = current_user.interactions.clear_all()
+    current_user.save()
+    return get_response_formatted(ret)
+
