@@ -58,8 +58,12 @@ def api_internal_upload_media():
         full_path = media_path + user_space_path
         ensure_dir(full_path)
 
-        if key.startswith('image'): key = "image"
-        if key.startswith('video'): key = "video"
+        mime = f_request.mimetype.split('/')[0]
+        if mime in ['image', 'video']:
+            key = mime
+        else:
+            if key.startswith('image'): key = "image"
+            if key.startswith('video'): key = "video"
 
         if key in ["image", "video"]:
             file_name = f_request.filename
@@ -177,7 +181,7 @@ def api_web_upload_media():
 
 
 @blueprint.route('/upload', methods=['POST'])
-@api_key_or_login_required
+@api_key_login_or_anonymous
 def api_upload_media():
     """Upload media files to this system
     ---
