@@ -1,4 +1,5 @@
 import os
+import werkzeug
 from flask import Flask, jsonify, request
 
 from flasgger import Swagger, LazyString, LazyJSONEncoder
@@ -87,3 +88,20 @@ def after_request(response):
     response.headers.add('Access-Control-Allow-Credentials', 'true')
     response.headers.add('Access-Control-Allow-Headers', 'Content-Type, Authorization')
     return response
+
+
+def handle_bad_request(e):
+    from api import get_response_error_formatted
+    import traceback
+    traceback.print_tb(e.__traceback__)
+    print_alert("BAD REQUEST EXCEPTION  [%s] [%d]" % (type(e), e.code))
+
+    return get_response_error_formatted(e.code, {
+        'error_msg': e.description,
+        'no_std': True,
+    })
+
+
+app.register_error_handler(werkzeug.exceptions.NotFound, handle_bad_request)
+app.register_error_handler(werkzeug.exceptions.BadRequest, handle_bad_request)
+

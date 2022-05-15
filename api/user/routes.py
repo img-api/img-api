@@ -620,9 +620,9 @@ def api_set_this_media_into_an_action(media_id, action, my_list):
     return get_response_formatted(ret)
 
 
-@blueprint.route('/list/<string:list_id>/<string:action>', methods=['GET', 'DELETE'])
-@api_key_or_login_required
-def api_actions_on_list(list_id, action):
+@blueprint.route('/<string:username>/list/<string:list_id>/<string:action>', methods=['GET', 'DELETE'])
+@api_key_login_or_anonymous
+def api_actions_on_list(username, list_id, action):
     """ Performs an action for a list
     ---
     tags:
@@ -630,6 +630,12 @@ def api_actions_on_list(list_id, action):
     schemes: ['http', 'https']
     deprecated: false
     parameters:
+        - in: query
+          name: username
+          schema:
+            type: string
+          description: Username to perform an action. An anonymous user can ask for public media lists
+
         - in: query
           name: list_id
           schema:
@@ -645,16 +651,39 @@ def api_actions_on_list(list_id, action):
     definitions:
       user_file:
         type: object
+    responses:
+      200:
+        description: Returns a list of media_files
+      400:
+        description: The list is not found
+      401:
+        description: The list is private to that particular user
     """
 
-    ret = {}
-    if action == 'remove':
-        ret = current_user.interactions.media_list_remove(list_id)
+    from api.media.routes import api_populate_media_list
 
-    elif action == 'get':
-        ret = current_user.interactions.media_list_get(list_id)
+    if current_user.is_authenticated:
+        if username == 'me' or current_user.username == username:
+            if action == 'remove':
+                res = current_user.interactions.media_list_remove(list_id)
+                return get_response_formatted(res)
 
-    return get_response_formatted(ret)
+    if action == 'get':
+        if current_user.is_authenticated and (username == 'me' or current_user.username == username):
+            ret = current_user.interactions.media_list_get(list_id)
+        else:
+            user = User.objects(username__iexact=username).first()
+            if not user:
+                return get_response_error_formatted(404, {'error_msg': "User not found."})
+
+            ret = user.interactions.media_list_get(list_id)
+
+        media_list = [media['media_id'] for media in ret['media_list']]
+        ret.update(api_populate_media_list(username, media_list))
+        return ret
+
+    return get_response_error_formatted(400, {'error_msg': "Wrong parameters."})
+
 
 @blueprint.route('/list/get', methods=['GET'])
 @api_key_or_login_required
@@ -691,4 +720,3 @@ def api_delete_all_the_lists():
     ret = current_user.interactions.clear_all(current_user.username)
     current_user.save()
     return get_response_formatted(ret)
-

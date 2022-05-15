@@ -37,7 +37,7 @@ def get_media_valid_extension(file_name):
 
 
 def api_internal_upload_media():
-    from flask_login import current_user # Required by pytest, otherwise client crashes on CI
+    from flask_login import current_user  # Required by pytest, otherwise client crashes on CI
 
     if request.method != "POST":
         return get_response_error_formatted(404, {"error_msg": "No files to upload!"})
@@ -309,7 +309,7 @@ def api_fetch_media_with_media_category(media_category):
         description: Category doesn't exist anymore on the system
 
     """
-    from flask_login import current_user # Required by pytest, otherwise client crashes on CI
+    from flask_login import current_user  # Required by pytest, otherwise client crashes on CI
     from api.media.models import File_Tracking
 
     files = File_Tracking.objects(is_public=True)
@@ -373,7 +373,7 @@ def api_get_media(media_id):
         description: File doesn't exist anymore on the system
 
     """
-    from flask_login import current_user # Required by pytest, otherwise client crashes on CI
+    from flask_login import current_user  # Required by pytest, otherwise client crashes on CI
 
     username = None
     if current_user.is_authenticated:
@@ -451,7 +451,7 @@ def api_get_posts_json(user_id):
                   is_public:
                       type: boolean
     """
-    from flask_login import current_user # Required by pytest, otherwise client crashes on CI
+    from flask_login import current_user  # Required by pytest, otherwise client crashes on CI
 
     username = None
     if current_user.is_authenticated:
@@ -473,6 +473,28 @@ def api_get_posts_json(user_id):
 
     ret = {'status': 'success', 'media_files': return_list}
     return get_response_formatted(ret)
+
+
+def api_populate_media_list(user_id, media_list):
+    """ Populates a list of media, checking that the media is public or the user is itself """
+
+    username = None
+    if current_user.is_authenticated:
+        username = current_user.username
+
+    query = Q(pk__in=media_list)
+
+    if user_id != username:
+        query = query & Q(is_public=True)
+
+    file_list = File_Tracking.objects(query)
+
+    return_list = [ft.serialize() for ft in file_list]
+
+    if current_user.is_authenticated:
+        current_user.populate_media(return_list)
+
+    return {'media_files': return_list}
 
 
 @blueprint.route('/fetch', methods=[
@@ -505,7 +527,7 @@ def api_fetch_from_url():
             job_id:
               type: string
     """
-    from flask_login import current_user # Required by pytest, otherwise client crashes on CI
+    from flask_login import current_user  # Required by pytest, otherwise client crashes on CI
 
     if request.method == 'POST':
         request_url = request.json['request_url']
@@ -566,7 +588,7 @@ def api_get_media_post(media_id):
         description: File Media is missing
 
     """
-    from flask_login import current_user # Required by pytest, otherwise client crashes on CI
+    from flask_login import current_user  # Required by pytest, otherwise client crashes on CI
 
     ret = {'status': 'success', 'media_id': media_id}
     media_file = File_Tracking.objects(id=media_id).first()
@@ -611,7 +633,7 @@ def api_set_media_private_posts_json(media_id, privacy_mode):
         description: File is missing
 
     """
-    from flask_login import current_user # Required by pytest, otherwise client crashes on CI
+    from flask_login import current_user  # Required by pytest, otherwise client crashes on CI
 
     if not current_user.is_authenticated:
         return get_response_error_formatted(403, {'error_msg': "Anonymous users are not allowed."})
@@ -632,9 +654,7 @@ def api_set_media_private_posts_json(media_id, privacy_mode):
     else:
         media_file.is_public = True
 
-    media_file.update(**{
-        'is_public': media_file.is_public
-    })
+    media_file.update(**{'is_public': media_file.is_public})
 
     if media_file.is_public:
         privacy_mode = "public"
@@ -673,7 +693,7 @@ def api_remove_self_media(media_id):
         description: File is missing
 
     """
-    from flask_login import current_user # Required by pytest, otherwise client crashes on CI
+    from flask_login import current_user  # Required by pytest, otherwise client crashes on CI
 
     if not current_user.is_authenticated:
         return get_response_error_formatted(403, {'error_msg': "Anonymous users are not allowed."})

@@ -80,11 +80,36 @@ def api_key_or_login_required(func):
             if current_user.is_authenticated and current_user.active:
                 return func(*args, **kwargs)
 
-        # A function might use Abort to exit, this will generate a
-        # HTTPException but we want to return our API exceptions in JSON
-        # Therefore we catch the exception and dump the description using our standard error response
+            token = request.args.get("key")
+            if not token:
+                if 'key' in request.form:
+                    token = request.form["key"]
+
+            if not token:
+                return get_response_error_formatted(401, {'error_msg': "No token or user found", "no_std": True})
+
+            user = User.verify_auth_token(token)
+            if isinstance(user, User) and user.active:
+                print("\n------------ API LOGIN --------------")
+
+                # The user might be already logged in
+                if current_user.is_authenticated:
+                    # We logout the user if the key belongs to a different user.
+                    if current_user.username != user.username:
+                        logout_user()
+
+                # We login this user normally
+                login_user(user, remember=True)
+
+                ret = func(*args, **kwargs)
+                logout_user()
+                return ret
 
         except HTTPException as errh:
+            # A function might use Abort to exit, this will generate a
+            # HTTPException but we want to return our API exceptions in JSON
+            # Therefore we catch the exception and dump the description using our standard error response
+
             if 'error_msg' in errh.description:
                 return get_response_error_formatted(errh.code, errh.description)
 
@@ -93,31 +118,6 @@ def api_key_or_login_required(func):
         except Exception as err:
             print(err, " CRASH ON USER. " + str(err))
             return get_response_error_formatted(400, {'error_msg': str(err)})
-
-        token = request.args.get("key")
-        if not token:
-            if 'key' in request.form:
-                token = request.form["key"]
-
-        if not token:
-            return get_response_error_formatted(401, {'error_msg': "No token or user found", "no_std": True})
-
-        user = User.verify_auth_token(token)
-        if isinstance(user, User) and user.active:
-            print("\n------------ API LOGIN --------------")
-
-            # The user might be already logged in
-            if current_user.is_authenticated:
-                # We logout the user if the key belongs to a different user.
-                if current_user.username != user.username:
-                    logout_user()
-
-            # We login this user normally
-            login_user(user, remember=True)
-
-            ret = func(*args, **kwargs)
-            logout_user()
-            return ret
 
         return get_response_error_formatted(401, {'error_msg': "User Unauthorized, check token with admin"})
 
@@ -131,28 +131,45 @@ def api_key_login_or_anonymous(func):
 
     @wraps(func)
     def decorated_view(*args, **kwargs):
-        token = request.args.get("key")
-        if not token:
-            if 'key' in request.form:
-                token = request.form["key"]
 
-        if not token:
-            return func(*args, **kwargs)
+        try:
+            token = request.args.get("key")
+            if not token:
+                if 'key' in request.form:
+                    token = request.form["key"]
 
-        user = User.verify_auth_token(token)
-        if isinstance(user, User) and user.active:
-            if current_user.is_authenticated:
-                # Relogin the user if the key belongs to a different one
-                if current_user.username != user.username:
-                    logout_user()
+            if not token:
+                return func(*args, **kwargs)
+
+            user = User.verify_auth_token(token)
+            if isinstance(user, User) and user.active:
+                if current_user.is_authenticated:
+                    # Relogin the user if the key belongs to a different one
+                    if current_user.username != user.username:
+                        logout_user()
+                        login_user(user, remember=True)
+
+                else:
                     login_user(user, remember=True)
 
-            else:
-                login_user(user, remember=True)
+            return func(*args, **kwargs)
 
-        return func(*args, **kwargs)
+        except HTTPException as errh:
+            # A function might use Abort to exit, this will generate a
+            # HTTPException but we want to return our API exceptions in JSON
+            # Therefore we catch the exception and dump the description using our standard error response
+
+            if 'error_msg' in errh.description:
+                return get_response_error_formatted(errh.code, errh.description)
+
+            return get_response_error_formatted(errh.code, {'error_msg': errh.description})
+
+        except Exception as err:
+            print(err, " CRASH ON USER. " + str(err))
+            return get_response_error_formatted(400, {'error_msg': str(err)})
 
     return decorated_view
+
 
 def configure_media_folder(app):
     """ Gets the media folder path from the environment or uses a local one inside the application """

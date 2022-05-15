@@ -75,7 +75,7 @@ class DB_MediaList(db.Document):
     def check_permissions(self):
         from flask_login import current_user
 
-        if not self.is_public and self.username != current_user.username:
+        if not self.is_public and (not current_user.is_authenticated or self.username != current_user.username):
             return abort(401, "Unauthorized")
 
         return True
