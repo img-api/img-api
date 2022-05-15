@@ -1,5 +1,7 @@
 import os
 import werkzeug
+import traceback
+
 from flask import Flask, jsonify, request
 
 from flasgger import Swagger, LazyString, LazyJSONEncoder
@@ -91,8 +93,9 @@ def after_request(response):
 
 
 def handle_bad_request(e):
+    from api.print_helper import print_alert
     from api import get_response_error_formatted
-    import traceback
+
     traceback.print_tb(e.__traceback__)
     print_alert("BAD REQUEST EXCEPTION  [%s] [%d]" % (type(e), e.code))
 

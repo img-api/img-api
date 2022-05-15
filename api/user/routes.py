@@ -296,11 +296,14 @@ def api_create_user_local():
     if first_name: first_name = first_name.strip()
     if last_name: last_name = last_name.strip()
 
+    if len(username) < 4:
+        return get_response_error_formatted(401, {'error_msg': "Your username is too short"})
+
     if not validators.slug(username):
         return get_response_error_formatted(401, {'error_msg': "Your username has non valid characters"})
 
     if not is_password_valid(password):
-        return get_response_error_formatted(401, {'error_msg': "Invalid password"})
+        return get_response_error_formatted(401, {'error_msg': "Password has to be at least 8 characters long"})
 
     hashpass = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
 
