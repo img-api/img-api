@@ -21,8 +21,6 @@ from mongoengine.queryset import QuerySet
 from mongoengine.queryset.visitor import Q
 
 from wand.image import Image
-from flask_login import current_user
-
 
 def get_media_valid_extension(file_name):
     """ Checks with the system to see if the extension provided is valid,
@@ -477,6 +475,13 @@ def api_get_posts_json(user_id):
 
 def api_populate_media_list(user_id, media_list):
     """ Populates a list of media, checking that the media is public or the user is itself """
+    from flask_login import current_user
+
+    if user_id == "me":
+        if not current_user.is_authenticated:
+            return abort(404, "User is not valid")
+
+        user_id = current_user.username
 
     username = None
     if current_user.is_authenticated:

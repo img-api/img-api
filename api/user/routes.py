@@ -680,7 +680,7 @@ def api_actions_on_list(username, list_id, action):
 
         media_list = [media['media_id'] for media in ret['media_list']]
         ret.update(api_populate_media_list(username, media_list))
-        return ret
+        return get_response_formatted(ret)
 
     return get_response_error_formatted(400, {'error_msg': "Wrong parameters."})
 

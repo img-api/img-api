@@ -51,6 +51,31 @@ def test_media(client):
 
     assert test_media != None
 
+    ###################### Begin Media lists ################################
+
+    # We append a media to a list of favourites
+    ret = client.get("/api/user/media/" + test_media['media_id'] + "/append/favs")
+    assert ret.json['status'] == 'success'
+
+    # Get all the lists for this user
+    ret = client.get("/api/user/list/get")
+    assert ret.json['status'] == 'success'
+    assert "list_favs_id" in ret.json
+
+    # Check the list
+    ret = client.get("/api/user/me/list/favs/get")
+    assert ret.json['status'] == 'success'
+    assert "media_files" in ret.json
+    assert len(ret.json["media_files"]) == 1
+
+    # Check the list
+    ret = client.get("/api/user/" + "dummy" + "/list/favs/get")
+    assert ret.json['status'] == 'success'
+    assert "media_files" in ret.json
+    assert len(ret.json["media_files"]) == 1
+
+    ###################### End Media lists ################################
+
     # Check that the info is correct
     assert test_media['info']['width'] == 256
     assert test_media['info']['height'] == 256

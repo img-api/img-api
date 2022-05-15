@@ -33,6 +33,21 @@ def test_user(client):
     ret = client.get("/api/user/token?key=" + user_token[10])
     assert ret.json['status'] != 'success'
 
+    ###################### Media lists ################################
+
+    # Get the favourite list from this user
+    ret = client.get("/api/user/me/list/favs/get?" + TEST_CREDENTIALS)
+
+    # It should be empty, so we should get an error
+    assert ret.json['error'] == 404
+    assert ret.json['status'] == 'error'
+
+    # Get the favourite list from an invalid user
+    ret = client.get("/api/user/01/list/favs/get?" + TEST_CREDENTIALS)
+    assert ret.json['status'] == 'error'
+
+    ###################### Clean up ################################
+
     # Delete the user
     ret = client.get("/api/user/remove?" + TEST_CREDENTIALS)
     assert ret.json['status'] == 'success'
