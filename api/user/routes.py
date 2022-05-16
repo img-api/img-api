@@ -707,7 +707,7 @@ def api_get_all_the_lists():
 
 @blueprint.route('/list/create', methods=['POST'])
 @api_key_or_login_required
-def api_get_all_the_lists():
+def api_create_a_new_list():
     """ Gets all the list of media lists this user has. It is a private call for this user
     ---
     tags:
