@@ -24,12 +24,21 @@ class DB_ItemMedia(db.DynamicEmbeddedDocument):
 
 class DB_MediaList(db.Document):
     """ A media list is a collection of items that an user likes, dislikes, or are a in a playlist """
-    is_public = db.BooleanField(default=False)
     username = db.StringField()
     list_type = db.StringField()
 
     name = db.StringField()
+    title = db.StringField()
+    header = db.StringField()
     description = db.StringField()
+
+    img_logo_id = db.StringField()
+    img_background_id = db.StringField()
+
+    is_public = db.BooleanField(default=False)
+    allow_public_upload = db.BooleanField(default=False)
+    tags = db.ListField(db.StringField(), default=list)
+
     media_list = db.EmbeddedDocumentListField(DB_ItemMedia, default=[])
 
     def find_on_list(self, media_id):
@@ -186,7 +195,32 @@ class DB_UserGalleries(db.DynamicEmbeddedDocument):
 
     @staticmethod
     def get_safe_gallery_name(possible_name):
-        final = re.sub(r'[^\x00-\x7F]+','-', lower(possible_name))
+        """ Converts a title into a string that we can use for our database name, by removing all the extra characters
+            [TODO] Check unicode values
+        """
+        clean = possible_name.strip().lower()
+        prev = '_'
+
+        clean = []
+
+        for c in possible_name:
+            s = ("" + c)
+            if s.isalpha() or s.isalnum():
+                clean.append(c)
+                prev = c
+                continue
+
+            if prev == '_':
+                continue
+
+            prev = '_'
+            clean.append(prev)
+
+        if clean[-1] == '_':
+            clean.pop()
+
+        # The name has to be less than 24, so we don't hit an ID
+        final = "".join(clean)[:23]
         return final
 
     def exists(self, name_or_id):
@@ -246,3 +280,17 @@ class DB_UserGalleries(db.DynamicEmbeddedDocument):
         my_list.delete()
 
         return self.get_every_media_list()
+
+    def create(self, username, gallery_name, my_dict):
+        my_dict.update({
+            "name": gallery_name,
+            "username": username,
+            "list_type": "gallery",
+        })
+
+        my_list = DB_MediaList(**my_dict)
+        my_list.save().reload()
+        self['list_' + gallery_name + '_id'] = str(my_list.id)
+
+        ret = mongo_to_dict_helper(my_list)
+        return { "galleries": [ret]}

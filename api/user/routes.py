@@ -6,6 +6,7 @@ import datetime
 import validators
 
 from api.user import blueprint
+from api.print_helper import *
 
 from api import get_response_formatted, get_response_error_formatted, api_key_or_login_required, api_key_login_or_anonymous
 
@@ -700,10 +701,14 @@ def api_get_all_the_lists():
     definitions:
       user_file:
         type: object
+    responses:
+      200:
+        description: Returns a list of lists
     """
 
     ret = current_user.galleries.get_every_media_list()
     return get_response_formatted(ret)
+
 
 @blueprint.route('/list/create', methods=['POST'])
 @api_key_or_login_required
@@ -717,13 +722,30 @@ def api_create_a_new_list():
     definitions:
       user_file:
         type: object
+    responses:
+      200:
+        description: Returns the created gallery
+      409:
+        description: The gallery already exists and there is a conflict
     """
 
     g = current_user.galleries
 
-    gallery_name = g.get_safe_gallery_name(request.form["title"])
-    ret = g.exists(gallery_name)
+    json = request.json
+    title = json['title']
+    gallery_name = g.get_safe_gallery_name(title)
+    if len(gallery_name) <= 4:
+        return get_response_error_formatted(400, {'error_msg': "Gallery name has to be longer than that"})
 
+    ret = g.exists(gallery_name)
+    print_b("Creating " + gallery_name)
+
+    if ret:
+        print_r("Duplicated")
+        return get_response_error_formatted(409, {'error_msg': "Gallery already exists with that name"})  # Conflict
+
+    ret = g.create(current_user.username, gallery_name, json)
+    current_user.save(validate=False)
     return get_response_formatted(ret)
 
 
