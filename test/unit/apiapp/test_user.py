@@ -38,9 +38,9 @@ def test_user(client):
     # Get the favourite list from this user
     ret = client.get("/api/user/me/list/favs/get?" + TEST_CREDENTIALS)
 
-    # It should be empty, so we should get an error
-    assert ret.json['error'] == 404
-    assert ret.json['status'] == 'error'
+    # It should be empty
+    assert ret.json['status'] == 'success'
+    assert ret.json['is_empty']
 
     # Get the favourite list from an invalid user
     ret = client.get("/api/user/01/list/favs/get?" + TEST_CREDENTIALS)
