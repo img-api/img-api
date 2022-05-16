@@ -73,7 +73,7 @@
     "python.linting.flake8Enabled": false,
     "python.linting.mypyEnabled": false,
     "python.linting.pylamaEnabled": false,
-    "python.linting.enabled": false,
+    "python.linting.enabled": true,
     "python.linting.pylintEnabled": false,
 
     "cSpell.diagnosticLevel": "Hint",

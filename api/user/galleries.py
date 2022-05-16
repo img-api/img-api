@@ -1,3 +1,4 @@
+import re
 import os
 import time
 import shutil
@@ -81,7 +82,7 @@ class DB_MediaList(db.Document):
         return True
 
 
-class DB_UserInteractions(db.DynamicEmbeddedDocument):
+class DB_UserGalleries(db.DynamicEmbeddedDocument):
     """ User interaction is every item that the user wants to store as a collection
         User stores media lists, which are just lists of IDs and media with special information.
 
@@ -177,14 +178,28 @@ class DB_UserInteractions(db.DynamicEmbeddedDocument):
                 name_or_id = "list_" + name_or_id + "_id"
 
             if not name_or_id in self:
-                return abort(404, "Not found")
+                return None
 
             return self[name_or_id]
 
         return name_or_id
 
+    @staticmethod
+    def get_safe_gallery_name(possible_name):
+        final = re.sub(r'[^\x00-\x7F]+','-', lower(possible_name))
+        return final
+
+    def exists(self, name_or_id):
+        list_id = self.get_list_id(name_or_id)
+        if not list_id:
+            return False
+
+        return True
+
     def media_list_remove(self, list_id):
         list_id = self.get_list_id(list_id)
+        if not list_id:
+            return abort(404, "Media list not found")
 
         my_list = DB_MediaList.objects(pk=list_id).first()
         if my_list.username != current_user.username:
@@ -195,6 +210,8 @@ class DB_UserInteractions(db.DynamicEmbeddedDocument):
 
     def media_list_get(self, list_id):
         list_id = self.get_list_id(list_id)
+        if not list_id:
+            return {'is_empty': True, 'media_list': []}
 
         my_list = DB_MediaList.objects(pk=list_id).first()
         my_list.check_permissions()

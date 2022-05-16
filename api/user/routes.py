@@ -668,18 +668,18 @@ def api_actions_on_list(username, list_id, action):
     if current_user.is_authenticated:
         if username == 'me' or current_user.username == username:
             if action == 'remove':
-                res = current_user.interactions.media_list_remove(list_id)
+                res = current_user.galleries.media_list_remove(list_id)
                 return get_response_formatted(res)
 
     if action == 'get':
         if current_user.is_authenticated and (username == 'me' or current_user.username == username):
-            ret = current_user.interactions.media_list_get(list_id)
+            ret = current_user.galleries.media_list_get(list_id)
         else:
             user = User.objects(username__iexact=username).first()
             if not user:
                 return get_response_error_formatted(404, {'error_msg': "User not found."})
 
-            ret = user.interactions.media_list_get(list_id)
+            ret = user.galleries.media_list_get(list_id)
 
         media_list = [media['media_id'] for media in ret['media_list']]
         ret.update(api_populate_media_list(username, media_list))
@@ -702,7 +702,28 @@ def api_get_all_the_lists():
         type: object
     """
 
-    ret = current_user.interactions.get_every_media_list()
+    ret = current_user.galleries.get_every_media_list()
+    return get_response_formatted(ret)
+
+@blueprint.route('/list/create', methods=['POST'])
+@api_key_or_login_required
+def api_get_all_the_lists():
+    """ Gets all the list of media lists this user has. It is a private call for this user
+    ---
+    tags:
+      - user
+    schemes: ['http', 'https']
+    deprecated: false
+    definitions:
+      user_file:
+        type: object
+    """
+
+    g = current_user.galleries
+
+    gallery_name = g.get_safe_gallery_name(request.form["title"])
+    ret = g.exists(gallery_name)
+
     return get_response_formatted(ret)
 
 
@@ -720,6 +741,6 @@ def api_delete_all_the_lists():
         type: object
     """
 
-    ret = current_user.interactions.clear_all(current_user.username)
+    ret = current_user.galleries.clear_all(current_user.username)
     current_user.save()
     return get_response_formatted(ret)

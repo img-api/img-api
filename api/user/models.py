@@ -14,7 +14,7 @@ from api.query_helper import mongo_to_dict_helper
 
 from .signature_serializer import TimedJSONWebSignatureSerializer as Serializer, BadSignature, SignatureExpired
 
-from .interactions import DB_UserInteractions
+from .galleries import DB_UserGalleries
 
 
 class DB_UserSubscription(db.DynamicEmbeddedDocument):
@@ -69,7 +69,7 @@ class User(UserMixin, db.Document):
     is_anon = db.BooleanField(default=False)
 
     settings = db.EmbeddedDocumentField(DB_UserSettings, default=DB_UserSettings())
-    interactions = db.EmbeddedDocumentField(DB_UserInteractions, default=DB_UserInteractions())
+    galleries = db.EmbeddedDocumentField(DB_UserGalleries, default=DB_UserGalleries())
 
     list_subscriptions = db.EmbeddedDocumentListField(DB_UserSubscription, default=[])
 
@@ -200,17 +200,17 @@ class User(UserMixin, db.Document):
         print("--------------------------------------------------------")
 
         self.delete_media()
-        self.interactions.clear_all(self.username)
+        self.galleries.clear_all(self.username)
 
         return super(User, self).delete(*args, **kwargs)
 
     def populate_media(self, media_list):
         """ Appends all the information from this user into the media files on the list """
-        self.interactions.populate(media_list)
+        self.galleries.populate(media_list)
 
     def action_on_list(self, media_id, action, media_list_short_name):
         """ Performs an interaction on a media list """
-        update, ret = self.interactions.perform(media_id, action, media_list_short_name)
+        update, ret = self.galleries.perform(media_id, action, media_list_short_name)
 
         if update:
             self.save()
