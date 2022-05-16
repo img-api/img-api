@@ -12,8 +12,10 @@ from api import get_response_formatted, get_response_error_formatted, api_key_or
 
 from flask import jsonify, request, Response, redirect
 from api.tools import generate_file_md5, ensure_dir, is_api_call
+from api.query_helper import mongo_to_dict_helper
 
 from .models import User
+from .galleries import DB_MediaList
 
 from mongoengine.queryset import QuerySet
 from mongoengine.queryset.visitor import Q
@@ -689,6 +691,44 @@ def api_actions_on_list(username, list_id, action):
     return get_response_error_formatted(400, {'error_msg': "Wrong parameters."})
 
 
+@blueprint.route('/list/get_by_id/<string:list_id>', methods=['GET'])
+@api_key_or_login_required
+def api_get_by_list_id(list_id):
+    """ Gets all the list of media this list has, if it is public
+    ---
+    tags:
+      - user
+    schemes: ['http', 'https']
+    deprecated: false
+    definitions:
+      user_file:
+        type: object
+    responses:
+      200:
+        description: Returns a the list given by id if it is public or you are the owner
+      404:
+        description: Missing gallery
+      401:
+        description: Gallery is not public and it is not yours
+
+    """
+    from api.media.routes import api_populate_media_list
+
+    the_list = DB_MediaList.objects(pk=list_id).first()
+    if not the_list:
+        return abort(404, "Missing")
+
+    if current_user.is_authenticated and the_list.username != current_user.username:
+        if not the_list.is_public:
+            return abort(401, "Unauthorized")
+
+    ret = mongo_to_dict_helper(the_list)
+
+    ret.update(api_populate_media_list(the_list.username, the_list.get_as_list()))
+
+    return get_response_formatted(ret)
+
+
 @blueprint.route('/list/get', methods=['GET'])
 @api_key_or_login_required
 def api_get_all_the_lists():
@@ -707,6 +747,10 @@ def api_get_all_the_lists():
     """
 
     ret = current_user.galleries.get_every_media_list()
+
+    if False:
+        ret['galleries'].pop('favs', None)
+
     return get_response_formatted(ret)
 
 
@@ -734,7 +778,7 @@ def api_create_a_new_list():
     json = request.json
     title = json['title']
     gallery_name = g.get_safe_gallery_name(title)
-    if len(gallery_name) <= 4:
+    if len(gallery_name) <= 3:
         return get_response_error_formatted(400, {'error_msg': "Gallery name has to be longer than that"})
 
     ret = g.exists(gallery_name)
@@ -746,6 +790,8 @@ def api_create_a_new_list():
 
     ret = g.create(current_user.username, gallery_name, json)
     current_user.save(validate=False)
+    ret['username'] = current_user.username
+
     return get_response_formatted(ret)
 
 

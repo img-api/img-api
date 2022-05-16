@@ -203,8 +203,6 @@ def mongo_to_dict_helper(obj, filter_out=None, add_empty_lists=True):
             return return_data
 
         for field_name in obj._fields:
-            print(" field_name " + field_name)
-
             if filter_out and field_name in filter_out:
                 continue
 

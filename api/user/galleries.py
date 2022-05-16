@@ -90,6 +90,9 @@ class DB_MediaList(db.Document):
 
         return True
 
+    def get_as_list(self):
+        return [media['media_id'] for media in self.media_list]
+
 
 class DB_UserGalleries(db.DynamicEmbeddedDocument):
     """ User interaction is every item that the user wants to store as a collection
@@ -253,9 +256,20 @@ class DB_UserGalleries(db.DynamicEmbeddedDocument):
         ret = mongo_to_dict_helper(my_list)
         return ret
 
+    @staticmethod
+    def clean_dict(ret):
+        s = {}
+        for key in ret.keys():
+            if not key.startswith("list_"):
+                continue
+
+            # Remove start "list_" and  "_id"
+            s[key[5:-3]] = ret[key]
+        return s
+
     def get_every_media_list(self):
         ret = mongo_to_dict_helper(self)
-        return ret
+        return {'galleries': self.clean_dict(ret)}
 
     def clear_all(self, username):
         """ Deletes every media list for this object """
@@ -293,4 +307,4 @@ class DB_UserGalleries(db.DynamicEmbeddedDocument):
         self['list_' + gallery_name + '_id'] = str(my_list.id)
 
         ret = mongo_to_dict_helper(my_list)
-        return { "galleries": [ret]}
+        return {"galleries": [ret]}

@@ -477,6 +477,9 @@ def api_populate_media_list(user_id, media_list):
     """ Populates a list of media, checking that the media is public or the user is itself """
     from flask_login import current_user
 
+    if len(media_list) == 0:
+        return {'media_files': []}
+
     if user_id == "me":
         if not current_user.is_authenticated:
             return abort(404, "User is not valid")
