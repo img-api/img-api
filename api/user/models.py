@@ -208,6 +208,12 @@ class User(UserMixin, db.Document):
         """ Appends all the information from this user into the media files on the list """
         self.galleries.populate(media_list)
 
+    def media_list_remove(self, gallery_id):
+        if self.galleries.media_list_remove(gallery_id):
+            self.save()
+
+        return {"deleted": True}
+
     def action_on_list(self, media_id, action, media_list_short_name):
         """ Performs an interaction on a media list """
         update, ret = self.galleries.perform(media_id, action, media_list_short_name)

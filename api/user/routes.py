@@ -10,7 +10,7 @@ from api.print_helper import *
 
 from api import get_response_formatted, get_response_error_formatted, api_key_or_login_required, api_key_login_or_anonymous
 
-from flask import jsonify, request, Response, redirect
+from flask import jsonify, request, Response, redirect, abort
 from api.tools import generate_file_md5, ensure_dir, is_api_call
 from api.query_helper import mongo_to_dict_helper
 
@@ -626,9 +626,10 @@ def api_set_this_media_into_an_action(media_id, action, my_list):
     return get_response_formatted(ret)
 
 
+@blueprint.route('/<string:username>/list/<string:list_id>/<string:action>/<string:media_id>', methods=['GET'])
 @blueprint.route('/<string:username>/list/<string:list_id>/<string:action>', methods=['GET', 'DELETE'])
 @api_key_login_or_anonymous
-def api_actions_on_list(username, list_id, action):
+def api_actions_on_list(username, list_id, action, media_id=None):
     """ Performs an action for a list
     ---
     tags:
@@ -652,7 +653,7 @@ def api_actions_on_list(username, list_id, action):
           name: action
           schema:
             type: string
-          description: create, remove, get
+          description: create, remove, get, add
 
     definitions:
       user_file:
@@ -668,11 +669,18 @@ def api_actions_on_list(username, list_id, action):
 
     from api.media.routes import api_populate_media_list
 
+    if list_id == "undefined":
+        return get_response_error_formatted(400, {'error_msg': "Wrong frontend."})
+
     if current_user.is_authenticated:
         if username == 'me' or current_user.username == username:
             if action == 'remove':
-                res = current_user.galleries.media_list_remove(list_id)
+                res = current_user.media_list_remove(list_id)
                 return get_response_formatted(res)
+
+            if action == 'add':
+                ret = current_user.action_on_list(media_id, action, my_list)
+                return get_response_formatted({})
 
     if action == 'get':
         if current_user.is_authenticated and (username == 'me' or current_user.username == username):
@@ -716,7 +724,7 @@ def api_get_by_list_id(list_id):
 
     the_list = DB_MediaList.objects(pk=list_id).first()
     if not the_list:
-        return abort(404, "Missing")
+        return abort(404, "Missing Gallery")
 
     if current_user.is_authenticated and the_list.username != current_user.username:
         if not the_list.is_public:

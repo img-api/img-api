@@ -164,12 +164,20 @@ class DB_UserGalleries(db.DynamicEmbeddedDocument):
         if action in ['append', 'remove', 'toggle']:
             name_id = "list_" + media_list_short_name + "_id"
 
-            if (name_id in self or hasattr(self, name_id)) and self[name_id]:
-                media_list = self.get_media_list(self[name_id])
+            if len(media_list_short_name) == 24:
+                media_list = self.get_media_list(media_list_short_name)
             else:
-                media_list = DB_MediaList(**{"username": current_user.username, "list_type": media_list_short_name})
-                media_list.save().reload()
-                self[name_id] = str(media_list.id)
+                if (name_id in self or hasattr(self, name_id)) and self[name_id]:
+                    media_list = self.get_media_list(self[name_id])
+                else:
+                    media_list = DB_MediaList(**{"username": current_user.username, "list_type": media_list_short_name})
+                    media_list.save().reload()
+                    self[name_id] = str(media_list.id)
+
+            if not media_list:
+                return abort(404, "Not found")
+
+            media_list.check_permissions()
 
             if action == "toggle":
                 if media_list.is_on_list(media_id):
@@ -233,17 +241,38 @@ class DB_UserGalleries(db.DynamicEmbeddedDocument):
 
         return True
 
+    def remove_list_entry(self, list_id):
+        found_key = None
+        for key, value in self.__dict__.items():
+            if value == list_id:
+                self[key] = None
+                found_key = key
+                break
+
+        if found_key:
+            self.__dict__.pop(key,None)
+            return True
+
+        return False
+
     def media_list_remove(self, list_id):
         list_id = self.get_list_id(list_id)
         if not list_id:
             return abort(404, "Media list not found")
 
+        self.remove_list_entry(list_id)
+
         my_list = DB_MediaList.objects(pk=list_id).first()
+        if not my_list:
+            print_r(" Gallery doesn't exist anymore.")
+            return True
+
         if my_list.username != current_user.username:
-            return abort(401, "Unauthorized")
+            print_r(" User is not owner, cannot delete only unsubscribe.")
+            return True
 
         my_list.delete()
-        return {'media_list': 'deleted'}
+        return True
 
     def media_list_get(self, list_id):
         list_id = self.get_list_id(list_id)
