@@ -60,7 +60,7 @@ def test_media(client):
     # Get all the lists for this user
     ret = client.get("/api/user/list/get")
     assert ret.json['status'] == 'success'
-    assert "list_favs_id" in ret.json
+    assert "favs" in ret.json
 
     # Check the list
     ret = client.get("/api/user/me/list/favs/get")
