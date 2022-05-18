@@ -209,7 +209,7 @@ class DB_UserGalleries(db.DynamicEmbeddedDocument):
         """ Converts a title into a string that we can use for our database name, by removing all the extra characters
             [TODO] Check unicode values
         """
-        clean = possible_name.strip().lower()
+        possible_name = possible_name.strip().lower()
         prev = '_'
 
         clean = []

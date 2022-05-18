@@ -667,7 +667,7 @@ def api_actions_on_list(username, list_id, action, media_id=None):
         description: The list is private to that particular user
     """
 
-    from api.media.routes import api_populate_media_list
+    from api.media.routes import api_populate_media_list, api_get_user_photostream
 
     if list_id == "undefined":
         return get_response_error_formatted(400, {'error_msg': "Wrong frontend."})
@@ -683,6 +683,9 @@ def api_actions_on_list(username, list_id, action, media_id=None):
                 return get_response_formatted({})
 
     if action == 'get':
+        if list_id == "stream":
+            return api_get_user_photostream(username)
+
         if current_user.is_authenticated and (username == 'me' or current_user.username == username):
             ret = current_user.galleries.media_list_get(list_id)
         else:
@@ -692,8 +695,11 @@ def api_actions_on_list(username, list_id, action, media_id=None):
 
             ret = user.galleries.media_list_get(list_id)
 
-        media_list = [media['media_id'] for media in ret['media_list']]
-        ret.update(api_populate_media_list(username, media_list))
+        populate = not request.args.get("no_populate", False)
+        if populate:
+            media_list = [media['media_id'] for media in ret['media_list']]
+            ret.update(api_populate_media_list(username, media_list))
+
         return get_response_formatted(ret)
 
     return get_response_error_formatted(400, {'error_msg': "Wrong parameters."})

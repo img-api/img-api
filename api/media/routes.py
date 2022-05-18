@@ -22,6 +22,7 @@ from mongoengine.queryset.visitor import Q
 
 from wand.image import Image
 
+
 def get_media_valid_extension(file_name):
     """ Checks with the system to see if the extension provided is valid,
         You should never trust the frontend """
@@ -412,7 +413,7 @@ def api_get_media(media_id):
 
 
 @blueprint.route('/stream/<string:user_id>', methods=['GET'])
-def api_get_posts_json(user_id):
+def api_get_user_photostream(user_id):
     """Returns a json object with a list of media objects owned by this user.
     ---
     tags:

@@ -86,7 +86,7 @@ def api_key_or_login_required(func):
                     token = request.form["key"]
 
             if not token:
-                return get_response_error_formatted(401, {'error_msg': "No token or user found", "no_std": True})
+                return get_response_error_formatted(401, {'error_msg': "No user found, please login or create an account.", "no_std": True})
 
             user = User.verify_auth_token(token)
             if isinstance(user, User) and user.active:
