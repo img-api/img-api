@@ -334,7 +334,7 @@ def api_fetch_media_with_media_category(media_category):
 
 @blueprint.route('/get/<string:media_id>', methods=['GET'])
 @api_key_login_or_anonymous
-def api_get_media(media_id):
+def api_get_media(media_id, image_only=False):
     """Returns a media object given it's media_id.
         The user might be rejected if the media is private
         The user can specify an extension to the media_id file and it will be converted on the fly
@@ -402,6 +402,10 @@ def api_get_media(media_id):
 
     abs_path = File_Tracking.get_media_path() + my_file.file_path
 
+    if image_only and my_file.file_type == "video":
+        extension = "PNG"
+        thumbnail = "v512"
+
     if extension or thumbnail:
         # If it is a video we want to use the video preview
         if my_file.file_type == "video":
@@ -410,6 +414,25 @@ def api_get_media(media_id):
         return api_dynamic_conversion(my_file, abs_path, extension, thumbnail, my_file.file_name, True)
 
     return send_file(abs_path, attachment_filename=my_file.file_name)
+
+
+@blueprint.route('/get_image/<string:media_id>', methods=['GET'])
+@api_key_login_or_anonymous
+def api_get_media_image(media_id):
+    """Returns a media object given it's media_id, if it is a video, it will transform it into an image.
+        Check /get for a full description
+    ---
+    tags:
+      - media
+    schemes: ['http', 'https']
+    deprecated: false
+    definitions:
+      image_file:
+        type: object
+
+    """
+
+    return api_get_media(media_id, image_only=True)
 
 
 @blueprint.route('/stream/<string:user_id>', methods=['GET'])
