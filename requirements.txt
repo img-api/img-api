@@ -19,3 +19,5 @@ ffmpeg-python
 flask-cors
 
 prompt_toolkit
+
+flask-caching

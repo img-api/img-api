@@ -2,6 +2,7 @@ import os
 import time
 import datetime
 from functools import wraps
+from flask_caching import Cache
 
 from flask import json, jsonify, redirect, request, Response
 from flask_login import current_user, login_required, login_user, logout_user
@@ -14,6 +15,7 @@ from .print_helper import *
 
 API_VERSION = "0.50pa"
 
+cache = Cache(config={'CACHE_TYPE': 'SimpleCache'})
 
 def get_response_formatted(content, pretty=True):
     """ Returns a formatted response with the API version
@@ -193,6 +195,7 @@ def configure_media_folder(app):
 def register_api_blueprints(app):
     """ Loads all the modules for the API """
     from importlib import import_module
+    global cache
 
     print_b(" API BLUE PRINTS ")
     for module_name in (
@@ -209,3 +212,6 @@ def register_api_blueprints(app):
 
     configure_media_folder(app)
     init_redis(app)
+
+    # Cache
+    cache.init_app(app)

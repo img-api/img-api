@@ -21,6 +21,7 @@ MONGODB_SETTINGS = {'host': 'localhost', 'port': 27017}
 
 app.config.update(DEBUG=True, MONGODB_SETTINGS=MONGODB_SETTINGS, SECRET_KEY="mysecret_key_loaded_from_the_system")
 
+
 # Database initialization
 
 db = MongoEngine()
