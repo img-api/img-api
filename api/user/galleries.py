@@ -201,48 +201,55 @@ class DB_UserGalleries(db.DynamicEmbeddedDocument):
             Current available actions are:
                 - Append a media
                 - Remove a media
+                - Set Cover and Background
         """
 
-        if action in ['append', 'remove', 'toggle']:
-            is_favs = (media_list_short_name == "favs")
+        if action not in ['append', 'remove', 'toggle', 'set_cover', 'set_background']:
+            return False, {'action': 'error', 'error_msg': "Action unknown"}
 
-            media_list = self.get_media_list_by_name_or_id(media_list_short_name)
+        is_favs = (media_list_short_name == "favs")
+
+        media_list = self.get_media_list_by_name_or_id(media_list_short_name)
+        if not media_list:
+            if len(media_list_short_name) == 24:
+                return abort(400, "Wrong media name")
+
+            name_id = "list_" + media_list_short_name + "_id"
+            media_list = DB_MediaList(**{
+                "name": media_list_short_name,
+                "username": current_user.username,
+                "list_type": media_list_short_name
+            })
             if not media_list:
-                if len(media_list_short_name) == 24:
-                    return abort(400, "Wrong media name")
+                return abort(404, "Not found")
 
-                name_id = "list_" + media_list_short_name + "_id"
-                media_list = DB_MediaList(**{"name": media_list_short_name, "username": current_user.username, "list_type": media_list_short_name})
-                if not media_list:
-                    return abort(404, "Not found")
+            media_list.save().reload()
 
-                media_list.save().reload()
+            self[name_id] = str(media_list.id)
 
-                self[name_id] = str(media_list.id)
+        media_list.check_permissions()
 
-            media_list.check_permissions()
+        if action == "toggle":
+            if media_list.is_on_list(media_id):
+                action = "remove"
+            else:
+                action = "append"
 
-            if action == "toggle":
-                if media_list.is_on_list(media_id):
-                    action = "remove"
-                else:
-                    action = "append"
+        if action == "append":
+            media_list.add_to_list(media_id)
+            if is_favs:
+                action = "set_cover"
 
-            if action == "append":
-                media_list.add_to_list(media_id)
-                if is_favs:
-                    action = "set_cover"
+        elif action == "remove":
+            media_list.remove_from_list(media_id)
 
-            elif action == "remove":
-                media_list.remove_from_list(media_id)
+        if action == "set_cover":
+            media_list.set_cover(media_id)
 
-            if action == "set_cover":
-                media_list.set_cover(media_id)
+        if action == "set_background":
+            media_list.set_background(media_id)
 
-            if action == "set_background":
-                media_list.set_background(media_id)
-
-            return True, {'action': 'success', 'media_list_id': str(media_list.id)}
+        return True, {'action': 'success', 'media_list_id': str(media_list.id)}
 
     def get_list_id(self, name_or_id):
         if len(name_or_id) != 24:

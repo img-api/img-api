@@ -684,10 +684,10 @@ def api_actions_on_list(username, list_id, action, image_type=None):
                 res = current_user.media_list_remove(list_id)
                 return get_response_formatted(res)
 
-            # Not supported through this API
-            #if action == 'add':
-            #    ret = current_user.action_on_list(media_id, action, my_list)
-            #    return get_response_formatted({})
+
+            if action in ['set_cover', 'set_background']:
+                ret = current_user.action_on_list(media_id, action, my_list)
+                return get_response_formatted({})
 
     if action == 'get':
 
@@ -811,7 +811,7 @@ def api_create_a_new_list():
     json = request.json
     title = json['title']
     gallery_name = g.get_safe_gallery_name(title)
-    if len(gallery_name) <= 3:
+    if len(gallery_name) <= 2:
         return get_response_error_formatted(400, {'error_msg': "Gallery name has to be longer than that"})
 
     ret = g.exists(gallery_name)
