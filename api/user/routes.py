@@ -827,6 +827,30 @@ def api_create_a_new_list():
 
     return get_response_formatted(ret)
 
+@blueprint.route('/list/update', methods=['POST'])
+@api_key_or_login_required
+def api_update_a_list():
+    """ Updates the list information, we only accept calls from this user
+    ---
+    tags:
+      - user
+    schemes: ['http', 'https']
+    deprecated: false
+    definitions:
+      user_file:
+        type: object
+    responses:
+      200:
+        description: Returns the updated library
+      401:
+        description: User cannot update this library
+    """
+
+    ret = current_user.galleries.update(request.json)
+    current_user.save(validate=False)
+    ret['username'] = current_user.username
+
+    return get_response_formatted(ret)
 
 @blueprint.route('/list/clear', methods=['GET', 'DELETE'])
 @api_key_or_login_required

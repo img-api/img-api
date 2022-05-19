@@ -97,13 +97,19 @@ class DB_MediaList(db.Document):
         self.save()
         return True
 
+    def is_current_user(self):
+        if not current_user.is_authenticated:
+            return False
+
+        return self.username == current_user.username
+
     def check_permissions(self):
         from flask_login import current_user
 
         if self.allow_public_upload:
             return True
 
-        if not self.is_public and (not current_user.is_authenticated or self.username != current_user.username):
+        if not self.is_public and not self.is_current_user():
             return abort(401, "Unauthorized")
 
         return True
@@ -340,6 +346,7 @@ class DB_UserGalleries(db.DynamicEmbeddedDocument):
 
     @staticmethod
     def clean_dict(ret):
+        """ Removes the extra information list_< name >_id """
         s = {}
         for key in ret.keys():
             if not key.startswith("list_"):
@@ -389,4 +396,22 @@ class DB_UserGalleries(db.DynamicEmbeddedDocument):
         self['list_' + gallery_name + '_id'] = str(my_list.id)
 
         ret = mongo_to_dict_helper(my_list)
+        return {"galleries": [ret]}
+
+    def update(self, my_dict):
+        media_list = self.media_list_get(my_dict['id'], raw_db=True)
+        if not media_list:
+            return abort(400, "There was a problem updating this media, are you the owner?")
+
+        if not media_list.is_current_user():
+            return abort(401, "Unauthorized to access this media resource, please contact the owner")
+
+        # We don't update the name of the list
+        if 'name' in my_dict:
+            my_dict.pop('name')
+
+        my_dict.pop('id')
+
+        media_list.update(**my_dict)
+        ret = mongo_to_dict_helper(media_list)
         return {"galleries": [ret]}
