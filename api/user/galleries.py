@@ -200,16 +200,18 @@ class DB_UserGalleries(db.DynamicEmbeddedDocument):
         if action in ['append', 'remove', 'toggle']:
             is_favs = (media_list_short_name == "favs")
 
-            media_list = get_media_list_by_name_or_id(media_list_short_name)
+            media_list = self.get_media_list_by_name_or_id(media_list_short_name)
             if not media_list:
                 if len(media_list_short_name) == 24:
                     return abort(400, "Wrong media name")
 
-                media_list = DB_MediaList(**{"username": current_user.username, "list_type": media_list_short_name})
+                name_id = "list_" + media_list_short_name + "_id"
+                media_list = DB_MediaList(**{"name": media_list_short_name, "username": current_user.username, "list_type": media_list_short_name})
                 if not media_list:
                     return abort(404, "Not found")
 
                 media_list.save().reload()
+
                 self[name_id] = str(media_list.id)
 
             media_list.check_permissions()
