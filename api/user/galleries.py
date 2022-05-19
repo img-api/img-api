@@ -1,6 +1,7 @@
 import re
 import os
 import time
+import random
 import shutil
 import datetime
 
@@ -32,8 +33,8 @@ class DB_MediaList(db.Document):
     header = db.StringField()
     description = db.StringField()
 
-    img_logo_id = db.StringField()
-    img_background_id = db.StringField()
+    cover_id = db.StringField()
+    background_id = db.StringField()
 
     is_public = db.BooleanField(default=False)
     allow_public_upload = db.BooleanField(default=False)
@@ -67,12 +68,26 @@ class DB_MediaList(db.Document):
 
         item = DB_ItemMedia(**{"media_id": media_id, "update_date": datetime.datetime.now()})
 
+        # First item on the list will be the media cover
+        if len(self.media_list) == 0 or not self.cover_id:
+            self.set_cover(media_id)
+
+        # Second item will be the background. Users can change them with the API
+        if len(self.media_list) == 1:
+            self.set_background(media_id)
+
         self.media_list.append(item)
         self.save()
         return True
 
     def remove_from_list(self, media_id):
         """ Remove from a list of media """
+
+        if self.cover_id == media_id:
+            self.set_cover(None)
+
+        if self.background_id == media_id:
+            self.set_background(None)
 
         res = self.find_on_list(media_id)
         if res == -1:
@@ -92,6 +107,14 @@ class DB_MediaList(db.Document):
 
     def get_as_list(self):
         return [media['media_id'] for media in self.media_list]
+
+    def set_cover(self, media_id):
+        """ Galleries have a cover """
+        self.update(**{"cover_id": media_id})
+
+    def set_background(self, media_id):
+        """ Galleries have a background which is also used when a large image has to be displayed  """
+        self.update(**{"background_id": media_id})
 
 
 class DB_UserGalleries(db.DynamicEmbeddedDocument):
@@ -162,6 +185,8 @@ class DB_UserGalleries(db.DynamicEmbeddedDocument):
         """
 
         if action in ['append', 'remove', 'toggle']:
+            is_favs = (media_list_short_name == "favs")
+
             name_id = "list_" + media_list_short_name + "_id"
 
             if len(media_list_short_name) == 24:
@@ -187,8 +212,17 @@ class DB_UserGalleries(db.DynamicEmbeddedDocument):
 
             if action == "append":
                 media_list.add_to_list(media_id)
+                if is_favs:
+                    action = "set_cover"
+
             elif action == "remove":
                 media_list.remove_from_list(media_id)
+
+            if action == "set_cover":
+                media_list.set_cover(media_id)
+
+            if action == "set_background":
+                media_list.set_background(media_id)
 
             return True, {'action': 'success', 'media_list_id': str(media_list.id)}
 
@@ -250,7 +284,7 @@ class DB_UserGalleries(db.DynamicEmbeddedDocument):
                 break
 
         if found_key:
-            self.__dict__.pop(key,None)
+            self.__dict__.pop(key, None)
             return True
 
         return False
@@ -274,7 +308,7 @@ class DB_UserGalleries(db.DynamicEmbeddedDocument):
         my_list.delete()
         return True
 
-    def media_list_get(self, list_id):
+    def media_list_get(self, list_id, image_type=None):
         list_id = self.get_list_id(list_id)
         if not list_id:
             return {'is_empty': True, 'media_list': []}
@@ -283,6 +317,10 @@ class DB_UserGalleries(db.DynamicEmbeddedDocument):
         my_list.check_permissions()
 
         ret = mongo_to_dict_helper(my_list)
+
+        if image_type == "random":
+            ret['media_list'] = [random.choice(ret['media_list'])]
+
         return ret
 
     @staticmethod

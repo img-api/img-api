@@ -626,10 +626,10 @@ def api_set_this_media_into_an_action(media_id, action, my_list):
     return get_response_formatted(ret)
 
 
-@blueprint.route('/<string:username>/list/<string:list_id>/<string:action>/<string:media_id>', methods=['GET'])
+@blueprint.route('/<string:username>/list/<string:list_id>/<string:action>/<string:image_type>', methods=['GET'])
 @blueprint.route('/<string:username>/list/<string:list_id>/<string:action>', methods=['GET', 'DELETE'])
 @api_key_login_or_anonymous
-def api_actions_on_list(username, list_id, action, media_id=None):
+def api_actions_on_list(username, list_id, action, image_type=None):
     """ Performs an action for a list
     ---
     tags:
@@ -653,7 +653,13 @@ def api_actions_on_list(username, list_id, action, media_id=None):
           name: action
           schema:
             type: string
-          description: create, remove, get, add
+          description: create, remove, get, add, set_cover, set_background
+
+        - in: query
+          name: no_populate
+          schema:
+            type: string
+          description: Do not add all the media_files and leave the media_list
 
     definitions:
       user_file:
@@ -683,18 +689,25 @@ def api_actions_on_list(username, list_id, action, media_id=None):
                 return get_response_formatted({})
 
     if action == 'get':
+
+        # We have the special category "stream" which is the photo stream of the user.
+        # That will be their public photos if you are a third party user, or all your pictures if it is you.
         if list_id == "stream":
             return api_get_user_photostream(username)
 
+        # Galleries owned by you will display everything
         if current_user.is_authenticated and (username == 'me' or current_user.username == username):
-            ret = current_user.galleries.media_list_get(list_id)
+            ret = current_user.galleries.media_list_get(list_id, image_type)
         else:
+            # Galleries owned by a third pary will only display public facing pictures
             user = User.objects(username__iexact=username).first()
             if not user:
                 return get_response_error_formatted(404, {'error_msg': "User not found."})
 
-            ret = user.galleries.media_list_get(list_id)
+            ret = user.galleries.media_list_get(list_id, image_type)
 
+        # We populate the list with results, and not only media IDs
+        # The user might want to get a clean view without extra information, to maybe display only the tile.
         populate = not request.args.get("no_populate", False)
         if populate:
             media_list = [media['media_id'] for media in ret['media_list']]
@@ -705,9 +718,10 @@ def api_actions_on_list(username, list_id, action, media_id=None):
     return get_response_error_formatted(400, {'error_msg': "Wrong parameters."})
 
 
+@blueprint.route('/list/get_by_id/<string:list_id>/<string:image_type>', methods=['GET'])
 @blueprint.route('/list/get_by_id/<string:list_id>', methods=['GET'])
 @api_key_or_login_required
-def api_get_by_list_id(list_id):
+def api_get_by_list_id(list_id, image_type=None):
     """ Gets all the list of media this list has, if it is public
     ---
     tags:
@@ -738,7 +752,11 @@ def api_get_by_list_id(list_id):
 
     ret = mongo_to_dict_helper(the_list)
 
-    ret.update(api_populate_media_list(the_list.username, the_list.get_as_list()))
+    arr = the_list.get_as_list()
+    if image_type == "random":
+        arr = [random.choice(arr)]
+
+    ret.update(api_populate_media_list(the_list.username, arr))
 
     return get_response_formatted(ret)
 
