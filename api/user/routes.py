@@ -684,9 +684,10 @@ def api_actions_on_list(username, list_id, action, image_type=None):
                 res = current_user.media_list_remove(list_id)
                 return get_response_formatted(res)
 
-            if action == 'add':
-                ret = current_user.action_on_list(media_id, action, my_list)
-                return get_response_formatted({})
+            # Not supported through this API
+            #if action == 'add':
+            #    ret = current_user.action_on_list(media_id, action, my_list)
+            #    return get_response_formatted({})
 
     if action == 'get':
 

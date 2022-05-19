@@ -12,6 +12,7 @@ from api import get_response_formatted, get_response_error_formatted, api_key_or
 from flask import jsonify, request, send_file, redirect
 
 from flask import current_app, url_for, abort
+from api.print_helper import *
 
 from api.tools import generate_file_md5, ensure_dir, is_api_call
 from api.user.routes import generate_random_user
@@ -34,9 +35,23 @@ def get_media_valid_extension(file_name):
 
     return extension
 
+def api_internal_add_to_media_list(media_list, my_file):
+    if not media_list:
+        return
+
+    # Try to append this media to the media list
+    try:
+        if media_list['is_public']:
+            my_file.update(**{'is_public': True})
+
+        media_list.add_to_list(str(my_file.id))
+    except Exception as e:
+        print_exception(e, "Failed adding to list, please continue")
+
 
 def api_internal_upload_media():
     from flask_login import current_user  # Required by pytest, otherwise client crashes on CI
+    from api.user.routes import api_actions_on_list
 
     if request.method != "POST":
         return get_response_error_formatted(404, {"error_msg": "No files to upload!"})
@@ -48,6 +63,14 @@ def api_internal_upload_media():
         current_user = generate_random_user()
 
     print(" User to upload files " + current_user.username)
+
+    # Target gallery to upload this file on the user.
+    # Media can go to their photostream or to a target gallery.
+    # If the target gallery is public, the media will be public too.
+    # If the user is anonymous, we also check if the user created the library with "allow anonymous" permission.
+    # This should be handled by the media list itself.
+    gallery_id = request.args.get("gallery_id", '')
+    media_list = current_user.get_media_list(gallery_id, raw_db=True)
 
     uploaded_ft = []
     for key, f_request in request.files.items():
@@ -92,6 +115,7 @@ def api_internal_upload_media():
                 if my_file:
                     print(" FILE ALREADY UPLOADED WITH ID " + str(my_file.id))
                     uploaded_ft.append(my_file.serialize())
+                    api_internal_add_to_media_list(media_list, my_file)
                     continue
 
                 print(" FILE WAS LOST - CREATE NEW")
@@ -165,6 +189,8 @@ def api_internal_upload_media():
 
             my_file = File_Tracking(**new_file)
             my_file.save()
+
+            api_internal_add_to_media_list(media_list, my_file)
 
             new_file['media_id'] = str(my_file.id)
             uploaded_ft.append(new_file)

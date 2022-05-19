@@ -214,6 +214,15 @@ class User(UserMixin, db.Document):
 
         return {"deleted": True}
 
+    def get_media_list(self, gallery_id, raw_db=False):
+        """ Returns a dictionary with the media list """
+
+        if gallery_id in ['', 'me', 'stream', 'undefined', 'null']:
+            print_b(" No media list to return ")
+            return None
+
+        return self.galleries.media_list_get(gallery_id, raw_db=raw_db)
+
     def action_on_list(self, media_id, action, media_list_short_name):
         """ Performs an interaction on a media list """
         update, ret = self.galleries.perform(media_id, action, media_list_short_name)

@@ -100,6 +100,9 @@ class DB_MediaList(db.Document):
     def check_permissions(self):
         from flask_login import current_user
 
+        if self.allow_public_upload:
+            return True
+
         if not self.is_public and (not current_user.is_authenticated or self.username != current_user.username):
             return abort(401, "Unauthorized")
 
@@ -177,6 +180,16 @@ class DB_UserGalleries(db.DynamicEmbeddedDocument):
             if self.is_on_list(m_id, 'list_dislikes_id'):
                 media['dislike'] = True
 
+    def get_media_list_by_name_or_id(self, media_list_id):
+        if len(media_list_id) == 24:
+            return self.get_media_list(media_list_id)
+
+        name_id = "list_" + media_list_id + "_id"
+        if (name_id in self or hasattr(self, name_id)) and self[name_id]:
+            return self.get_media_list(self[name_id])
+
+        return None
+
     def perform(self, media_id, action, media_list_short_name):
         """ Executes an action on the user's media lists
             Current available actions are:
@@ -187,20 +200,17 @@ class DB_UserGalleries(db.DynamicEmbeddedDocument):
         if action in ['append', 'remove', 'toggle']:
             is_favs = (media_list_short_name == "favs")
 
-            name_id = "list_" + media_list_short_name + "_id"
-
-            if len(media_list_short_name) == 24:
-                media_list = self.get_media_list(media_list_short_name)
-            else:
-                if (name_id in self or hasattr(self, name_id)) and self[name_id]:
-                    media_list = self.get_media_list(self[name_id])
-                else:
-                    media_list = DB_MediaList(**{"username": current_user.username, "list_type": media_list_short_name})
-                    media_list.save().reload()
-                    self[name_id] = str(media_list.id)
-
+            media_list = get_media_list_by_name_or_id(media_list_short_name)
             if not media_list:
-                return abort(404, "Not found")
+                if len(media_list_short_name) == 24:
+                    return abort(400, "Wrong media name")
+
+                media_list = DB_MediaList(**{"username": current_user.username, "list_type": media_list_short_name})
+                if not media_list:
+                    return abort(404, "Not found")
+
+                media_list.save().reload()
+                self[name_id] = str(media_list.id)
 
             media_list.check_permissions()
 
@@ -308,13 +318,16 @@ class DB_UserGalleries(db.DynamicEmbeddedDocument):
         my_list.delete()
         return True
 
-    def media_list_get(self, list_id, image_type=None):
+    def media_list_get(self, list_id, image_type=None, raw_db=False):
         list_id = self.get_list_id(list_id)
         if not list_id:
             return {'is_empty': True, 'media_list': []}
 
         my_list = DB_MediaList.objects(pk=list_id).first()
         my_list.check_permissions()
+
+        if raw_db:
+            return my_list
 
         ret = mongo_to_dict_helper(my_list)
 
