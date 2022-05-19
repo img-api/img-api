@@ -547,7 +547,7 @@ def api_populate_media_list(user_id, media_list):
 
     file_list = File_Tracking.objects(query)
 
-    return_list = [ft.serialize() for ft in file_list]
+    return_list = [ft.serialize() for ft in reversed(file_list)]
 
     if current_user.is_authenticated:
         current_user.populate_media(return_list)
