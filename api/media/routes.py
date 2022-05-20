@@ -22,6 +22,7 @@ from mongoengine.queryset import QuerySet
 from mongoengine.queryset.visitor import Q
 
 from wand.image import Image
+from api.file_cache import api_file_cache
 
 
 def get_media_valid_extension(file_name):
@@ -308,6 +309,7 @@ def api_dynamic_conversion(my_file, abs_path, extension, thumbnail, filename, ca
 
 @blueprint.route('/category/<string:media_category>', methods=['GET'])
 @api_key_login_or_anonymous
+@api_file_cache
 def api_fetch_media_with_media_category(media_category):
     """Returns a list of media objects to display.
 
@@ -463,6 +465,7 @@ def api_get_media_image(media_id):
 
 
 @blueprint.route('/stream/<string:user_id>', methods=['GET'])
+@api_file_cache
 def api_get_user_photostream(user_id):
     """Returns a json object with a list of media objects owned by this user.
     ---
@@ -690,7 +693,6 @@ def api_get_media_post(media_id):
 
         else:
             media_file = current_user.get_photostream_position(media_id, position)
-
 
     ######################################################
 
