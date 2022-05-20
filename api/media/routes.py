@@ -681,13 +681,16 @@ def api_get_media_post(media_id):
         position = -1
         media_list = current_user.get_media_list(get_prev, raw_db=True)
 
-    if media_list:
-        new_media = media_list.get_position(media_id, position)
-        print_b(" Media " + media_id)
-        if new_media:
-            media_file = api_get_media_id(new_media.media_id)
+    if position != 0:
+        if media_list:
+            new_media = media_list.get_position(media_id, position)
+            if new_media:
+                media_file = api_get_media_id(new_media.media_id)
+                print_b(str(position) + ":: Media Position " + str(media_file.id))
 
-            print_b(str(position) + ":: Media Position " + str(media_file.id))
+        else:
+            media_file = current_user.get_photostream_position(media_id, position)
+
 
     ######################################################
 

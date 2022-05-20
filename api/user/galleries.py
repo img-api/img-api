@@ -45,7 +45,7 @@ class DB_MediaList(db.Document):
     def get_position(self, media_id, position):
         for idx, item in enumerate(self.media_list):
             if item.media_id == media_id:
-                return self.media_list[idx + position]
+                return self.media_list[(idx + position) % len(self.media_list)]
 
         return self.media_list[0]
 

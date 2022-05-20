@@ -15,7 +15,7 @@ from api.query_helper import mongo_to_dict_helper
 from .signature_serializer import TimedJSONWebSignatureSerializer as Serializer, BadSignature, SignatureExpired
 
 from .galleries import DB_UserGalleries
-
+from api.media.models import File_Tracking
 
 class DB_UserSubscription(db.DynamicEmbeddedDocument):
     category_id = db.StringField()
@@ -181,8 +181,6 @@ class User(UserMixin, db.Document):
         return get_response_error_formatted(403, {'error_msg': 'User is not active!'})
 
     def delete_media(self):
-        from api.media.models import File_Tracking
-
         print(" FULL USER CLEAN UP - REMOVE FILES AND DATABASE ENTRIES ")
 
         # Delete every file that contains me
@@ -213,6 +211,17 @@ class User(UserMixin, db.Document):
             self.save()
 
         return {"deleted": True}
+
+    def get_photostream_position(self, media_id, position):
+        stream_list = File_Tracking.objects(username=current_user.username)
+
+        # Convert cursor into list
+        for idx, item in enumerate(stream_list):
+            if str(item.id) == media_id:
+                return stream_list[(idx + position) % len(stream_list)]
+
+        return None
+
 
     def get_media_list(self, gallery_id, raw_db=False):
         """ Returns a dictionary with the media list """
