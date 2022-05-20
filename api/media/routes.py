@@ -307,7 +307,6 @@ def api_dynamic_conversion(my_file, abs_path, extension, thumbnail, filename, ca
 
 @blueprint.route('/category/<string:media_category>', methods=['GET'])
 @api_key_login_or_anonymous
-@cache.cached(120)
 def api_fetch_media_with_media_category(media_category):
     """Returns a list of media objects to display.
 
@@ -445,7 +444,6 @@ def api_get_media(media_id, image_only=False):
 
 @blueprint.route('/get_image/<string:media_id>', methods=['GET'])
 @api_key_login_or_anonymous
-@cache.cached(120)
 def api_get_media_image(media_id):
     """Returns a media object given it's media_id, if it is a video, it will transform it into an image.
         Check /get for a full description
@@ -464,7 +462,6 @@ def api_get_media_image(media_id):
 
 
 @blueprint.route('/stream/<string:user_id>', methods=['GET'])
-@cache.cached(120)
 def api_get_user_photostream(user_id):
     """Returns a json object with a list of media objects owned by this user.
     ---
@@ -624,7 +621,6 @@ def api_fetch_from_url():
 
 
 @blueprint.route('/posts/<string:media_id>/get', methods=['GET'])
-@cache.cached(60)
 def api_get_media_post(media_id):
     """Returns an individual post information
     ---
