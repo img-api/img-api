@@ -45,7 +45,11 @@ def api_file_cache(func):
 
             params += item[0] + "=" + item[1]
 
-        key = lang + "/" + current_user.username + "/" + path + "?" + params
+        if current_user.is_authenticated:
+            key = lang + "/" + current_user.username + "/" + path + "?" + params
+        else:
+            key = lang + "/anon/" + path + "?" + params
+
         cache_key = hashlib.md5(key.encode()).hexdigest()
         return cache_key
 
@@ -59,7 +63,12 @@ def api_file_cache(func):
         debug_cache = request.args.get("debug_cache")
 
         try:
-            cache_path = "/tmp/cache/" + current_user.username + "/"
+            if current_user.is_authenticated:
+                cache_path = "/tmp/cache/" + current_user.username + "/"
+            else:
+                cache_path = "/tmp/cache/anon/"
+
+
             file_path = cache_path + key + ".json"
 
             cached = pathlib.Path(file_path)
@@ -99,7 +108,11 @@ def api_file_cache(func):
         try:
             debug_cache = request.args.get("debug_cache", True)
 
-            cache_path = "/tmp/cache/" + current_user.username + "/"
+            if current_user.is_authenticated:
+                cache_path = "/tmp/cache/" + current_user.username + "/"
+            else:
+                cache_path = "/tmp/cache/anon/"
+
             ensure_dir(cache_path)
             if not key:
                 key = make_cache_key()
