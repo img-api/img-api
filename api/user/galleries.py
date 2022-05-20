@@ -42,6 +42,13 @@ class DB_MediaList(db.Document):
 
     media_list = db.EmbeddedDocumentListField(DB_ItemMedia, default=[])
 
+    def get_position(self, media_id, position):
+        for idx, item in enumerate(self.media_list):
+            if item.media_id == media_id:
+                return self.media_list[idx + position]
+
+        return self.media_list[0]
+
     def find_on_list(self, media_id):
         for idx, item in enumerate(self.media_list):
             if item.media_id == media_id:
@@ -422,3 +429,4 @@ class DB_UserGalleries(db.DynamicEmbeddedDocument):
         media_list.update(**my_dict)
         ret = mongo_to_dict_helper(media_list)
         return {"galleries": [ret]}
+

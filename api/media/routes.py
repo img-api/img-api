@@ -35,6 +35,7 @@ def get_media_valid_extension(file_name):
 
     return extension
 
+
 def api_internal_add_to_media_list(media_list, my_file):
     if not media_list:
         return
@@ -620,6 +621,19 @@ def api_fetch_from_url():
     return get_response_formatted(ret)
 
 
+def api_get_media_id(media_id):
+    media_file = File_Tracking.objects(id=media_id).first()
+
+    if not media_file:
+        return abort(404, {'error_msg': "Media not found."})
+
+    if media_file.is_private() and not media_file.is_current_user():
+        return abort(403, {'error_msg': "Media is private."})
+
+    print_b(" MEDIA " + media_file.file_name)
+    return media_file
+
+
 @blueprint.route('/posts/<string:media_id>/get', methods=['GET'])
 def api_get_media_post(media_id):
     """Returns an individual post information
@@ -649,13 +663,33 @@ def api_get_media_post(media_id):
     from flask_login import current_user  # Required by pytest, otherwise client crashes on CI
 
     ret = {'status': 'success', 'media_id': media_id}
-    media_file = File_Tracking.objects(id=media_id).first()
 
-    if not media_file:
-        return get_response_error_formatted(404, {'error_msg': "Media not found."})
+    media_file = api_get_media_id(media_id)
 
-    if media_file.is_private() and not media_file.is_current_user():
-        return get_response_error_formatted(403, {'error_msg': "Media is private."})
+    ################ Next and previous ##################
+
+    get_next = request.args.get("next", '')
+    get_prev = request.args.get("prev", '')
+
+    position = 0
+    media_list = None
+    if get_next:
+        position = 1
+        media_list = current_user.get_media_list(get_next, raw_db=True)
+
+    if get_prev:
+        position = -1
+        media_list = current_user.get_media_list(get_prev, raw_db=True)
+
+    if media_list:
+        new_media = media_list.get_position(media_id, position)
+        print_b(" Media " + media_id)
+        if new_media:
+            media_file = api_get_media_id(new_media.media_id)
+
+            print_b(str(position) + ":: Media Position " + str(media_file.id))
+
+    ######################################################
 
     return_list = [media_file.serialize()]
 
