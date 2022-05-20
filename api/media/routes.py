@@ -678,11 +678,13 @@ def api_get_media_post(media_id):
     media_list = None
     if get_next:
         position = 1
-        media_list = current_user.get_media_list(get_next, raw_db=True)
+        if (get_next!= "posts"):
+            media_list = current_user.get_media_list(get_next, raw_db=True)
 
     if get_prev:
         position = -1
-        media_list = current_user.get_media_list(get_prev, raw_db=True)
+        if (get_prev!= "posts"):
+            media_list = current_user.get_media_list(get_prev, raw_db=True)
 
     if position != 0:
         if media_list:
