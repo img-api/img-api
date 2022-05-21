@@ -719,7 +719,8 @@ def api_actions_on_list(username, list_id, action, my_param=None, my_value=None)
         populate = not request.args.get("no_populate", False)
         if populate:
             media_list = [media['media_id'] for media in ret['media_list']]
-            ret.update(api_populate_media_list(username, media_list, ret['is_order_asc']))
+            if media_list:
+                ret.update(api_populate_media_list(username, media_list, ret['is_order_asc']))
 
         return get_response_formatted(ret)
 
