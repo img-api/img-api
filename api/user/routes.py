@@ -585,7 +585,6 @@ def api_user_logout():
 
 
 @blueprint.route('/media/<string:media_id>/<string:action>/<string:my_list>', methods=['GET'])
-@cache.cached(60)
 @api_key_or_login_required
 def api_set_this_media_into_an_action(media_id, action, my_list):
     """ Performs an action for a particular media in a list.

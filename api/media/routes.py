@@ -22,8 +22,6 @@ from mongoengine.queryset import QuerySet
 from mongoengine.queryset.visitor import Q
 
 from wand.image import Image
-from api.file_cache import api_file_cache
-
 
 def get_media_valid_extension(file_name):
     """ Checks with the system to see if the extension provided is valid,
@@ -309,7 +307,6 @@ def api_dynamic_conversion(my_file, abs_path, extension, thumbnail, filename, ca
 
 @blueprint.route('/category/<string:media_category>', methods=['GET'])
 @api_key_login_or_anonymous
-@api_file_cache
 def api_fetch_media_with_media_category(media_category):
     """Returns a list of media objects to display.
 
@@ -465,7 +462,6 @@ def api_get_media_image(media_id):
 
 
 @blueprint.route('/stream/<string:user_id>', methods=['GET'])
-@api_file_cache
 def api_get_user_photostream(user_id):
     """Returns a json object with a list of media objects owned by this user.
     ---
@@ -678,12 +674,12 @@ def api_get_media_post(media_id):
     media_list = None
     if get_next:
         position = 1
-        if (get_next!= "posts"):
+        if (get_next != "posts"):
             media_list = current_user.get_media_list(get_next, raw_db=True)
 
     if get_prev:
         position = -1
-        if (get_prev!= "posts"):
+        if (get_prev != "posts"):
             media_list = current_user.get_media_list(get_prev, raw_db=True)
 
     if position != 0:
@@ -760,7 +756,7 @@ def api_set_media_private_posts_json(media_id, privacy_mode):
     else:
         privacy_mode = "private"
 
-    print(" New privacy " + privacy_mode)
+    print_b(" New privacy " + privacy_mode)
 
     ret = {'status': 'success', 'media_id': media_id, 'privacy_mode': privacy_mode}
     return get_response_formatted(ret)
