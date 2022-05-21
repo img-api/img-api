@@ -1,6 +1,25 @@
 from api.print_helper import *
 from imgapi_launcher import db
 
+def get_value_from_text(value):
+    if value is bool:
+        return value
+
+    if value is int:
+        return value >= 1
+
+    value = str(value).strip().lower()
+    if value in ['', 'none', 'null', 'undefined']:
+        return None
+
+    if value in ['1', 'true']:
+        return True
+
+    if value in ['0', 'false']:
+        return False
+
+    return value
+
 
 def get_value_type_helper(field, value):
     if isinstance(field, int):

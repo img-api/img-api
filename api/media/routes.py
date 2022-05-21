@@ -23,6 +23,7 @@ from mongoengine.queryset.visitor import Q
 
 from wand.image import Image
 
+
 def get_media_valid_extension(file_name):
     """ Checks with the system to see if the extension provided is valid,
         You should never trust the frontend """
@@ -523,7 +524,7 @@ def api_get_user_photostream(user_id):
     return get_response_formatted(ret)
 
 
-def api_populate_media_list(user_id, media_list):
+def api_populate_media_list(user_id, media_list, is_order_asc=True):
     """ Populates a list of media, checking that the media is public or the user is itself """
     from flask_login import current_user
 
@@ -547,7 +548,10 @@ def api_populate_media_list(user_id, media_list):
 
     file_list = File_Tracking.objects(query)
 
-    return_list = [ft.serialize() for ft in reversed(file_list)]
+    if is_order_asc:
+        return_list = [ft.serialize() for ft in reversed(file_list)]
+    else:
+        return_list = [ft.serialize() for ft in file_list]
 
     if current_user.is_authenticated:
         current_user.populate_media(return_list)
@@ -618,6 +622,19 @@ def api_fetch_from_url():
 
     ret = {'status': 'success', 'job_id': job.id, 'request_url': request_url}
     return get_response_formatted(ret)
+
+
+def api_media_set_privacy(media_id, is_public):
+    media_file = File_Tracking.objects(id=media_id).first()
+    if not media_file:
+        return False
+
+    # We can only change the permission to our current user, and owner of the media
+    if not media_file.is_current_user():
+        return False
+
+    media_file.update(**{"is_public": is_public})
+    return True
 
 
 def api_get_media_id(media_id):

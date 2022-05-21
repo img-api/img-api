@@ -17,6 +17,7 @@ from .signature_serializer import TimedJSONWebSignatureSerializer as Serializer,
 from .galleries import DB_UserGalleries
 from api.media.models import File_Tracking
 
+
 class DB_UserSubscription(db.DynamicEmbeddedDocument):
     category_id = db.StringField()
     update_date = db.DateTimeField()
@@ -222,7 +223,6 @@ class User(UserMixin, db.Document):
 
         return None
 
-
     def get_media_list(self, gallery_id, raw_db=False):
         """ Returns a dictionary with the media list """
 
@@ -240,3 +240,9 @@ class User(UserMixin, db.Document):
             self.save()
 
         return ret
+
+    def set_on_list(self, gallery_id, param, value):
+        """ Sets a parameter on the list  """
+
+        return self.galleries.set(gallery_id, param, value)
+

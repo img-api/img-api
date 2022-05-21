@@ -626,10 +626,12 @@ def api_set_this_media_into_an_action(media_id, action, my_list):
     return get_response_formatted(ret)
 
 
-@blueprint.route('/<string:username>/list/<string:list_id>/<string:action>/<string:image_type>', methods=['GET'])
+@blueprint.route('/<string:username>/list/<string:list_id>/<string:action>/<string:my_param>/<string:my_value>',
+                 methods=['GET'])
+@blueprint.route('/<string:username>/list/<string:list_id>/<string:action>/<string:my_param>', methods=['GET'])
 @blueprint.route('/<string:username>/list/<string:list_id>/<string:action>', methods=['GET', 'DELETE'])
 @api_key_login_or_anonymous
-def api_actions_on_list(username, list_id, action, image_type=None):
+def api_actions_on_list(username, list_id, action, my_param=None, my_value=None):
     """ Performs an action for a list
     ---
     tags:
@@ -653,7 +655,7 @@ def api_actions_on_list(username, list_id, action, image_type=None):
           name: action
           schema:
             type: string
-          description: create, remove, get, add, set_cover, set_background
+          description: create, remove, get, add, set
 
         - in: query
           name: no_populate
@@ -684,10 +686,15 @@ def api_actions_on_list(username, list_id, action, image_type=None):
                 res = current_user.media_list_remove(list_id)
                 return get_response_formatted(res)
 
+            if action == 'set':
+                if not my_value: my_value = True
+                ret = current_user.set_on_list(list_id, my_param, my_value)
+                return get_response_formatted(ret)
 
-            if action in ['set_cover', 'set_background']:
-                ret = current_user.action_on_list(media_id, action, my_list)
-                return get_response_formatted({})
+            if action == 'unset':
+                # Removes the parameter from the list
+                ret = current_user.unset_on_list(list_id, my_param)
+                return get_response_formatted(ret)
 
     if action == 'get':
 
@@ -698,21 +705,21 @@ def api_actions_on_list(username, list_id, action, image_type=None):
 
         # Galleries owned by you will display everything
         if current_user.is_authenticated and (username == 'me' or current_user.username == username):
-            ret = current_user.galleries.media_list_get(list_id, image_type)
+            ret = current_user.galleries.media_list_get(list_id, my_param)
         else:
             # Galleries owned by a third pary will only display public facing pictures
             user = User.objects(username__iexact=username).first()
             if not user:
                 return get_response_error_formatted(404, {'error_msg': "User not found."})
 
-            ret = user.galleries.media_list_get(list_id, image_type)
+            ret = user.galleries.media_list_get(list_id, my_param)
 
         # We populate the list with results, and not only media IDs
         # The user might want to get a clean view without extra information, to maybe display only the tile.
         populate = not request.args.get("no_populate", False)
         if populate:
             media_list = [media['media_id'] for media in ret['media_list']]
-            ret.update(api_populate_media_list(username, media_list))
+            ret.update(api_populate_media_list(username, media_list, ret['is_order_asc']))
 
         return get_response_formatted(ret)
 
@@ -757,7 +764,8 @@ def api_get_by_list_id(list_id, image_type=None):
     if image_type == "random":
         arr = [random.choice(arr)]
 
-    ret.update(api_populate_media_list(the_list.username, arr))
+    if request.args.get("populate", False):
+        ret.update(api_populate_media_list(the_list.username, arr, the_list.is_order_asc))
 
     return get_response_formatted(ret)
 
@@ -827,6 +835,7 @@ def api_create_a_new_list():
 
     return get_response_formatted(ret)
 
+
 @blueprint.route('/list/update', methods=['POST'])
 @api_key_or_login_required
 def api_update_a_list():
@@ -851,6 +860,7 @@ def api_update_a_list():
     ret['username'] = current_user.username
 
     return get_response_formatted(ret)
+
 
 @blueprint.route('/list/clear', methods=['GET', 'DELETE'])
 @api_key_or_login_required

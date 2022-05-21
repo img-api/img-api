@@ -37,6 +37,8 @@ class DB_MediaList(db.Document):
     background_id = db.StringField()
 
     is_public = db.BooleanField(default=False)
+    is_order_asc = db.BooleanField(default=True)
+
     allow_public_upload = db.BooleanField(default=False)
     tags = db.ListField(db.StringField(), default=list)
 
@@ -131,6 +133,14 @@ class DB_MediaList(db.Document):
     def set_background(self, media_id):
         """ Galleries have a background which is also used when a large image has to be displayed  """
         self.update(**{"background_id": media_id})
+
+    def set_media_privacy(self, is_public):
+        from api.media.routes import api_media_set_privacy
+
+        print_b(" Special case in which we toggle all the items on the gallery ")
+        my_list = self.get_as_list()
+        for media_id in my_list:
+            api_media_set_privacy(media_id, is_public)
 
 
 class DB_UserGalleries(db.DynamicEmbeddedDocument):
@@ -426,7 +436,25 @@ class DB_UserGalleries(db.DynamicEmbeddedDocument):
 
         my_dict.pop('id')
 
+        if 'is_public' in my_dict and my_dict['is_public'] != media_list.is_public:
+            media_list.set_media_privacy(my_dict['is_public'])
+
         media_list.update(**my_dict)
+        media_list.reload()
+
         ret = mongo_to_dict_helper(media_list)
         return {"galleries": [ret]}
 
+    def set(self, gallery_id, param, value):
+        from api.query_helper import get_value_from_text
+
+        if param[0] == "_":
+            return abort(401, "Unauthorized access")
+
+        value = get_value_from_text(value)
+
+        # Clean the name so we don't get mongo injections on parameters by removing extra characters and double __
+        param = self.get_safe_gallery_name(param)
+
+        print_b(gallery_id + " SET " + param + "=[" + str(value) + "]")
+        return self.update({'id': gallery_id, param: value})
