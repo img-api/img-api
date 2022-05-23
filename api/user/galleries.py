@@ -44,10 +44,48 @@ class DB_MediaList(db.Document):
 
     media_list = db.EmbeddedDocumentListField(DB_ItemMedia, default=[])
 
+    def find_media_pos(self, media_id, position):
+        for idx, item in enumerate(self.media_list):
+            if item.media_id == media_id:
+                pos = (idx + position) % len(self.media_list)
+                return pos
+
+        return 0
+
+    def get_media_position(self, media_id, position):
+        from api.media.models import File_Tracking
+
+        media_file = None
+
+        remove_cleanup = []
+
+        pos = self.find_media_pos(media_id, position)
+
+        try:
+            while position < len(self.media_list):
+                item = self.media_list[pos]
+                media_file = File_Tracking.objects(id=item.media_id).first()
+
+                if not media_file:
+                    remove_cleanup.append(item.media_id)
+
+                if media_file: return media_file
+
+                position += 1
+                pos = (pos + position) % len(self.media_list)
+
+            return None
+        finally:
+            for mid in remove_cleanup:
+                print_r(" Media was deleted , we have to remove it from this list ")
+                self.remove_from_list(mid)
+            pass
+
     def get_position(self, media_id, position):
         for idx, item in enumerate(self.media_list):
             if item.media_id == media_id:
-                return self.media_list[(idx + position) % len(self.media_list)]
+                pos = (idx + position) % len(self.media_list)
+                return self.media_list[pos]
 
         return self.media_list[0]
 

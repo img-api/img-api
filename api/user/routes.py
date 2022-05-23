@@ -512,7 +512,7 @@ def generate_random_name():
     """ Generates a random name so we can use it for the anonymous user.
         This name should come from a dictionary like 3words
     """
-    from services.my_dictionary import words
+    from services.dictonary.my_dictionary import words
 
     l = len(words)
 
