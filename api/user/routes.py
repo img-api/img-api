@@ -643,9 +643,18 @@ def api_get_all_the_lists_by_username(username):
         description: Returns a list of lists
     """
 
-    if username == 'me' or (current_user.is_authenticated and current_user.username == username):
-        ret = current_user.galleries.get_every_media_list(username)
-    else:
+    ret = None
+    if current_user.is_authenticated:
+        if username == 'me':
+            username = current_user.username
+
+        if current_user.username == username:
+            ret = current_user.galleries.get_every_media_list(username)
+
+    if not ret:
+        if username == "me":
+            return get_response_error_formatted(404, {'error_msg': "Please create an account."})
+
         user = User.objects(username__iexact=username).first()
         if not user or not user.is_public:
             return get_response_error_formatted(404, {'error_msg': "User not found."})

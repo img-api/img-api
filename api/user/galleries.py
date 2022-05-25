@@ -419,9 +419,13 @@ class DB_UserGalleries(db.DynamicEmbeddedDocument):
         return s
 
     def get_every_media_list(self, username=None):
-        if current_user.is_authenticated and current_user.username == username:
-            ret = mongo_to_dict_helper(self)
-            return {'galleries': self.clean_dict(ret)}
+        if current_user.is_authenticated:
+            if not username or username == "me":
+                username = current_user.username
+
+            if current_user.username == username:
+                ret = mongo_to_dict_helper(self)
+                return {'galleries': self.clean_dict(ret)}
 
         ret = {}
         for key, value in self.__dict__.items():
