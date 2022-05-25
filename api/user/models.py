@@ -68,6 +68,7 @@ class User(UserMixin, db.Document):
 
     active = db.BooleanField(default=False)
     is_anon = db.BooleanField(default=False)
+    is_public = db.BooleanField(default=True)
 
     settings = db.EmbeddedDocumentField(DB_UserSettings, default=DB_UserSettings())
     galleries = db.EmbeddedDocumentField(DB_UserGalleries, default=DB_UserGalleries())
@@ -214,14 +215,36 @@ class User(UserMixin, db.Document):
         return {"deleted": True}
 
     def get_photostream_position(self, media_id, position):
-        stream_list = File_Tracking.objects(username=current_user.username)
+        stream_list = File_Tracking.objects(username=self.username)
+
+        only_public = True
+        if current_user.is_authenticated and self.username == current_user.username:
+            only_public = False
 
         # Convert cursor into list
+        found = -1
         for idx, item in enumerate(stream_list):
             if str(item.id) == media_id:
-                return stream_list[(idx + position) % len(stream_list)]
+                found = idx
+                break
 
-        return None
+        if found == -1:
+            return media_id
+
+        while position < len(stream_list):
+            new_media = stream_list[(found + position) % len(stream_list)]
+            if 'info' not in new_media:
+                # We don't have info?... what?
+                new_media.delete()
+                position += 1
+                continue
+
+            if only_public and not new_media.is_public:
+                position += 1
+            else:
+                return new_media
+
+        return media_id
 
     def get_media_list(self, gallery_id, raw_db=False):
         """ Returns a dictionary with the media list """
@@ -245,4 +268,3 @@ class User(UserMixin, db.Document):
         """ Sets a parameter on the list  """
 
         return self.galleries.set(gallery_id, param, value)
-

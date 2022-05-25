@@ -395,11 +395,11 @@ def api_remove_user_local():
     """
     print("======= DELETE USER LOCAL =============")
 
-    user = get_user_from_request()
-    if isinstance(user, Response):
-        return user
+    if not current_user.is_authenticated:
+        return get_response_error_formatted(401, {'error_msg': "Account not found."})
 
-    user.delete()
+    if current_user.id:
+        current_user.delete()
     return get_response_formatted({'status': 'success', 'msg': 'user deleted'})
 
 
@@ -626,6 +626,38 @@ def api_set_this_media_into_an_action(media_id, action, my_list):
     return get_response_formatted(ret)
 
 
+@blueprint.route('/<string:username>/list/get', methods=['GET'])
+@api_key_login_or_anonymous
+def api_get_all_the_lists_by_username(username):
+    """ Gets all the list of media lists this an user has. It is a private call for this user
+    ---
+    tags:
+      - user
+    schemes: ['http', 'https']
+    deprecated: false
+    definitions:
+      user_file:
+        type: object
+    responses:
+      200:
+        description: Returns a list of lists
+    """
+
+    if username == 'me' or (current_user.is_authenticated and current_user.username == username):
+        ret = current_user.galleries.get_every_media_list(username)
+    else:
+        user = User.objects(username__iexact=username).first()
+        if not user or not user.is_public:
+            return get_response_error_formatted(404, {'error_msg': "User not found."})
+
+        ret = user.galleries.get_every_media_list(username)
+
+    if False:
+        ret['galleries'].pop('favs', None)
+
+    return get_response_formatted(ret)
+
+
 @blueprint.route('/<string:username>/list/<string:list_id>/<string:action>/<string:my_param>/<string:my_value>',
                  methods=['GET'])
 @blueprint.route('/<string:username>/list/<string:list_id>/<string:action>/<string:my_param>', methods=['GET'])
@@ -729,7 +761,7 @@ def api_actions_on_list(username, list_id, action, my_param=None, my_value=None)
 
 @blueprint.route('/list/get_by_id/<string:list_id>/<string:image_type>', methods=['GET'])
 @blueprint.route('/list/get_by_id/<string:list_id>', methods=['GET'])
-@api_key_or_login_required
+@api_key_login_or_anonymous
 def api_get_by_list_id(list_id, image_type=None):
     """ Gets all the list of media this list has, if it is public
     ---
@@ -788,7 +820,10 @@ def api_get_all_the_lists():
         description: Returns a list of lists
     """
 
-    ret = current_user.galleries.get_every_media_list()
+    if not current_user.is_authenticated:
+        return abort(401, "Please login or create an account to create galleries")
+
+    ret = current_user.galleries.get_every_media_list(current_user.username)
 
     if False:
         ret['galleries'].pop('favs', None)

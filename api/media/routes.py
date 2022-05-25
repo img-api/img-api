@@ -689,32 +689,33 @@ def api_get_media_post(media_id):
 
     position = 0
     media_list = None
+
+    if current_user.is_authenticated:
+        user = current_user
+    else:
+        user = media_file.get_owner()
+        if not user:
+            return get_response_error_formatted(403, {'error_msg': "User is private."})
+
     if get_next:
         position = 1
         if (get_next != "posts"):
-            media_list = current_user.get_media_list(get_next, raw_db=True)
+            media_list = user.get_media_list(get_next, raw_db=True)
 
     if get_prev:
         position = -1
         if (get_prev != "posts"):
-            media_list = current_user.get_media_list(get_prev, raw_db=True)
+            media_list = user.get_media_list(get_prev, raw_db=True)
 
     if position != 0:
         if media_list:
             media_file = media_list.get_media_position(media_id, position)
-            #if new_media:
-            #    media_file = api_get_media_id(new_media.media_id)
-            #    print_b(str(position) + ":: Media Position " + str(media_file.id))
-
         else:
-            media_file = current_user.get_photostream_position(media_id, position)
+            media_file = user.get_photostream_position(media_id, position)
 
     ######################################################
 
     return_list = [media_file.serialize()]
-
-    if current_user.is_authenticated:
-        current_user.populate_media(return_list)
 
     return get_response_formatted({'status': 'success', "media_files": return_list})
 

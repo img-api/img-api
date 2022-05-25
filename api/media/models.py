@@ -101,6 +101,15 @@ class File_Tracking(db.DynamicDocument):
 
         return False
 
+    def get_owner(self):
+        from api.user.models import User
+
+        if not self.is_public:
+            return None
+
+        return User.objects(username=self.username).first()
+
+
     def serialize(self):
         """ Cleanup version of the media file so don't release confidential information """
         serialized_file = {

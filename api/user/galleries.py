@@ -418,8 +418,20 @@ class DB_UserGalleries(db.DynamicEmbeddedDocument):
             s[key[5:-3]] = ret[key]
         return s
 
-    def get_every_media_list(self):
-        ret = mongo_to_dict_helper(self)
+    def get_every_media_list(self, username=None):
+        if current_user.is_authenticated and current_user.username == username:
+            ret = mongo_to_dict_helper(self)
+            return {'galleries': self.clean_dict(ret)}
+
+        ret = {}
+        for key, value in self.__dict__.items():
+            if not key.startswith("list_"):
+                continue
+
+            my_list = DB_MediaList.objects(pk=value).first()
+            if my_list and my_list.is_public:
+                ret[key] = value
+
         return {'galleries': self.clean_dict(ret)}
 
     def clear_all(self, username):
@@ -444,7 +456,7 @@ class DB_UserGalleries(db.DynamicEmbeddedDocument):
         my_list = DB_MediaList.objects(username=username)
         my_list.delete()
 
-        return self.get_every_media_list()
+        return {}
 
     def create(self, username, gallery_name, my_dict):
         my_dict.update({
