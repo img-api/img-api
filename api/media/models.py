@@ -11,9 +11,7 @@ from flask_login import current_user
 
 
 class File_Tracking(db.DynamicDocument):
-    meta = {
-        'strict': False,
-    }
+    meta = {'strict': False, "auto_create_index": False, "index_background": True, 'indexes': ['username', 'tags', 'creation_date']}
 
     creation_date = db.DateTimeField()
     file_format = db.StringField()
@@ -26,6 +24,11 @@ class File_Tracking(db.DynamicDocument):
     checksum_md5 = db.StringField()
     username = db.StringField()
 
+    title = db.StringField()
+    description = db.StringField()
+
+    source_url = db.StringField()
+
     # A helper to specify if a preview was generated
     has_preview = db.BooleanField(default=False)
 
@@ -35,7 +38,12 @@ class File_Tracking(db.DynamicDocument):
     is_public = db.BooleanField(default=False)
     is_anon = db.BooleanField(default=False)
 
+    no_views = db.LongField()
+    no_likes = db.LongField()
+    no_dislikes = db.LongField()
+
     comments = db.ListField(db.StringField())
+    tags = db.ListField(db.StringField(), default=list)
 
     @staticmethod
     def get_media_path():
@@ -108,7 +116,6 @@ class File_Tracking(db.DynamicDocument):
             return None
 
         return User.objects(username=self.username).first()
-
 
     def serialize(self):
         """ Cleanup version of the media file so don't release confidential information """

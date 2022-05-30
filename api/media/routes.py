@@ -338,12 +338,31 @@ def api_fetch_media_with_media_category(media_category):
     from flask_login import current_user  # Required by pytest, otherwise client crashes on CI
     from api.media.models import File_Tracking
 
-    files = File_Tracking.objects(is_public=True)
+    DEFAULT_ITEMS_LIMIT = 25
+    items = int(request.args.get('items', DEFAULT_ITEMS_LIMIT))
+    page = int(request.args.get('page', 0))
+    offset = page * items
+
+    query = Q(is_public=True)
+
+    if media_category != "NEW":
+        query = query & Q(tags__contains=media_category)
+
+    print_h1(" LOAD PAGE " + str(page))
+
+    op = File_Tracking.objects(query)
+
+    if request.args.get('order', 'desc') == 'desc':
+        op = op.order_by('-creation_date')
+    else:
+        op = op.order_by('+creation_date')
+
+    files = op.skip(offset).limit(items)
 
     return_list = []
 
     count = 0
-    for f in reversed(files):
+    for f in files:
         if f.exists():
             return_list.append(f.serialize())
             count += 1
@@ -355,7 +374,7 @@ def api_fetch_media_with_media_category(media_category):
     if current_user.is_authenticated:
         current_user.populate_media(return_list)
 
-    ret = {'status': 'success', 'media_files': return_list}
+    ret = {'status': 'success', 'media_files': return_list, 'items': items, 'offset': offset, 'page': page}
     return get_response_formatted(ret)
 
 
@@ -511,7 +530,15 @@ def api_get_user_photostream(user_id):
     else:
         query = Q(username=user_id) & Q(is_public=True)
 
-    file_list = File_Tracking.objects(query)
+    op = File_Tracking.objects(query)
+
+    DEFAULT_ITEMS_LIMIT = 25
+    items = int(request.args.get('items', DEFAULT_ITEMS_LIMIT))
+    page = int(request.args.get('page', 0))
+    offset = page * items
+
+    print_h1(" LOAD PAGE " + str(page))
+    file_list = op.skip(offset).limit(items)
 
     return_list = []
     for ft in file_list:
@@ -520,7 +547,7 @@ def api_get_user_photostream(user_id):
     if current_user.is_authenticated:
         current_user.populate_media(return_list)
 
-    ret = {'status': 'success', 'media_files': return_list}
+    ret = {'status': 'success', 'media_files': return_list, 'items': items, 'offset': offset, 'page': page}
     return get_response_formatted(ret)
 
 
@@ -541,22 +568,36 @@ def api_populate_media_list(user_id, media_list, is_order_asc=True):
     if current_user.is_authenticated:
         username = current_user.username
 
+    ####################### PAGINATION ################################################
+
+    DEFAULT_ITEMS_LIMIT = 50
+    items = int(request.args.get('items', DEFAULT_ITEMS_LIMIT))
+    page = int(request.args.get('page', 0))
+    offset = page * items
+
     query = Q(pk__in=media_list)
 
     if user_id != username:
         query = query & Q(is_public=True)
 
-    file_list = File_Tracking.objects(query)
+    op = File_Tracking.objects(query)
+
+    ######### TODO: ORDER SHOULD BE THE DATE IT GOT ON THE LIBRARY ####################
 
     if is_order_asc:
-        return_list = [ft.serialize() for ft in reversed(file_list)]
+        op = op.order_by('-creation_date')
     else:
-        return_list = [ft.serialize() for ft in file_list]
+        op = op.order_by('+creation_date')
+
+    file_list = op.skip(offset).limit(items)
+
+    return_list = [ft.serialize() for ft in file_list]
 
     if current_user.is_authenticated:
         current_user.populate_media(return_list)
 
-    return {'media_files': return_list}
+    ret = {'media_files': return_list, 'items': items, 'offset': offset, 'page': page}
+    return ret
 
 
 @blueprint.route('/fetch', methods=[
@@ -714,6 +755,9 @@ def api_get_media_post(media_id):
             media_file = user.get_photostream_position(media_id, position)
 
     ######################################################
+
+    if not media_file:
+        return get_response_error_formatted(404, {'error_msg': "Missing file."})
 
     return_list = [media_file.serialize()]
 
