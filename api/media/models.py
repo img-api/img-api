@@ -11,7 +11,12 @@ from flask_login import current_user
 
 
 class File_Tracking(db.DynamicDocument):
-    meta = {'strict': False, "auto_create_index": False, "index_background": True, 'indexes': ['username', 'tags', 'creation_date']}
+    meta = {
+        'strict': False,
+        "auto_create_index": False,
+        "index_background": True,
+        'indexes': ['username', 'tags', 'creation_date']
+    }
 
     creation_date = db.DateTimeField()
     file_format = db.StringField()
@@ -24,10 +29,12 @@ class File_Tracking(db.DynamicDocument):
     checksum_md5 = db.StringField()
     username = db.StringField()
 
-    title = db.StringField()
-    description = db.StringField()
+    #### Edit attributes are editable by the user without ####
 
-    source_url = db.StringField()
+    my_title = db.StringField()
+    my_header = db.StringField()
+    my_description = db.StringField()
+    my_source_url = db.StringField()
 
     # A helper to specify if a preview was generated
     has_preview = db.BooleanField(default=False)
@@ -117,6 +124,33 @@ class File_Tracking(db.DynamicDocument):
 
         return User.objects(username=self.username).first()
 
+    def set_key_value(self, key, value):
+        if not self.is_current_user():
+            return False
+
+        # My own fields that can be edited:
+        if not key.startsWith('my_') and key not in ["is_public", "tags"]:
+            return False
+
+        self.update(**{key: value}, validate=False)
+        return True
+
+    def update_with_checks(self, json):
+        if not self.is_current_user():
+            return False
+
+        # My own fields that can be edited:
+        update = {}
+        for key in json:
+            if not key.startswith('my_') and key not in ["is_public", "tags"]:
+                continue
+
+            update[key] = json[key]
+
+        self.update(**update, validate=False)
+        self.reload()
+        return self.serialize()
+
     def serialize(self):
         """ Cleanup version of the media file so don't release confidential information """
         serialized_file = {
@@ -128,6 +162,9 @@ class File_Tracking(db.DynamicDocument):
             'username': self.username,
             'media_id': str(self.id),
             'creation_date': time.mktime(self.creation_date.timetuple()),
+            'my_title': self.my_title,
+            'my_description': self.my_description,
+            'my_source_url': self.my_source_url,
         }
 
         if 'info' in self:

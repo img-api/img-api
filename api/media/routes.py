@@ -200,6 +200,43 @@ def api_internal_upload_media():
     return get_response_formatted(ret)
 
 
+@blueprint.route('/update', methods=['POST'])
+@api_key_or_login_required
+def api_update_a_media():
+    """ Updates the media data which starts with my_
+    ---
+    tags:
+      - user
+    schemes: ['http', 'https']
+    deprecated: false
+    definitions:
+      user_file:
+        type: object
+    responses:
+      200:
+        description: Returns the updated media
+      401:
+        description: User cannot update this media
+    """
+    from flask_login import current_user  # Required by pytest, otherwise client crashes on CI
+    from api.media.models import File_Tracking
+
+    json = request.json
+    if not current_user.is_authenticated:
+        return abort(404, "User is not valid")
+
+    my_file = File_Tracking.objects(pk=json['media_id']).first()
+    if not my_file:
+        return abort(404, "Media is not valid")
+
+    ret = my_file.update_with_checks(json)
+    if not ret:
+        return abort(400, "You cannot edit this library")
+
+    ret['username'] = current_user.username
+
+    return get_response_formatted(ret)
+
 @blueprint.route('/upload_from_web', methods=['POST'])
 def api_web_upload_media():
     """ Uploads without an user or without checking a token, we use this to create new users on the fly """
