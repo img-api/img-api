@@ -27,5 +27,5 @@ sudo systemctl enable mongod
 echo "IMAGE MAGICK"
 sudo apt install imagemagick -y
 
-echo "IMAGE MAGICK"
+echo "REDIS"
 sudo apt install redis -y

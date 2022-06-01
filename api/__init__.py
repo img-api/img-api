@@ -7,8 +7,7 @@ from flask_caching import Cache
 from flask import json, jsonify, redirect, request, Response
 from flask_login import current_user, login_required, login_user, logout_user
 from werkzeug.exceptions import HTTPException
-
-from api.user.models import User
+from api.user.models import User, user_loader
 
 from .api_redis import init_redis
 from .print_helper import *

@@ -1,6 +1,11 @@
 #!/usr/bin/python3
 import sys
 import os
+import pwd
+import mod_wsgi
+
+print("########## Python " + sys.version + " #############")
+#print(mod_wsgi.version)
 
 sys.path.insert(0, "/home/imgapi/img-api/")
 sys.path.insert(0, "/home/imgapi/img-api/site-packages")
@@ -13,9 +18,10 @@ os.environ["LANG"] = "C.UTF-8"
 
 sys.getfilesystemencoding = lambda: 'C.UTF-8'
 
-activate_this = '/home/imgapi/img-api/.venv/bin/activate_this.py'
-with open(activate_this) as file_:
-    exec(file_.read(), dict(__file__=activate_this))
+os.environ["IMGAPI_MEDIA_PATH"] = "/home/imgapi/IMGAPI_DATA"
 
+print(" EXECUTABLE " + sys.executable)
+print(" USER " + pwd.getpwuid(os.getuid()).pw_name)
 print(" STARTING IMG-API ")
+
 from imgapi_launcher import app as application
