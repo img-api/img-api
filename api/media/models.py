@@ -33,6 +33,7 @@ class File_Tracking(db.DynamicDocument):
 
     my_title = db.StringField()
     my_header = db.StringField()
+
     my_description = db.StringField()
     my_source_url = db.StringField()
 
@@ -44,6 +45,7 @@ class File_Tracking(db.DynamicDocument):
 
     is_public = db.BooleanField(default=False)
     is_anon = db.BooleanField(default=False)
+    is_cover = db.BooleanField(default=False)
 
     no_views = db.LongField()
     no_likes = db.LongField()
@@ -142,13 +144,16 @@ class File_Tracking(db.DynamicDocument):
         # My own fields that can be edited:
         update = {}
         for key in json:
-            if not key.startswith('my_') and key not in ["is_public", "tags"]:
+            if not key.startswith('my_') and key not in ["is_cover", "is_public", "tags"]:
                 continue
 
-            update[key] = json[key]
+            if json[key] != self[key]:
+                update[key] = json[key]
 
-        self.update(**update, validate=False)
-        self.reload()
+        if len(update) > 0:
+            self.update(**update, validate=False)
+            self.reload()
+
         return self.serialize()
 
     def serialize(self):
@@ -156,6 +161,7 @@ class File_Tracking(db.DynamicDocument):
         serialized_file = {
             'is_public': self.is_public,
             'is_anon': self.is_anon,
+            'is_cover': self.is_cover,
             'file_size': self.file_size,
             'file_type': self.file_type,
             'file_format': self.file_format,

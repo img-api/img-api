@@ -268,3 +268,20 @@ class User(UserMixin, db.Document):
         """ Sets a parameter on the list  """
 
         return self.galleries.set(gallery_id, param, value)
+
+    def get_random(self):
+        covers = File_Tracking.objects(username=self.username, is_cover=True)
+        return covers.first()
+
+    def get_cover(self):
+        if "my_cover" in self and self["my_cover"]:
+            return self['my_cover']
+
+        covers = File_Tracking.objects(username=self.username, is_cover=True)
+        return covers.first()
+
+    def get_background(self):
+        if "my_cover" in self and self["my_cover"]:
+            return self['my_cover']
+
+        return self.get_random()

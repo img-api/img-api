@@ -585,6 +585,13 @@ def api_get_user_photostream(user_id):
         current_user.populate_media(return_list)
 
     ret = {'status': 'success', 'media_files': return_list, 'items': items, 'offset': offset, 'page': page}
+
+    cover_id = current_user.get_cover()
+    background_id = current_user.get_background()
+
+    if cover_id: ret['cover_id'] = cover_id
+    if background_id: ret['background_id'] = background_id
+
     return get_response_formatted(ret)
 
 
