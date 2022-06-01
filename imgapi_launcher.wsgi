@@ -13,10 +13,10 @@ sys.path.insert(0, "/home/imgapi/img-api/site-packages")
 os.environ["SETTINGS"]="/home/img-api/imgapi_production_settings.cfg"
 os.environ["WSGI"]="TRUE"
 
-os.environ["LC_ALL"] = "C.UTF-8"
-os.environ["LANG"] = "C.UTF-8"
-
-sys.getfilesystemencoding = lambda: 'C.UTF-8'
+# Revisit ENCODING
+#os.environ["LC_ALL"] = "C.UTF-8"
+#os.environ["LANG"] = "C.UTF-8"
+#sys.getfilesystemencoding = lambda: 'C.UTF-8'
 
 os.environ["IMGAPI_MEDIA_PATH"] = "/home/imgapi/IMGAPI_DATA/"
 
