@@ -42,3 +42,7 @@ def root_login_into_account():
 def root_create_account():
     """ Shows the login and password """
     return render_template('create_account.html')
+
+@blueprint.route('/favicon.ico')
+def favicon():
+    return redirect("/static/img-api/favicon/favicon.ico")
