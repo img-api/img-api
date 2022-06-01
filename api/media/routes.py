@@ -79,6 +79,7 @@ def api_internal_upload_media():
 
         user_space_path = current_user.username + "/"
         full_path = media_path + user_space_path
+        print(" Save at " + full_path)
         ensure_dir(full_path)
 
         mime = f_request.mimetype.split('/')[0]

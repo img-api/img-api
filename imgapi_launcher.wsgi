@@ -18,7 +18,7 @@ os.environ["LANG"] = "C.UTF-8"
 
 sys.getfilesystemencoding = lambda: 'C.UTF-8'
 
-os.environ["IMGAPI_MEDIA_PATH"] = "/home/imgapi/IMGAPI_DATA"
+os.environ["IMGAPI_MEDIA_PATH"] = "/home/imgapi/IMGAPI_DATA/"
 
 print(" EXECUTABLE " + sys.executable)
 print(" USER " + pwd.getpwuid(os.getuid()).pw_name)
