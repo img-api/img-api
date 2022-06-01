@@ -7,7 +7,7 @@ from rq.job import Job
 
 class Remote_Task():
     def init(self, app):
-        print(" STARTING REDIS CONNECTION ")
+        #print(" STARTING REDIS CONNECTION ")
 
         redis_url = os.getenv('REDISTOGO_URL', 'redis://localhost:6379')
 

@@ -336,6 +336,7 @@ def api_dynamic_conversion(my_file, abs_path, extension, thumbnail, filename, ca
                 img.save(filename=final_path)
 
     except Exception as exc:
+        print_exception("CRASH", exc)
         return get_response_error_formatted(500, {"error_msg": "Failed to convert to format " + extension})
 
     return send_file(bit_image,

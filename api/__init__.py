@@ -196,7 +196,7 @@ def register_api_blueprints(app):
     from importlib import import_module
     global cache
 
-    print_b(" API BLUE PRINTS ")
+    #print_b(" API BLUE PRINTS ")
     for module_name in (
             'user',
             'jobs',
@@ -207,7 +207,7 @@ def register_api_blueprints(app):
         module = import_module('api.{}.routes'.format(module_name))
         app.register_blueprint(module.blueprint)
 
-        print(" Registering API " + str(module_name))
+        #print(" Registering API " + str(module_name))
 
     configure_media_folder(app)
     init_redis(app)
