@@ -9,6 +9,7 @@ echo "VIRTUAL ENV INSTALL"
 
 sudo apt-get install python3-pip python3-venv -y   # If needed
 sudo pip3 install virtualenv
+sudo python3 -m pip install virtualenv
 
 python3 -m virtualenv .venv --python=python3
 source .venv/bin/activate
