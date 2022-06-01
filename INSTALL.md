@@ -20,11 +20,11 @@ cd img-api
 
 # Linux
 sudo apt-get install python3-venv    # If needed
-python3 -m venv .venv
+python3 -m virtualenv .venv --python=python3
 source .venv/bin/activate
 
 # macOS
-python3 -m venv .venv
+python3 -m virtualenv .venv --python=python3
 source .venv/bin/activate
 
 # Windows
@@ -40,7 +40,7 @@ The database of choice for this project is Mongodb since we can dynamically grow
 sudo apt-get install mongodb-org
 ```
 
-### Install redis 
+### Install redis
 
 Our microservices work using redis as our main platform for RPC (Remote Process Procedure)
 
@@ -57,3 +57,15 @@ sudo apt install imagemagick
 
 ## REFERENCE
 https://code.visualstudio.com/docs/python/tutorial-flask
+
+
+## Apache Server
+
+``` Bash
+sudo apt-get install apache2 -y
+sudo apt-get install libapache2-mod-wsgi -y
+sudo apt-get remove libapache2-mod-python libapache2-mod-wsgi -y
+
+sudo a2enmod wsgi
+sudo apt-get install libapache2-mod-wsgi-py3 -y
+```

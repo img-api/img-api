@@ -8,7 +8,9 @@ sudo apt install software-properties-common  -y
 echo "VIRTUAL ENV INSTALL"
 
 sudo apt-get install python3-pip python3-venv -y   # If needed
-python3 -m venv .venv
+sudo pip3 install virtualenv
+
+python3 -m virtualenv .venv --python=python3
 source .venv/bin/activate
 
 echo "MONGODB INSTALL"
