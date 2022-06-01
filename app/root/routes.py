@@ -1,6 +1,6 @@
 from app.root import blueprint
 from api import get_response_formatted
-from flask import render_template
+from flask import render_template, redirect
 
 
 @blueprint.route('/test', methods=['GET', 'POST'])
