@@ -20,11 +20,11 @@ cd img-api
 
 # Linux
 sudo apt-get install python3-venv    # If needed
-python3 -m virtualenv .venv --python=python3
+python3 -m venv .venv
 source .venv/bin/activate
 
 # macOS
-python3 -m virtualenv .venv --python=python3
+python3 -m venv .venv
 source .venv/bin/activate
 
 # Windows
@@ -66,6 +66,12 @@ sudo apt-get install apache2 -y
 sudo apt-get install libapache2-mod-wsgi -y
 sudo apt-get remove libapache2-mod-python libapache2-mod-wsgi -y
 
+sudo a2enmod rewrite
+sudo a2enmod proxy
+sudo a2enmod proxy_http
+sudo a2enmod proxy_balancer
+sudo a2enmod lbmethod_byrequests
 sudo a2enmod wsgi
+
 sudo apt-get install libapache2-mod-wsgi-py3 -y
 ```

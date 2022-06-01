@@ -1,6 +1,10 @@
-#!/bin/sh
+#!/bin/bash
 
-python3 -m virtualenv .venv --python=python3
+if [ ! -d ".venv" ]
+then
+   echo "INSTALLING VENV "
+   python3 -m venv .venv
+fi
 
 echo "UPDATING IMG-API"
 
