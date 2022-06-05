@@ -116,7 +116,11 @@ def api_internal_upload_media():
 
                 if my_file:
                     print(" FILE ALREADY UPLOADED WITH ID " + str(my_file.id))
-                    uploaded_ft.append(my_file.serialize())
+
+                    ret = my_file.serialize()
+                    ret['is_duplicated'] = True
+
+                    uploaded_ft.append(ret)
                     api_internal_add_to_media_list(media_list, my_file)
                     continue
 
