@@ -5,6 +5,7 @@ import datetime
 
 from mongoengine import *
 from api.print_helper import *
+from api.query_helper import *
 
 from flask import current_app
 from flask_login import UserMixin, current_user
@@ -68,7 +69,12 @@ class User(UserMixin, db.Document):
 
     active = db.BooleanField(default=False)
     is_anon = db.BooleanField(default=False)
+
+    # Can people see this user?
     is_public = db.BooleanField(default=True)
+
+    # User uploads are public by default?
+    is_media_public = db.BooleanField(default=False)
 
     settings = db.EmbeddedDocumentField(DB_UserSettings, default=DB_UserSettings())
     galleries = db.EmbeddedDocumentField(DB_UserGalleries, default=DB_UserGalleries())
@@ -110,6 +116,8 @@ class User(UserMixin, db.Document):
             'profile_img': self.profile_img,
             'lang': self.lang,
             'is_anon': self.is_anon,
+            'is_public': self.is_public,
+            'is_media_public': self.is_media_public,
             'creation_date': time.mktime(self.creation_date.timetuple()),
         }
 
@@ -285,3 +293,40 @@ class User(UserMixin, db.Document):
             return self['my_cover']
 
         return self.get_random()
+
+    def is_current_user(self):
+        """ Returns if this media belongs to this user, so when we serialize we don't include confidential data """
+        if not current_user.is_authenticated:
+            return False
+
+        if self.username == current_user.username:
+            return True
+
+        return False
+
+    def set_is_media_public(self, is_public):
+        """ Changes all the media to public or private
+            Quite dangerous, because the user will lose all the properties
+        """
+
+        privacy = File_Tracking.objects(username=self.username, is_public=not is_public)
+        privacy.update(**{"is_public": is_public}, validate=False)
+
+    def set_key_value(self, key, value):
+        if not self.is_current_user():
+            return False
+
+        # My own fields that can be edited:
+        if not key.startswith('my_') and key not in ["is_public", "is_media_public"]:
+            return False
+
+        value = get_value_type_helper(self[key], value)
+
+        if value != self[key]:
+            self.update(**{key: value})
+            self.reload()
+
+            if key == "is_media_public":
+                self.set_is_media_public(value)
+
+        return True

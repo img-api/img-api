@@ -9,6 +9,8 @@ from imgapi_launcher import db
 from flask import current_app
 from flask_login import current_user
 
+from api.query_helper import get_value_type_helper
+
 
 class File_Tracking(db.DynamicDocument):
     meta = {
@@ -131,7 +133,7 @@ class File_Tracking(db.DynamicDocument):
             return False
 
         # My own fields that can be edited:
-        if not key.startsWith('my_') and key not in ["is_public", "tags"]:
+        if not key.startswith('my_') and key not in ["is_public", "tags"]:
             return False
 
         self.update(**{key: value}, validate=False)
@@ -147,6 +149,7 @@ class File_Tracking(db.DynamicDocument):
             if not key.startswith('my_') and key not in ["is_cover", "is_public", "tags"]:
                 continue
 
+            value = get_value_type_helper(self[key], value)
             if json[key] != self[key]:
                 update[key] = json[key]
 

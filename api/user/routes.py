@@ -924,3 +924,48 @@ def api_delete_all_the_lists():
     ret = current_user.galleries.clear_all(current_user.username)
     current_user.save()
     return get_response_formatted(ret)
+
+
+@blueprint.route('/set/<string:my_key>', methods=['GET', 'POST'])
+@api_key_or_login_required
+def set_user_info(my_key):
+    """ Sets this user variable
+
+    ---
+    tags:
+      - user
+    schemes: ['http', 'https']
+    deprecated: false
+    parameters:
+        - in: query
+          name: my_key
+          schema:
+            type: string
+          description: Key to set a value
+
+    definitions:
+      my_key:
+        type: A valid key, like is_public, or something on 'my_' which is available for the user to set
+    responses:
+      200:
+        description: Returns the user token
+        schema:
+          id: Token
+          type: object
+          properties:
+            token:
+                type: string
+    """
+
+    value= request.args.get("value", None)
+    if not value and 'value' in request.json:
+        value = request.json['value']
+
+    if value == None:
+        return get_response_error_formatted(400, {'error_msg': "Wrong parameters."})
+
+    if not current_user.set_key_value(my_key, value):
+        return get_response_error_formatted(400, {'error_msg': "Something went wrong saving this key."})
+
+    ret = current_user.serialize()
+    return get_response_formatted(ret)

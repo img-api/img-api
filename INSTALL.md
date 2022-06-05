@@ -37,7 +37,7 @@ py -3 -m venv .venv
 The database of choice for this project is Mongodb since we can dynamically grow the project and scale it through clusters
 
 ```
-sudo apt-get install mongodb-org
+sudo apt-get install mongodb-org -y
 ```
 
 ### Install redis
@@ -47,8 +47,11 @@ Our microservices work using redis as our main platform for RPC (Remote Process 
 ### Install imagemagick
 
 ```
-sudo apt install imagemagick
+sudo apt install imagemagick -y
 ```
+
+### Video
+sudo apt-get install ffmpeg -y
 
 ### Update project dependences
 ```

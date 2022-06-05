@@ -1,6 +1,7 @@
 from api.print_helper import *
 from imgapi_launcher import db
 
+
 def get_value_from_text(value):
     if value is bool:
         return value
@@ -22,6 +23,19 @@ def get_value_from_text(value):
 
 
 def get_value_type_helper(field, value):
+    if isinstance(field, bool):
+        if isinstance(value, bool):
+            return value
+
+        if isinstance(value, str):
+            value = value.lower()
+            return (value in ['1', 'true'])
+
+        if isinstance(value, int):
+            return (value >= 1)
+
+        return False
+
     if isinstance(field, int):
         return int(value)
 
@@ -33,19 +47,6 @@ def get_value_type_helper(field, value):
 
     if isinstance(field, datetime.datetime):
         return value
-
-    if isinstance(field, bool):
-        if isinstance(value, bool):
-            return value
-
-        if field is str:
-            value = value.lower()
-            return (value in ['1', 'true'])
-
-        if field is int:
-            return (value >= 1)
-
-        return False
 
     return value
 
