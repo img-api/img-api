@@ -186,7 +186,7 @@ def api_internal_upload_media():
                 'is_anon': current_user.is_anon,
 
                 # An user file by default is not public, but if you are anonymous, the file is public
-                'is_public': current_user.is_anon
+                'is_public': current_user.is_anon or current_user.is_media_public
             }
 
             my_file = File_Tracking(**new_file)
