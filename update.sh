@@ -12,5 +12,6 @@ cd "${BASH_SOURCE%/*}"
 
 . .venv/bin/activate
 
+git pull --rebase
 pip3 install -r requirements.txt --upgrade
 
