@@ -575,6 +575,11 @@ def api_get_user_photostream(user_id):
 
     op = File_Tracking.objects(query)
 
+    if request.args.get('order', 'desc') == 'desc':
+        op = op.order_by('-creation_date')
+    else:
+        op = op.order_by('+creation_date')
+
     DEFAULT_ITEMS_LIMIT = 25
     items = int(request.args.get('items', DEFAULT_ITEMS_LIMIT))
     page = int(request.args.get('page', 0))
