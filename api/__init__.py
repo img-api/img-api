@@ -28,6 +28,11 @@ def get_response_formatted(content, pretty=True):
     if 'status' not in content:
         content['status'] = "success"
 
+    if current_user.is_authenticated:
+        content['current_user'] = current_user.username
+    else:
+        content['is_anon'] = True
+
     content = json.dumps(content).encode('utf8')
     response = Response(content, mimetype='application/json')
 
@@ -51,6 +56,11 @@ def get_response_error_formatted(status, content, is_warning=False):
     content['error'] = status
     content['time'] = str(datetime.datetime.now())
     content['timestamp'] = int(time.time())
+
+    if current_user.is_authenticated:
+        content['current_user'] = current_user.username
+    else:
+        content['is_anon'] = True
 
     response = Response(json.dumps(content, sort_keys=True, indent=4), status=status, mimetype='application/json')
 
