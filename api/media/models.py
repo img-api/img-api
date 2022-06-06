@@ -149,9 +149,9 @@ class File_Tracking(db.DynamicDocument):
             if not key.startswith('my_') and key not in ["is_cover", "is_public", "tags"]:
                 continue
 
-            value = get_value_type_helper(self[key], value)
-            if json[key] != self[key]:
-                update[key] = json[key]
+            value = get_value_type_helper(self[key], json[key])
+            if value != self[key]:
+                update[key] = value
 
         if len(update) > 0:
             self.update(**update, validate=False)
