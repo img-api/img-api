@@ -23,6 +23,12 @@ from mongoengine.queryset.visitor import Q
 
 from wand.image import Image
 
+from flask_cachecontrol import (
+    cache,
+    cache_for,
+    dont_cache,
+    Always,
+    ResponseIsSuccessfulOrRedirect)
 
 def get_media_valid_extension(file_name):
     """ Checks with the system to see if the extension provided is valid,
@@ -320,7 +326,8 @@ def api_dynamic_conversion(my_file, abs_path, extension, thumbnail, filename, ca
 
     final_path = abs_path + extra
     if cache_file and os.path.exists(final_path):
-        return send_file(final_path, attachment_filename=attachment_filename + extra)
+        response = send_file(final_path, attachment_filename=attachment_filename + extra)
+        return response
 
     try:
         bit_image = io.BytesIO()
@@ -343,10 +350,12 @@ def api_dynamic_conversion(my_file, abs_path, extension, thumbnail, filename, ca
         print_exception(exc, "CRASH")
         return get_response_error_formatted(500, {"error_msg": "Failed to convert to format " + extension})
 
-    return send_file(bit_image,
+    response = send_file(bit_image,
                      mimetype='image/' + extension,
                      as_attachment=True,
                      attachment_filename=attachment_filename + extra)
+
+    return response
 
 
 @blueprint.route('/category/<string:media_category>', methods=['GET'])
@@ -423,6 +432,7 @@ def api_fetch_media_with_media_category(media_category):
 
 @blueprint.route('/get/<string:media_id>', methods=['GET'])
 @api_key_login_or_anonymous
+@cache_for(hours=48, only_if=ResponseIsSuccessfulOrRedirect)
 def api_get_media(media_id, image_only=False):
     """Returns a media object given it's media_id.
         The user might be rejected if the media is private
@@ -467,6 +477,8 @@ def api_get_media(media_id, image_only=False):
     if current_user.is_authenticated:
         username = current_user.username
 
+    print_b(" SERVE " + media_id)
+
     arr = media_id.split(".")
     media_id = arr[0]
 
@@ -507,6 +519,7 @@ def api_get_media(media_id, image_only=False):
 
 @blueprint.route('/get_image/<string:media_id>', methods=['GET'])
 @api_key_login_or_anonymous
+@cache_for(hours=48, only_if=ResponseIsSuccessfulOrRedirect)
 def api_get_media_image(media_id):
     """Returns a media object given it's media_id, if it is a video, it will transform it into an image.
         Check /get for a full description
@@ -749,6 +762,7 @@ def api_get_media_id(media_id):
 
 
 @blueprint.route('/posts/<string:media_id>/get', methods=['GET'])
+@cache_for(minutes=5, only_if=ResponseIsSuccessfulOrRedirect)
 def api_get_media_post(media_id):
     """Returns an individual post information
     ---
