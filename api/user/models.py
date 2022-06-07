@@ -237,7 +237,8 @@ class User(UserMixin, db.Document):
                 break
 
         if found == -1:
-            return media_id
+            print_r(" Media not found on photostream wtf " + str(media_id))
+            found = 0
 
         while position < len(stream_list):
             new_media = stream_list[(found + position) % len(stream_list)]

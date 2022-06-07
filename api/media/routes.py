@@ -762,7 +762,6 @@ def api_get_media_id(media_id):
 
 
 @blueprint.route('/posts/<string:media_id>/get', methods=['GET'])
-@cache_for(minutes=5, only_if=ResponseIsSuccessfulOrRedirect)
 def api_get_media_post(media_id):
     """Returns an individual post information
     ---

@@ -48,6 +48,7 @@ class File_Tracking(db.DynamicDocument):
     is_public = db.BooleanField(default=False)
     is_anon = db.BooleanField(default=False)
     is_cover = db.BooleanField(default=False)
+    is_NSFW = db.BooleanField(default=False)
 
     no_views = db.LongField()
     no_likes = db.LongField()

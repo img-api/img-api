@@ -46,6 +46,13 @@ def get_user_from_request():
     if not email:
         return get_response_error_formatted(401, {'error_msg': "Please provide an email."})
 
+    if email:
+        email = email.strip()
+        if not validators.email(email):
+            username = email
+        else:
+            user = User.objects(email__iexact=email).first()
+
     if username:
         # Users tend to add extra spaces, frontend should take care of it, but the user calling the API might not write the username properly.
         username = username.strip()
@@ -53,12 +60,6 @@ def get_user_from_request():
             return get_response_error_formatted(401, {'error_msg': "Sorry, please contact an admin."})
 
         user = User.objects(username__iexact=username).first()
-    else:
-        email = email.strip()
-        if not validators.email(email):
-            return get_response_error_formatted(401, {'error_msg': "Sorry, please contact an admin."})
-
-        user = User.objects(email__iexact=email).first()
 
     if not user:
         return get_response_error_formatted(401, {'error_msg': "Account not found!"})
