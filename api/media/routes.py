@@ -8,7 +8,7 @@ import validators
 from api.media import blueprint
 from api.api_redis import api_rq
 
-from api import get_response_formatted, get_response_error_formatted, api_key_or_login_required, api_key_login_or_anonymous, cache
+from api import get_response_formatted, get_response_error_formatted, api_key_or_login_required, api_key_login_or_anonymous, cache, sanitizer
 from flask import jsonify, request, send_file, redirect
 
 from flask import current_app, url_for, abort
@@ -23,12 +23,8 @@ from mongoengine.queryset.visitor import Q
 
 from wand.image import Image
 
-from flask_cachecontrol import (
-    cache,
-    cache_for,
-    dont_cache,
-    Always,
-    ResponseIsSuccessfulOrRedirect)
+from flask_cachecontrol import (cache, cache_for, dont_cache, Always, ResponseIsSuccessfulOrRedirect)
+
 
 def get_media_valid_extension(file_name):
     """ Checks with the system to see if the extension provided is valid,
@@ -248,6 +244,7 @@ def api_update_a_media():
 
     return get_response_formatted(ret)
 
+
 @blueprint.route('/upload_from_web', methods=['POST'])
 def api_web_upload_media():
     """ Uploads without an user or without checking a token, we use this to create new users on the fly """
@@ -351,9 +348,9 @@ def api_dynamic_conversion(my_file, abs_path, extension, thumbnail, filename, ca
         return get_response_error_formatted(500, {"error_msg": "Failed to convert to format " + extension})
 
     response = send_file(bit_image,
-                     mimetype='image/' + extension,
-                     as_attachment=True,
-                     attachment_filename=attachment_filename + extra)
+                         mimetype='image/' + extension,
+                         as_attachment=True,
+                         attachment_filename=attachment_filename + extra)
 
     return response
 
@@ -674,6 +671,7 @@ def api_populate_media_list(user_id, media_list, is_order_asc=True):
     'GET',
     'POST',
 ])
+@api_key_login_or_anonymous
 def api_fetch_from_url():
     """Returns a JOB ID for the task of fetching this resource. It calls RQ to get the task done.
     ---
@@ -762,6 +760,7 @@ def api_get_media_id(media_id):
 
 
 @blueprint.route('/posts/<string:media_id>/get', methods=['GET'])
+@api_key_login_or_anonymous
 def api_get_media_post(media_id):
     """Returns an individual post information
     ---
@@ -835,6 +834,7 @@ def api_get_media_post(media_id):
 
 
 @blueprint.route('/posts/<string:media_id>/set_privacy/<string:privacy_mode>', methods=['GET'])
+@api_key_or_login_required
 def api_set_media_private_posts_json(media_id, privacy_mode):
     """Sets a media privacy mode
     ---
@@ -891,6 +891,33 @@ def api_set_media_private_posts_json(media_id, privacy_mode):
     print_b(" New privacy " + privacy_mode)
 
     ret = {'status': 'success', 'media_id': media_id, 'privacy_mode': privacy_mode}
+    return get_response_formatted(ret)
+
+
+@blueprint.route('/<string:media_id>/set/<string:my_key>', methods=['GET', 'POST'])
+@api_key_or_login_required
+def api_set_media_key(media_id, my_key):
+    from flask_login import current_user  # Required by pytest, otherwise client crashes on CI
+
+    media_file = File_Tracking.objects(id=media_id).first()
+
+    if not media_file:
+        return get_response_error_formatted(404, {'error_msg': "Missing."})
+
+    if not media_file.is_current_user():
+        return get_response_error_formatted(403, {'error_msg': "This user is not allowed to perform this action."})
+
+    value = request.args.get("value", None)
+    if not value and 'value' in request.json:
+        value = request.json['value']
+
+    if value == None:
+        return get_response_error_formatted(400, {'error_msg': "Wrong parameters."})
+
+    value = sanitizer.sanitize(value)
+    media_file.set_key_value(my_key, value)
+
+    ret = {'status': 'success', 'media_id': media_id, 'media_list': [media_file.serialize()]}
     return get_response_formatted(ret)
 
 
