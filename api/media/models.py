@@ -10,9 +10,10 @@ from flask import current_app
 from flask_login import current_user
 
 from api.query_helper import get_value_type_helper
+from api.user.user_check import DB_UserCheck
 
 
-class File_Tracking(db.DynamicDocument):
+class File_Tracking(DB_UserCheck, db.DynamicDocument):
     meta = {
         'strict': False,
         "auto_create_index": False,
@@ -20,7 +21,6 @@ class File_Tracking(db.DynamicDocument):
         'indexes': ['username', 'tags', 'creation_date']
     }
 
-    creation_date = db.DateTimeField()
     file_format = db.StringField()
 
     file_name = db.StringField()
@@ -29,7 +29,6 @@ class File_Tracking(db.DynamicDocument):
     file_size = db.LongField()
 
     checksum_md5 = db.StringField()
-    username = db.StringField()
 
     #### Edit attributes are editable by the user without ####
 
@@ -45,10 +44,11 @@ class File_Tracking(db.DynamicDocument):
     # Did we process this file with our services
     processed = db.BooleanField(default=False)
 
-    is_public = db.BooleanField(default=False)
+    is_NSFW = db.BooleanField(default=False)
     is_anon = db.BooleanField(default=False)
     is_cover = db.BooleanField(default=False)
-    is_NSFW = db.BooleanField(default=False)
+    is_public = db.BooleanField(default=False)
+    is_profile = db.BooleanField(default=False)
 
     no_views = db.LongField()
     no_likes = db.LongField()
@@ -111,16 +111,6 @@ class File_Tracking(db.DynamicDocument):
         """ Lexical helper """
         return not self.is_public
 
-    def is_current_user(self):
-        """ Returns if this media belongs to this user, so when we serialize we don't include confidential data """
-        if not current_user.is_authenticated:
-            return False
-
-        if self.username == current_user.username:
-            return True
-
-        return False
-
     def get_owner(self):
         from api.user.models import User
 
@@ -147,12 +137,15 @@ class File_Tracking(db.DynamicDocument):
         # My own fields that can be edited:
         update = {}
         for key in json:
-            if not key.startswith('my_') and key not in ["is_cover", "is_public", "tags"]:
+            if not key.startswith('my_') and key not in ["is_cover", "is_public", "tags", "is_profile"]:
                 continue
 
             value = get_value_type_helper(self[key], json[key])
             if value != self[key]:
                 update[key] = value
+
+            if key == "is_profile":
+                current_user.update(**{"profile_mid": str(self.id)})
 
         if len(update) > 0:
             self.update(**update, validate=False)
@@ -166,6 +159,7 @@ class File_Tracking(db.DynamicDocument):
             'is_public': self.is_public,
             'is_anon': self.is_anon,
             'is_cover': self.is_cover,
+            'is_profile': self.is_profile,
             'file_size': self.file_size,
             'file_type': self.file_type,
             'file_format': self.file_format,

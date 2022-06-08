@@ -16,6 +16,10 @@ API_VERSION = "0.50pa"
 
 cache = Cache(config={'CACHE_TYPE': 'SimpleCache'})
 
+from html_sanitizer import Sanitizer
+
+sanitizer = Sanitizer()
+
 def get_response_formatted(content, pretty=True):
     """ Returns a formatted response with the API version
         It cleans the input from private information.
@@ -212,6 +216,7 @@ def register_api_blueprints(app):
             'jobs',
             'admin',
             'media',
+            'content',
             'hello_world',
     ):
         module = import_module('api.{}.routes'.format(module_name))

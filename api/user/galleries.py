@@ -14,6 +14,7 @@ from flask_login import UserMixin, current_user
 
 from imgapi_launcher import db, login_manager
 from api.query_helper import mongo_to_dict_helper
+from api.user.user_check import DB_UserCheck
 
 from .signature_serializer import TimedJSONWebSignatureSerializer as Serializer, BadSignature, SignatureExpired
 
@@ -23,9 +24,9 @@ class DB_ItemMedia(db.DynamicEmbeddedDocument):
     update_date = db.DateTimeField()
 
 
-class DB_MediaList(db.Document):
+class DB_MediaList(db.Document, DB_UserCheck):
     """ A media list is a collection of items that an user likes, dislikes, or are a in a playlist """
-    username = db.StringField()
+
     list_type = db.StringField()
 
     name = db.StringField()
@@ -143,12 +144,6 @@ class DB_MediaList(db.Document):
         self.media_list.pop(res)
         self.save()
         return True
-
-    def is_current_user(self):
-        if not current_user.is_authenticated:
-            return False
-
-        return self.username == current_user.username
 
     def check_permissions(self):
         from flask_login import current_user

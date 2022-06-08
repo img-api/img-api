@@ -8,7 +8,7 @@ import validators
 from api.user import blueprint
 from api.print_helper import *
 
-from api import get_response_formatted, get_response_error_formatted, api_key_or_login_required, api_key_login_or_anonymous, cache
+from api import get_response_formatted, get_response_error_formatted, api_key_or_login_required, api_key_login_or_anonymous, cache, sanitizer
 
 from flask import jsonify, request, Response, redirect, abort
 from api.tools import generate_file_md5, ensure_dir, is_api_call
@@ -21,7 +21,6 @@ from mongoengine.queryset import QuerySet
 from mongoengine.queryset.visitor import Q
 
 from flask_login import current_user, login_user, logout_user
-
 
 def get_user_from_request():
     user = None
@@ -958,12 +957,14 @@ def set_user_info(my_key):
                 type: string
     """
 
-    value= request.args.get("value", None)
+    value = request.args.get("value", None)
     if not value and 'value' in request.json:
         value = request.json['value']
 
     if value == None:
         return get_response_error_formatted(400, {'error_msg': "Wrong parameters."})
+
+    value = sanitizer.sanitize(value)
 
     if not current_user.set_key_value(my_key, value):
         return get_response_error_formatted(400, {'error_msg': "Something went wrong saving this key."})

@@ -63,7 +63,7 @@ class User(UserMixin, db.Document):
     first_name = db.StringField(default="")
     last_name = db.StringField(default="")
 
-    profile_img = db.StringField(default="")
+    profile_mid = db.StringField()
 
     lang = db.StringField(default="EN")
 
@@ -80,6 +80,9 @@ class User(UserMixin, db.Document):
     galleries = db.EmbeddedDocumentField(DB_UserGalleries, default=DB_UserGalleries())
 
     list_subscriptions = db.EmbeddedDocumentListField(DB_UserSubscription, default=[])
+
+    # Users can modify directly fields which start with my_ or in the list of public variables
+    public_keys = ["first_name", "last_name", "is_public", "is_media_public", "email", "lang"]
 
     def check_in_usage(self):
         from datetime import datetime
@@ -113,7 +116,7 @@ class User(UserMixin, db.Document):
             'username': self.username,
             'first_name': self.first_name,
             'last_name': self.last_name,
-            'profile_img': self.profile_img,
+            'profile_mid': self.profile_mid,
             'lang': self.lang,
             'is_anon': self.is_anon,
             'is_public': self.is_public,
@@ -318,7 +321,7 @@ class User(UserMixin, db.Document):
             return False
 
         # My own fields that can be edited:
-        if not key.startswith('my_') and key not in ["is_public", "is_media_public"]:
+        if not key.startswith('my_') and key not in self.public_keys:
             return False
 
         value = get_value_type_helper(self[key], value)
