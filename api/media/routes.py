@@ -834,7 +834,7 @@ def api_get_media_post(media_id):
     return get_response_formatted({'status': 'success', "media_files": return_list})
 
 
-@blueprint.route('/posts/<string:media_id>/set/<string:privacy_mode>', methods=['GET'])
+@blueprint.route('/posts/<string:media_id>/set_privacy/<string:privacy_mode>', methods=['GET'])
 def api_set_media_private_posts_json(media_id, privacy_mode):
     """Sets a media privacy mode
     ---
