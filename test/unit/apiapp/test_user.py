@@ -51,3 +51,11 @@ def test_user(client):
     # Delete the user
     ret = client.get("/api/user/remove?" + TEST_CREDENTIALS)
     assert ret.json['status'] == 'success'
+
+    ret = client.get("/api/user/get_random_name?" + TEST_CREDENTIALS)
+    assert ret.json['status'] == 'success'
+
+    name = ret.json['username']
+    assert len(name.split("_")) == 3
+
+

@@ -21,6 +21,8 @@ from mongoengine.queryset import QuerySet
 from mongoengine.queryset.visitor import Q
 
 from flask_login import current_user, login_user, logout_user
+from services.dictionary.my_dictionary import words
+
 
 def get_user_from_request():
     user = None
@@ -512,11 +514,8 @@ def generate_random_name():
     """ Generates a random name so we can use it for the anonymous user.
         This name should come from a dictionary like 3words
     """
-    from services.dictonary.my_dictionary import words
 
     l = len(words)
-
-    random.seed(time.clock())
 
     my_user_name = ""
     while not my_user_name:
@@ -533,6 +532,11 @@ def generate_random_name():
 
     print("Your user name " + my_user_name)
     return my_user_name.upper()
+
+
+@blueprint.route('/get_random_name', methods=['GET'])
+def api_get_random_name():
+    return get_response_formatted({'username': generate_random_name()})
 
 
 def generate_random_user():
