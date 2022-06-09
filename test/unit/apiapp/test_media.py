@@ -81,15 +81,15 @@ def test_media(client):
     assert test_media['info']['height'] == 256
 
     # Do we get a PNG ?
-    response = client.get("/api/media/get/" + test_media['media_id'])
+    response = client.get("/api/media/get/" + test_media['media_id'] + "?no_redirect=1")
     assert response.content_type == "image/png"
 
     # Do we get a GIF ?
-    response = client.get("/api/media/get/" + test_media['media_id'] + ".GIF")
+    response = client.get("/api/media/get/" + test_media['media_id'] + ".GIF?no_redirect=1")
     assert response.content_type == "image/GIF"
 
     # Do we get a JPG ?
-    response = client.get("/api/media/get/" + test_media['media_id'] + ".JPG")
+    response = client.get("/api/media/get/" + test_media['media_id'] + ".JPG?no_redirect=1")
     assert response.content_type == "image/JPG"
 
     # Upload image from disk with a different orientation than normal so we need to get a rotated width and height
