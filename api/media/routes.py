@@ -317,7 +317,7 @@ def api_dynamic_conversion(my_file, abs_path, relative_path, extension, thumbnai
             thumbnail = None
             print(thumbnail + " Not a valid thumbnail definition")
 
-    extra = ""
+    extra = ".CACHE"
     if thumbnail: extra += "." + str(thumbnail)
     if extension: extra += "." + extension
 
@@ -437,7 +437,7 @@ def api_fetch_media_with_media_category(media_category):
 
 @blueprint.route('/get/<string:media_id>', methods=['GET'])
 @api_key_login_or_anonymous
-#@cache_for(hours=48, only_if=ResponseIsSuccessfulOrRedirect)
+@cache_for(hours=48, only_if=ResponseIsSuccessfulOrRedirect)
 def api_get_media(media_id, image_only=False):
     """Returns a media object given it's media_id.
         The user might be rejected if the media is private
