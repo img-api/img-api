@@ -289,7 +289,7 @@ def api_upload_media():
     return api_internal_upload_media()
 
 
-def api_dynamic_conversion(my_file, abs_path, extension, thumbnail, filename, cache_file=True):
+def api_dynamic_conversion(my_file, abs_path, relative_path, extension, thumbnail, filename, cache_file=True):
     """ Converts the file dynamically into an extension, and saves the file if it was requested
 
         The user can append an extension to convert into example .GIF
@@ -323,8 +323,10 @@ def api_dynamic_conversion(my_file, abs_path, extension, thumbnail, filename, ca
 
     final_path = abs_path + extra
     if cache_file and os.path.exists(final_path):
-        response = send_file(final_path, attachment_filename=attachment_filename + extra)
-        return response
+        if request.args.get('no_redirect'):
+            return send_file(final_path, attachment_filename=attachment_filename + extra)
+
+        return redirect("/static/MEDIA_FILES/" + relative_path + extra)
 
     try:
         bit_image = io.BytesIO()
@@ -337,22 +339,28 @@ def api_dynamic_conversion(my_file, abs_path, extension, thumbnail, filename, ca
                     img.resize(thumbnail, int(thumbnail * aspect_ratio))
 
             img.format = extension
-            img.save(file=bit_image)
-            bit_image.seek(0)
 
             if cache_file:
+                # Crop the images to the first
+                if len(img.sequence) > 0:
+                    img = Image(image=img.sequence[0])
+
                 img.save(filename=final_path)
+
+        if request.args.get('no_redirect'):
+            img.save(file=bit_image)
+            bit_image.seek(0)
+            return send_file(bit_image,
+                            mimetype='image/' + extension,
+                            as_attachment=True,
+                            attachment_filename=attachment_filename + extra)
 
     except Exception as exc:
         print_exception(exc, "CRASH")
         return get_response_error_formatted(500, {"error_msg": "Failed to convert to format " + extension})
 
-    response = send_file(bit_image,
-                         mimetype='image/' + extension,
-                         as_attachment=True,
-                         attachment_filename=attachment_filename + extra)
-
-    return response
+    print_b(" SERVE " + relative_path + extra)
+    return redirect("/static/MEDIA_FILES/" + relative_path + extra)
 
 
 @blueprint.route('/category/<string:media_category>', methods=['GET'])
@@ -429,7 +437,7 @@ def api_fetch_media_with_media_category(media_category):
 
 @blueprint.route('/get/<string:media_id>', methods=['GET'])
 @api_key_login_or_anonymous
-@cache_for(hours=48, only_if=ResponseIsSuccessfulOrRedirect)
+#@cache_for(hours=48, only_if=ResponseIsSuccessfulOrRedirect)
 def api_get_media(media_id, image_only=False):
     """Returns a media object given it's media_id.
         The user might be rejected if the media is private
@@ -498,7 +506,8 @@ def api_get_media(media_id, image_only=False):
         else:
             return redirect("/static/img-api/images/placeholder_private.jpg")
 
-    abs_path = File_Tracking.get_media_path() + my_file.file_path
+    relative_path = my_file.file_path
+    abs_path = File_Tracking.get_media_path()
 
     if image_only and my_file.file_type == "video":
         extension = "PNG"
@@ -507,11 +516,15 @@ def api_get_media(media_id, image_only=False):
     if extension or thumbnail:
         # If it is a video we want to use the video preview
         if my_file.file_type == "video":
-            abs_path += ".PREVIEW.PNG"
+            relative_path += ".PREVIEW.PNG"
 
-        return api_dynamic_conversion(my_file, abs_path, extension, thumbnail, my_file.file_name, True)
+        return api_dynamic_conversion(my_file, abs_path + relative_path, relative_path, extension, thumbnail,
+                                      my_file.file_name, True)
 
-    return send_file(abs_path, attachment_filename=my_file.file_name)
+    if request.args.get('no_redirect'):
+        return send_file(abs_path + relative_path, attachment_filename=my_file.file_name)
+
+    return redirect("/static/MEDIA_FILES/" + relative_path)
 
 
 @blueprint.route('/get_image/<string:media_id>', methods=['GET'])
