@@ -1,6 +1,7 @@
 import io
 import os
 import time
+import json
 import ffmpeg
 import datetime
 import validators
@@ -76,7 +77,9 @@ def api_internal_upload_media():
     media_list = current_user.get_media_list(gallery_id, raw_db=True)
 
     uploaded_ft = []
-    for key, f_request in request.files.items():
+    for file_key, f_request in request.files.items():
+        key = file_key
+
         print(" Upload multiple " + key)
 
         user_space_path = current_user.username + "/"
@@ -120,8 +123,12 @@ def api_internal_upload_media():
                 # Eventually if the project grows, files in folders like this are not ideal and all this code should get revamped
 
                 if my_file:
-                    if request.form:
-                        my_file.update_with_checks(request.form)
+                    try:
+                        if request.form and file_key in request.form:
+                            my_json = json.loads(request.form[file_key])
+                            my_file.update_with_checks(my_json)
+                    except Exception as e:
+                        print_exception(e, "Failed loading json")
 
                     print(" FILE ALREADY UPLOADED WITH ID " + str(my_file.id))
 

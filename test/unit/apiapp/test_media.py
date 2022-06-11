@@ -47,7 +47,7 @@ def test_media(client):
             response = client.post(url_upload, content_type='multipart/form-data', data=data)
             assert response.json['status'] == 'success'
 
-            test_media = response.json['media'][0]
+            test_media = response.json['media_files'][0]
 
     assert test_media != None
 
@@ -99,7 +99,7 @@ def test_media(client):
         response = client.post(url_upload, content_type='multipart/form-data', data=data)
         assert response.json['status'] == 'success'
 
-        test_media = response.json['media'][0]
+        test_media = response.json['media_files'][0]
 
         assert test_media['file_size'] == 190684
         assert test_media['info']['width'] == 480
