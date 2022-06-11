@@ -284,15 +284,23 @@ def api_create_user_local():
 
     if request.method == 'POST':
         form = request.json
-        first_name = form['first_name']
-        last_name = form['last_name']
+
+        if 'first_name' in form:
+            first_name = form['first_name']
+        else:
+            first_name = ""
+
+        if 'last_name' in form:
+            last_name = form['last_name']
+        else:
+            last_name = ""
 
         email = form['email'].strip().lower()
         username = form['username'].strip().lower()
         password = form['password']
     else:
-        first_name = request.args.get("first_name")
-        last_name = request.args.get("last_name")
+        first_name = request.args.get("first_name", "")
+        last_name = request.args.get("last_name", "")
 
         email = request.args.get("email").strip().lower()
         username = request.args.get("username").strip()
@@ -326,6 +334,7 @@ def api_create_user_local():
                     'duplicate': True,
                     'status': 'success',
                     'msg': 'You were already registered, here is our token of gratitude',
+                    'user': user.serialize(),
                     'token': user.generate_auth_token()
                 }
 
@@ -356,7 +365,8 @@ def api_create_user_local():
         'email': email,
         'status': 'success',
         'msg': 'Thanks for registering',
-        'token': user.generate_auth_token()
+        'token': user.generate_auth_token(),
+        'user': user.serialize()
     }
     return get_response_formatted(ret)
 

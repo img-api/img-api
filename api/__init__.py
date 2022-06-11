@@ -173,6 +173,7 @@ def api_key_login_or_anonymous(func):
             # A function might use Abort to exit, this will generate a
             # HTTPException but we want to return our API exceptions in JSON
             # Therefore we catch the exception and dump the description using our standard error response
+            print_exception(errh, "CRASH")
 
             if 'error_msg' in errh.description:
                 return get_response_error_formatted(errh.code, errh.description)

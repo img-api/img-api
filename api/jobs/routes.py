@@ -72,8 +72,8 @@ def api_convert_image_to_format(operation, transformation, media_id):
     """
 
     if transformation not in [
-            "PNG", "JPG", "rotate_right", "rotate_left", "thumbnail", "blur", "flop", "median", "thumbnail_256", "thumbnail_128",
-            "thumbnail_64", "thumbnail_32"
+            "PNG", "JPG", "rotate_right", "rotate_left", "thumbnail", "blur", "flop", "median", "thumbnail_256",
+            "thumbnail_128", "thumbnail_64", "thumbnail_32"
     ]:
         return get_response_error_formatted(500, {"error_msg": "SERVER CANNOT UNDERSTAND THIS TRANSFORMATION!"})
 
@@ -217,7 +217,7 @@ def api_get_result_job(job_id):
         else:
             return redirect("/static/img-api/images/placeholder.jpg")
 
-    if not my_file.is_public and my_file.username != current_user.username:
+    if not my_file.is_public and (my_file.username != current_user.username and current_user.username != "admin"):
         if is_api_call():
             return get_response_error_formatted(401, {"error_msg": "FILE IS PRIVATE!"})
         else:

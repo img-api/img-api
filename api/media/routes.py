@@ -84,21 +84,24 @@ def api_internal_upload_media():
         print(" Save at " + full_path)
         ensure_dir(full_path)
 
+        file_name = f_request.filename
+        extension = get_media_valid_extension(file_name)
+
         mime = f_request.mimetype.split('/')[0]
         if mime in ['image', 'video']:
             key = mime
         else:
-            if key.startswith('image'): key = "image"
-            if key.startswith('video'): key = "video"
+            if key.startswith('image') or File_Tracking.is_extension_image(extension):
+                key = "image"
+
+            if key.startswith('video') or File_Tracking.is_extension_video(extension):
+                key = "video"
 
         if key in ["image", "video"]:
-            file_name = f_request.filename
-
             md5, size = generate_file_md5(f_request)
             if size == 0:
                 return get_response_error_formatted(400, {"error_msg": "THERE WAS SOME PROBLEM WITH UPLOAD!"})
 
-            extension = get_media_valid_extension(file_name)
             if not extension:
                 return get_response_error_formatted(400, {"error_msg": "FILE FORMAT NOT SUPPORTED YET!"})
 
@@ -117,6 +120,9 @@ def api_internal_upload_media():
                 # Eventually if the project grows, files in folders like this are not ideal and all this code should get revamped
 
                 if my_file:
+                    if request.form:
+                        my_file.update_with_checks(request.form)
+
                     print(" FILE ALREADY UPLOADED WITH ID " + str(my_file.id))
 
                     ret = my_file.serialize()
@@ -198,12 +204,15 @@ def api_internal_upload_media():
             my_file = File_Tracking(**new_file)
             my_file.save()
 
+            if request.form:
+                my_file.update_with_checks(request.json)
+
             api_internal_add_to_media_list(media_list, my_file)
 
             new_file['media_id'] = str(my_file.id)
             uploaded_ft.append(new_file)
 
-    ret = {'media': uploaded_ft, 'username': current_user.username, 'status': 'success'}
+    ret = {'media_files': uploaded_ft, 'username': current_user.username, 'status': 'success'}
     return get_response_formatted(ret)
 
 
@@ -351,9 +360,9 @@ def api_dynamic_conversion(my_file, abs_path, relative_path, extension, thumbnai
             img.save(file=bit_image)
             bit_image.seek(0)
             return send_file(bit_image,
-                            mimetype='image/' + extension,
-                            as_attachment=True,
-                            attachment_filename=attachment_filename + extra)
+                             mimetype='image/' + extension,
+                             as_attachment=True,
+                             attachment_filename=attachment_filename + extra)
 
     except Exception as exc:
         print_exception(exc, "CRASH")
@@ -650,7 +659,7 @@ def api_populate_media_list(user_id, media_list, is_order_asc=True):
 
     ####################### PAGINATION ################################################
 
-    DEFAULT_ITEMS_LIMIT = 50
+    DEFAULT_ITEMS_LIMIT = 100
     items = int(request.args.get('items', DEFAULT_ITEMS_LIMIT))
     page = int(request.args.get('page', 0))
     offset = page * items
@@ -883,7 +892,7 @@ def api_set_media_private_posts_json(media_id, privacy_mode):
     if not media_file:
         return get_response_error_formatted(404, {'error_msg': "Missing."})
 
-    if media_file.username != current_user.username:
+    if current_user.username != "admin" and media_file.username != current_user.username:
         return get_response_error_formatted(403, {'error_msg': "This user is not allowed to perform this action."})
 
     if privacy_mode == 'toggle':

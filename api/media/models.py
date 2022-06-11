@@ -57,6 +57,9 @@ class File_Tracking(DB_UserCheck, db.DynamicDocument):
     comments = db.ListField(db.StringField())
     tags = db.ListField(db.StringField(), default=list)
 
+    def __init__(self, *args, **kwargs):
+        super(File_Tracking, self).__init__(*args, **kwargs)
+
     @staticmethod
     def get_media_path():
         media_path = current_app.config.get('MEDIA_PATH')
@@ -65,22 +68,25 @@ class File_Tracking(DB_UserCheck, db.DynamicDocument):
 
         return media_path
 
-    def __init__(self, *args, **kwargs):
-        super(File_Tracking, self).__init__(*args, **kwargs)
+    @staticmethod
+    def is_extension_image(file_format, image_list=[".JPEG", ".JPG", ".GIF", ".GIFV", ".PNG", ".BMP", ".TGA", ".WEBP"]):
+        if file_format in image_list:
+            return True
+
+        return False
+
+    @staticmethod
+    def is_extension_video(file_format, video_list=['MP4', 'MPEG', 'AVI', 'MOV', 'WMV', '3GP', 'M4V']):
+        if file_format in video_list:
+            return True
+
+        return False
 
     def is_image(self):
-        image_list = [".JPEG", ".JPG", ".GIF", ".GIFV", ".PNG", ".BMP", ".TGA", ".WEBP"]
-        if self.file_format in image_list:
-            return True
-
-        return False
+        return self.is_extension_image(self.file_format)
 
     def is_video(self):
-        video_list = ['MP4', 'MPEG', 'AVI', 'MOV', 'WMV', '3GP', 'M4V']
-        if self.file_format in video_list:
-            return True
-
-        return False
+        return self.is_extension_video(self.file_format)
 
     def save(self, *args, **kwargs):
         if not self.creation_date:
