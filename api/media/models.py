@@ -70,13 +70,15 @@ class File_Tracking(DB_UserCheck, db.DynamicDocument):
 
     @staticmethod
     def is_extension_image(file_format, image_list=[".JPEG", ".JPG", ".GIF", ".GIFV", ".PNG", ".BMP", ".TGA", ".WEBP"]):
+        if file_format[0] != '.': file_format = "." + file_format
         if file_format in image_list:
             return True
 
         return False
 
     @staticmethod
-    def is_extension_video(file_format, video_list=['MP4', 'MPEG', 'AVI', 'MOV', 'WMV', '3GP', 'M4V']):
+    def is_extension_video(file_format, video_list=['.MP4', '.MPEG', '.AVI', '.MOV', 'WMV', '.3GP', '.M4V']):
+        if file_format[0] != '.': file_format = "." + file_format
         if file_format in video_list:
             return True
 
