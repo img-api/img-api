@@ -337,3 +337,31 @@ class User(UserMixin, db.Document):
                 self.set_is_media_public(value)
 
         return True
+
+    def update_with_checks(self, json):
+        update = {}
+
+        if not self.is_current_user():
+            return False
+
+        for key in json:
+            value = json[key]
+
+            # My own fields that can be edited:
+            if not key.startswith('my_') and key not in self.public_keys:
+                continue
+
+            value = get_value_type_helper(self[key], value)
+
+            if value == self[key]:
+                continue
+
+            update[key] = value
+            if key == "is_media_public":
+                self.set_is_media_public(value)
+
+        if len(update) > 0:
+            self.update(**update)
+            self.reload()
+
+        return True

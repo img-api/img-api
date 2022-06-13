@@ -328,6 +328,9 @@ def api_create_user_local():
             if bcrypt.checkpw(password.encode('utf-8'), user_pass):
                 print(" User is already on the system with this credentials, we return a token ")
 
+                login_user(user)
+                user.update_with_checks(request.json)
+
                 ret = {
                     'username': username,
                     'email': email,
