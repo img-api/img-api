@@ -344,7 +344,7 @@ def api_create_user_local():
 
             return get_response_formatted(ret)
 
-        return get_response_error_formatted(401, {'error_msg': "User already on the system, would you like to login?"})
+        return get_response_error_formatted(401, {'error_msg': "The username and email combination does not match this user"})
 
     email = get_validated_email(email)
     if isinstance(email, Response):
@@ -890,7 +890,13 @@ def api_create_a_new_list():
 
     if ret:
         print_r("Duplicated")
-        return get_response_error_formatted(409, {'error_msg': "Gallery already exists with that name"})  # Conflict
+        media_list = current_user.get_media_list(gallery_name, raw_db = True)
+        media_list.update_with_checks(json)
+
+        ret = media_list.serialize()
+        ret['duplicated'] = True
+        return ret
+
 
     ret = g.create(current_user.username, gallery_name, json)
     current_user.save(validate=False)

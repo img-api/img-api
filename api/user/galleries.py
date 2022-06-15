@@ -15,6 +15,7 @@ from flask_login import UserMixin, current_user
 from imgapi_launcher import db, login_manager
 from api.query_helper import mongo_to_dict_helper
 from api.user.user_check import DB_UserCheck
+from api.query_helper import get_value_type_helper
 
 from .signature_serializer import TimedJSONWebSignatureSerializer as Serializer, BadSignature, SignatureExpired
 
@@ -44,6 +45,8 @@ class DB_MediaList(db.Document, DB_UserCheck):
     tags = db.ListField(db.StringField(), default=list)
 
     media_list = db.EmbeddedDocumentListField(DB_ItemMedia, default=[])
+
+    private_keys = []
 
     def find_media_pos(self, media_id, position):
         for idx, item in enumerate(self.media_list):
@@ -104,6 +107,11 @@ class DB_MediaList(db.Document, DB_UserCheck):
         ret = {}
         for item in self.media_list:
             ret[item.media_id] = item.update_date
+
+        return ret
+
+    def serialize(self):
+        ret = mongo_to_dict_helper(self, filter_out=['media_list'])
 
         return ret
 
@@ -174,6 +182,31 @@ class DB_MediaList(db.Document, DB_UserCheck):
         my_list = self.get_as_list()
         for media_id in my_list:
             api_media_set_privacy(media_id, is_public)
+
+    def update_with_checks(self, json):
+        update = {}
+
+        if not self.is_current_user():
+            return False
+
+        for key in json:
+            value = json[key]
+
+            if key in self.private_keys:
+                continue
+
+            value = get_value_type_helper(self[key], value)
+
+            if value == self[key]:
+                continue
+
+            update[key] = value
+
+        if len(update) > 0:
+            self.update(**update)
+            self.reload()
+
+        return True
 
 
 class DB_UserGalleries(db.DynamicEmbeddedDocument):

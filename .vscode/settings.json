@@ -33,7 +33,11 @@
     "editor.hover.enabled": false,
     "editor.minimap.enabled": false,
     "editor.parameterHints.enabled": false,
-    "editor.quickSuggestions": true,
+    "editor.quickSuggestions": {
+        "comments": "on",
+        "strings": "on",
+        "other": "on"
+    },
     "editor.quickSuggestionsDelay": 2,
     "editor.quickSuggestions.other": false,
     "editor.suggest.snippetsPreventQuickSuggestions": false,
