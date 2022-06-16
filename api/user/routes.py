@@ -1,3 +1,4 @@
+import re
 import time
 import random
 import bcrypt
@@ -57,7 +58,7 @@ def get_user_from_request():
     if username:
         # Users tend to add extra spaces, frontend should take care of it, but the user calling the API might not write the username properly.
         username = username.strip()
-        if not validators.slug(username):
+        if not is_valid_username(username):
             return get_response_error_formatted(401, {'error_msg': "Sorry, please contact an admin."})
 
         user = User.objects(username__iexact=username).first()
@@ -135,6 +136,10 @@ def api_login_user():
     token = user.generate_auth_token()
     return get_response_formatted({'status': 'success', 'msg': 'hello user', 'token': token})
 
+def is_valid_username(username):
+    """ User name cannot have double underscores, double dashes, nor double dots """
+    username_regex = re.compile(r'^(?!.*\.\..*)^(?!.*--.*)^(?!.*__.*)^[-a-zA-Z0-9_.]+$')
+    return username_regex.match(username)
 
 def split_addr(emailStr, encoding):
     import re
@@ -312,7 +317,7 @@ def api_create_user_local():
     if len(username) < 4:
         return get_response_error_formatted(401, {'error_msg': "Your username is too short"})
 
-    if not validators.slug(username):
+    if not is_valid_username(username):
         return get_response_error_formatted(401, {'error_msg': "Your username has non valid characters"})
 
     if not is_password_valid(password):
@@ -893,7 +898,10 @@ def api_create_a_new_list():
         media_list = current_user.get_media_list(gallery_name, raw_db = True)
         media_list.update_with_checks(json)
 
-        ret = media_list.serialize()
+        ret = {
+            'galleries': [media_list.serialize()]
+        }
+
         ret['duplicated'] = True
         return ret
 

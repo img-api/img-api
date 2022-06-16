@@ -25,8 +25,11 @@ class DB_ItemMedia(db.DynamicEmbeddedDocument):
     update_date = db.DateTimeField()
 
 
-class DB_MediaList(db.Document, DB_UserCheck):
+class DB_MediaList(db.DynamicDocument, DB_UserCheck):
     """ A media list is a collection of items that an user likes, dislikes, or are a in a playlist """
+    meta = {
+        'strict': False,
+    }
 
     list_type = db.StringField()
 
