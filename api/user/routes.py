@@ -901,9 +901,7 @@ def api_create_a_new_list():
         media_list = current_user.get_media_list(gallery_name, raw_db=True)
         media_list.update_with_checks(json)
 
-        ret = media_list.serialize()
-        ret['username'] = current_user.username
-        ret['duplicated'] = True
+        ret = {'galleries': [media_list.serialize()], 'username': current_user.username, 'duplicated': True}
         return ret
 
     ret = g.create(current_user.username, gallery_name, json)
