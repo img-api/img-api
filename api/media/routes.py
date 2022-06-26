@@ -451,6 +451,47 @@ def api_fetch_media_with_media_category(media_category):
     return get_response_formatted(ret)
 
 
+@blueprint.route('/check_md5/<string:md5>', methods=['GET'])
+@api_key_login_or_anonymous
+@cache_for(hours=48, only_if=ResponseIsSuccessfulOrRedirect)
+def api_get_media_by_md5(md5):
+    """ Returns if the file is MD5
+    ---
+    tags:
+      - media
+    schemes: ['http', 'https']
+    definitions:
+      image_file:
+        type: object
+    parameters:
+        - in: query
+          name: md5
+          schema:
+            type: string
+          description: You can specify a Thumbnail size that will correct the aspect ratio Examples .v256.PNG or .h128.GIF
+
+    responses:
+      200:
+        description: Returns the file found
+
+    """
+    from flask_login import current_user
+
+    media = None
+
+    if current_user.is_authenticated:
+        media = File_Tracking.objects(checksum_md5=md5, username=current_user.username).first()
+
+    if not media:
+        media = File_Tracking.objects(checksum_md5=md5, is_public=True).first()
+
+    if media:
+        ret = {'status': 'success', 'media_files': [media.serialize()]}
+        return get_response_formatted(ret)
+
+    return get_response_error_formatted(404, {"error_msg": "URL Not found"})
+
+
 @blueprint.route('/get/<string:media_id>', methods=['GET'])
 @api_key_login_or_anonymous
 @cache_for(hours=48, only_if=ResponseIsSuccessfulOrRedirect)

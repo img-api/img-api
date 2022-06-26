@@ -136,10 +136,12 @@ def api_login_user():
     token = user.generate_auth_token()
     return get_response_formatted({'status': 'success', 'msg': 'hello user', 'token': token})
 
+
 def is_valid_username(username):
     """ User name cannot have double underscores, double dashes, nor double dots """
     username_regex = re.compile(r'^(?!.*\.\..*)^(?!.*--.*)^(?!.*__.*)^[-a-zA-Z0-9_.]+$')
     return username_regex.match(username)
+
 
 def split_addr(emailStr, encoding):
     import re
@@ -349,7 +351,8 @@ def api_create_user_local():
 
             return get_response_formatted(ret)
 
-        return get_response_error_formatted(401, {'error_msg': "The username and email combination does not match this user"})
+        return get_response_error_formatted(
+            401, {'error_msg': "The username and email combination does not match this user"})
 
     email = get_validated_email(email)
     if isinstance(email, Response):
@@ -895,21 +898,18 @@ def api_create_a_new_list():
 
     if ret:
         print_r("Duplicated")
-        media_list = current_user.get_media_list(gallery_name, raw_db = True)
+        media_list = current_user.get_media_list(gallery_name, raw_db=True)
         media_list.update_with_checks(json)
 
-        ret = {
-            'galleries': [media_list.serialize()]
-        }
-
+        ret = media_list.serialize()
+        ret['username'] = current_user.username
         ret['duplicated'] = True
         return ret
 
-
     ret = g.create(current_user.username, gallery_name, json)
-    current_user.save(validate=False)
     ret['username'] = current_user.username
 
+    current_user.save(validate=False)
     return get_response_formatted(ret)
 
 
@@ -937,6 +937,26 @@ def api_update_a_list():
     ret['username'] = current_user.username
 
     return get_response_formatted(ret)
+
+
+@blueprint.route('/list/remove/<string:list_id>', methods=['POST'])
+@api_key_or_login_required
+def api_remove_a_list(list_id):
+    """ Remove a media list
+    ---
+    tags:
+      - user
+    schemes: ['http', 'https']
+    definitions:
+      user_file:
+        type: object
+    responses:
+      200:
+        description: Deletes a media
+    """
+
+    res = current_user.media_list_remove(list_id)
+    return get_response_formatted(res)
 
 
 @blueprint.route('/list/clear', methods=['GET', 'DELETE'])
