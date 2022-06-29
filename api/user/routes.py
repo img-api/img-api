@@ -15,8 +15,8 @@ from flask import jsonify, request, Response, redirect, abort
 from api.tools import generate_file_md5, ensure_dir, is_api_call
 from api.query_helper import mongo_to_dict_helper
 
-from .models import User
-from .galleries import DB_MediaList
+from api.user.models import User
+from api.galleries.models import DB_MediaList
 
 from mongoengine.queryset import QuerySet
 from mongoengine.queryset.visitor import Q

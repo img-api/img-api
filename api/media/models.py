@@ -175,10 +175,11 @@ class File_Tracking(DB_UserCheck, db.DynamicDocument):
             'username': self.username,
             'media_id': str(self.id),
             'creation_date': time.mktime(self.creation_date.timetuple()),
-            'my_title': self.my_title,
-            'my_description': self.my_description,
-            'my_source_url': self.my_source_url,
         }
+
+        for key in self:
+            if key.startswith('my_') and self[key]:
+                serialized_file[key] = self[key]
 
         if 'info' in self:
             serialized_file['info'] = self['info']

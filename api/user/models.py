@@ -13,9 +13,9 @@ from flask_login import UserMixin, current_user
 from imgapi_launcher import db, login_manager
 from api.query_helper import mongo_to_dict_helper
 
-from .signature_serializer import TimedJSONWebSignatureSerializer as Serializer, BadSignature, SignatureExpired
+from api.tools.signature_serializer import TimedJSONWebSignatureSerializer as Serializer, BadSignature, SignatureExpired
 
-from .galleries import DB_UserGalleries
+from api.galleries.models import DB_UserGalleries
 from api.media.models import File_Tracking
 
 

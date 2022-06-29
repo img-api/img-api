@@ -256,7 +256,6 @@ def mongo_to_dict_result(objects, filter_out=None, add_empty_lists=True):
             rdict = mongo_to_dict_helper(obj, filter_out, add_empty_lists)
             ret.append(rdict)
 
-        return ret
     except Exception as e:
         print_exception(e, "FAIL")
 

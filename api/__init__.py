@@ -218,6 +218,7 @@ def register_api_blueprints(app):
             'admin',
             'media',
             'content',
+            'galleries',
             'hello_world',
     ):
         module = import_module('api.{}.routes'.format(module_name))

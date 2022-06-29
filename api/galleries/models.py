@@ -17,7 +17,7 @@ from api.query_helper import mongo_to_dict_helper
 from api.user.user_check import DB_UserCheck
 from api.query_helper import get_value_type_helper
 
-from .signature_serializer import TimedJSONWebSignatureSerializer as Serializer, BadSignature, SignatureExpired
+from api.tools.signature_serializer import TimedJSONWebSignatureSerializer as Serializer, BadSignature, SignatureExpired
 
 
 class DB_ItemMedia(db.DynamicEmbeddedDocument):

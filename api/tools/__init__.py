@@ -3,8 +3,6 @@ import hashlib
 import traceback
 
 from flask import jsonify, request, json
-from api import get_response_formatted, get_response_error_formatted
-
 
 def file_as_blockiter(afile, blocksize=65536):
     with afile:
