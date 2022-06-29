@@ -22,7 +22,12 @@ def get_value_from_text(value):
     return value
 
 
-def get_value_type_helper(field, value):
+def get_value_type_helper(obj, key, value):
+    if key not in obj:
+        return str(value)
+
+    field = obj[key]
+
     if isinstance(field, bool):
         if isinstance(value, bool):
             return value

@@ -37,6 +37,7 @@ class File_Tracking(DB_UserCheck, db.DynamicDocument):
 
     my_description = db.StringField()
     my_source_url = db.StringField()
+    my_gallery_id = db.StringField()
 
     # A helper to specify if a preview was generated
     has_preview = db.BooleanField(default=False)
@@ -148,8 +149,8 @@ class File_Tracking(DB_UserCheck, db.DynamicDocument):
             if not key.startswith('my_') and key not in ["is_cover", "is_public", "tags", "is_profile"]:
                 continue
 
-            value = get_value_type_helper(self[key], json[key])
-            if value != self[key]:
+            value = get_value_type_helper(self, key, json[key])
+            if key not in self or value != self[key]:
                 update[key] = value
 
             if key == "is_profile":

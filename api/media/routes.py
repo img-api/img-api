@@ -77,6 +77,7 @@ def api_internal_upload_media():
     media_list = current_user.get_media_list(gallery_id, raw_db=True)
 
     uploaded_ft = []
+    idx = 0
     for file_key, f_request in request.files.items():
         key = file_key
 
@@ -211,8 +212,12 @@ def api_internal_upload_media():
             my_file = File_Tracking(**new_file)
             my_file.save()
 
-            if request.form:
-                my_file.update_with_checks(request.json)
+            try:
+                if request.form:
+                    data = request.form[file_key]
+                    my_file.update_with_checks(json.loads(data))
+            except Exception as e:
+                print_exception(e, "Crashed updating info")
 
             api_internal_add_to_media_list(media_list, my_file)
 

@@ -48,7 +48,7 @@ class DB_UserContent(DB_UserCheck, db.DynamicDocument):
             self.reload()
             return True
 
-        value = get_value_type_helper(self[key], value)
+        value = get_value_type_helper(self, key, value)
         if value != self[key]:
             self.update(**{key: value}, validate=False)
             self.reload()

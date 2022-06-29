@@ -41,6 +41,7 @@ class DB_MediaList(db.DynamicDocument, DB_UserCheck):
     cover_id = db.StringField()
     background_id = db.StringField()
 
+    is_NSFW = db.BooleanField(default=False)
     is_public = db.BooleanField(default=False)
     is_order_asc = db.BooleanField(default=True)
 
@@ -198,7 +199,7 @@ class DB_MediaList(db.DynamicDocument, DB_UserCheck):
             if key in self.private_keys:
                 continue
 
-            value = get_value_type_helper(self[key], value)
+            value = get_value_type_helper(self, key, value)
 
             if value == self[key]:
                 continue
@@ -425,6 +426,9 @@ class DB_UserGalleries(db.DynamicEmbeddedDocument):
             return {'is_empty': True, 'media_list': []}
 
         my_list = DB_MediaList.objects(pk=list_id).first()
+        if not my_list:
+            return None
+
         my_list.check_permissions()
 
         if raw_db:

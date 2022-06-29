@@ -327,7 +327,7 @@ class User(UserMixin, db.Document):
         if not key.startswith('my_') and key not in self.public_keys:
             return False
 
-        value = get_value_type_helper(self[key], value)
+        value = get_value_type_helper(self, key, value)
 
         if value != self[key]:
             self.update(**{key: value})
@@ -351,7 +351,7 @@ class User(UserMixin, db.Document):
             if not key.startswith('my_') and key not in self.public_keys:
                 continue
 
-            value = get_value_type_helper(self[key], value)
+            value = get_value_type_helper(self, key, value)
 
             if value == self[key]:
                 continue
