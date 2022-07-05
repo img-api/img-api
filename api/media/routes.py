@@ -387,73 +387,8 @@ def api_dynamic_conversion(my_file, abs_path, relative_path, extension, thumbnai
 @blueprint.route('/category/<string:media_category>', methods=['GET'])
 @api_key_login_or_anonymous
 def api_fetch_media_with_media_category(media_category):
-    """Returns a list of media objects to display.
-
-    This API is only for public media
-    ---
-    tags:
-      - media
-    schemes: ['http', 'https']
-    deprecated: false
-    definitions:
-      image_file:
-        type: object
-    parameters:
-        - in: query
-          name: media_category
-          schema:
-            type: string
-          description: Just specify from the list of media categories
-    responses:
-      200:
-        description: Returns a list of media files
-      401:
-        description: User doesn't have access to this resource.
-      404:
-        description: Category doesn't exist anymore on the system
-
-    """
-    from flask_login import current_user  # Required by pytest, otherwise client crashes on CI
-    from api.media.models import File_Tracking
-
-    DEFAULT_ITEMS_LIMIT = 25
-    items = int(request.args.get('items', DEFAULT_ITEMS_LIMIT))
-    page = int(request.args.get('page', 0))
-    offset = page * items
-
-    query = Q(is_public=True)
-
-    if media_category != "NEW":
-        query = query & Q(tags__contains=media_category)
-
-    print_h1(" LOAD PAGE " + str(page))
-
-    op = File_Tracking.objects(query)
-
-    if request.args.get('order', 'desc') == 'desc':
-        op = op.order_by('-creation_date')
-    else:
-        op = op.order_by('+creation_date')
-
-    files = op.skip(offset).limit(items)
-
-    return_list = []
-
-    count = 0
-    for f in files:
-        if f.exists():
-            return_list.append(f.serialize())
-            count += 1
-
-            # We should limit this on the File_Tracking call
-            if count > 150:
-                break
-
-    if current_user.is_authenticated:
-        current_user.populate_media(return_list)
-
-    ret = {'status': 'success', 'media_files': return_list, 'items': items, 'offset': offset, 'page': page}
-    return get_response_formatted(ret)
+    from api.galleries.routes import api_fetch_gallery_with_media_category
+    return api_fetch_gallery_with_media_category(media_category)
 
 
 @blueprint.route('/check_md5/<string:md5>', methods=['GET'])

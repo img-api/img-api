@@ -1,8 +1,10 @@
 import os
+import sys
 import hashlib
 import traceback
 
 from flask import jsonify, request, json
+
 
 def file_as_blockiter(afile, blocksize=65536):
     with afile:
@@ -57,6 +59,7 @@ def ensure_dir(f):
 
     return None
 
+
 def is_api_call():
     """ An api call is defined either by an application/json content header or our api key """
     if request.args.get("key"):
@@ -67,6 +70,7 @@ def is_api_call():
 
     return False
 
+
 def json_clean(obj):
     """ Returns the same object, but it ignores all the serialization problems """
     return json.loads(json.dumps(obj, default=lambda o: '<not serializable>'))
@@ -76,3 +80,16 @@ def get_timestamp():
     d = datetime.datetime.now()
     unixtime = time.mktime(d.timetuple())
     return int(unixtime)
+
+
+def to_bytes(x, charset=sys.getdefaultencoding(), errors='strict'):
+    if isinstance(x, int):
+        x = str(int)
+
+    if x is None:
+        return None
+    if isinstance(x, (bytes, bytearray, memoryview)):
+        return bytes(x)
+    if isinstance(x, str):
+        return x.encode(charset, errors)
+    raise TypeError('Expected bytes')
