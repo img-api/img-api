@@ -57,6 +57,7 @@ class File_Tracking(DB_UserCheck, db.DynamicDocument):
 
     comments = db.ListField(db.StringField())
     tags = db.ListField(db.StringField(), default=list)
+    auto_tags = db.ListField(db.StringField(), default=list)
 
     def __init__(self, *args, **kwargs):
         super(File_Tracking, self).__init__(*args, **kwargs)
