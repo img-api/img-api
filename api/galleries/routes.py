@@ -100,7 +100,7 @@ def api_fetch_gallery_with_media_category(media_category):
 
     DEFAULT_PAGE_CONTINUE = 3
 
-    DEFAULT_ITEMS_LIMIT = 10
+    DEFAULT_ITEMS_LIMIT = 25
     items = int(request.args.get('items', DEFAULT_ITEMS_LIMIT))
     page = int(request.args.get('page', 0))
     offset = page * items
