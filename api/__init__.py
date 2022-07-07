@@ -20,6 +20,7 @@ from html_sanitizer import Sanitizer
 
 sanitizer = Sanitizer()
 
+
 def get_response_formatted(content, pretty=True):
     """ Returns a formatted response with the API version
         It cleans the input from private information.
@@ -101,7 +102,10 @@ def api_key_or_login_required(func):
                     token = request.form["key"]
 
             if not token:
-                return get_response_error_formatted(401, {'error_msg': "No user found, please login or create an account.", "no_std": True})
+                return get_response_error_formatted(401, {
+                    'error_msg': "No user found, please login or create an account.",
+                    "no_std": True
+                })
 
             user = User.verify_auth_token(token)
             if isinstance(user, User) and user.active:
@@ -217,6 +221,7 @@ def register_api_blueprints(app):
             'jobs',
             'admin',
             'media',
+            'actors',
             'content',
             'galleries',
             'hello_world',
