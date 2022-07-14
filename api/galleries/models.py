@@ -423,16 +423,21 @@ class DB_UserGalleries(db.DynamicEmbeddedDocument):
     def media_list_get(self, list_gallery_id, image_type=None, raw_db=False):
         """ Gets a media list, if there is not one and it is not a MongoID, we generate a gallery automatically """
         list_id = self.get_list_id(list_gallery_id)
+
+        my_list = None
         if not list_id:
             if len(list_gallery_id) != 24:
                 # Auto create gallery
-                gen = self.create(current_user.username, list_gallery_id, {'title': list_gallery_id})
+                my_list = self.create(current_user.username, list_gallery_id, {'title': list_gallery_id})
                 if raw_db:
-                    return gen
+                    return my_list
 
-            return {'is_empty': True, 'media_list': []}
+            if not my_list:
+                return {'is_empty': True, 'media_list': []}
 
-        my_list = DB_MediaList.objects(pk=list_id).first()
+        if not my_list:
+            my_list = DB_MediaList.objects(pk=list_id).first()
+
         if not my_list:
             return None
 
