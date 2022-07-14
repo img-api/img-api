@@ -224,6 +224,9 @@ def api_internal_upload_media():
             new_file['media_id'] = str(my_file.id)
             uploaded_ft.append(new_file)
 
+    if len(uploaded_ft) == 0:
+        return get_response_error_formatted(500, {"error_msg": "No files found on upload"})
+
     ret = {'media_files': uploaded_ft, 'username': current_user.username, 'status': 'success'}
     return get_response_formatted(ret)
 

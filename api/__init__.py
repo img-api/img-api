@@ -38,8 +38,12 @@ def get_response_formatted(content, pretty=True):
     else:
         content['is_anon'] = True
 
-    content = json.dumps(content).encode('utf8')
-    response = Response(content, mimetype='application/json')
+    if pretty:
+        content = json.dumps(content, sort_keys=True, indent=4)
+    else:
+        content = json.dumps(content)
+
+    response = Response(content.encode('utf8'), mimetype='application/json')
 
     return response
 

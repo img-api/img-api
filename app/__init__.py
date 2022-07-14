@@ -9,6 +9,7 @@ def register_app_blueprints(app):
             'root',
             'user',
             'media',
+            'setup',
             'landing',
     ):
         module = import_module('app.{}.routes'.format(module_name))

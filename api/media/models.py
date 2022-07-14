@@ -59,6 +59,8 @@ class File_Tracking(DB_UserCheck, db.DynamicDocument):
     tags = db.ListField(db.StringField(), default=list)
     auto_tags = db.ListField(db.StringField(), default=list)
 
+    SAFE_KEYS = ["is_cover", "is_public", "tags", "is_profile", "is_NSFW"]
+
     def __init__(self, *args, **kwargs):
         super(File_Tracking, self).__init__(*args, **kwargs)
 
@@ -147,7 +149,7 @@ class File_Tracking(DB_UserCheck, db.DynamicDocument):
         # My own fields that can be edited:
         update = {}
         for key in json:
-            if not key.startswith('my_') and key not in ["is_cover", "is_public", "tags", "is_profile"]:
+            if not key.startswith('my_') and key not in self.SAFE_KEYS:
                 continue
 
             value = get_value_type_helper(self, key, json[key])
@@ -170,6 +172,7 @@ class File_Tracking(DB_UserCheck, db.DynamicDocument):
             'is_anon': self.is_anon,
             'is_cover': self.is_cover,
             'is_profile': self.is_profile,
+            'is_NSFW': self.is_NSFW,
             'file_size': self.file_size,
             'file_type': self.file_type,
             'file_format': self.file_format,
