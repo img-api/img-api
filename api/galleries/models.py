@@ -427,7 +427,8 @@ class DB_UserGalleries(db.DynamicEmbeddedDocument):
             if len(list_gallery_id) != 24:
                 # Auto create gallery
                 gen = self.create(current_user.username, list_gallery_id, {'title': list_gallery_id})
-                return gen
+                if raw_db:
+                    return gen
 
             return {'is_empty': True, 'media_list': []}
 

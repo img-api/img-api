@@ -40,7 +40,7 @@ def test_user(client):
 
     # It should be empty
     assert ret.json['status'] == 'success'
-    assert ret.json['is_empty']
+    assert ret.json['name'] == 'favs'
 
     # Get the favourite list from an invalid user
     ret = client.get("/api/user/01/list/favs/get?" + TEST_CREDENTIALS)
