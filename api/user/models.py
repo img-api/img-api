@@ -265,7 +265,11 @@ class User(UserMixin, db.Document):
             print_b(" No media list to return ")
             return None
 
-        return self.galleries.media_list_get(gallery_id, raw_db=raw_db)
+        gallery = self.galleries.media_list_get(gallery_id, raw_db=raw_db)
+        if not gallery:
+            print_r(" Generate new gallery with this gallery_id " + str(gallery_id))
+
+        return gallery
 
     def action_on_list(self, media_id, action, media_list_short_name):
         """ Performs an interaction on a media list """

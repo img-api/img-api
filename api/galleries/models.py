@@ -420,9 +420,15 @@ class DB_UserGalleries(db.DynamicEmbeddedDocument):
         my_list.delete()
         return True
 
-    def media_list_get(self, list_id, image_type=None, raw_db=False):
-        list_id = self.get_list_id(list_id)
+    def media_list_get(self, list_gallery_id, image_type=None, raw_db=False):
+        """ Gets a media list, if there is not one and it is not a MongoID, we generate a gallery automatically """
+        list_id = self.get_list_id(list_gallery_id)
         if not list_id:
+            if len(list_gallery_id) != 24:
+                # Auto create gallery
+                gen = self.create(current_user.username, list_gallery_id, {'title': list_gallery_id})
+                return gen
+
             return {'is_empty': True, 'media_list': []}
 
         my_list = DB_MediaList.objects(pk=list_id).first()
@@ -508,8 +514,11 @@ class DB_UserGalleries(db.DynamicEmbeddedDocument):
         my_list.save().reload()
         self['list_' + gallery_name + '_id'] = str(my_list.id)
 
-        ret = mongo_to_dict_helper(my_list)
-        return {"galleries": [ret]}
+        # Update current user galleries
+        if current_user.is_authenticated and current_user.username == username:
+            current_user.save(validate=False)
+
+        return my_list
 
     def update(self, my_dict):
         media_list = self.media_list_get(my_dict['id'], raw_db=True)

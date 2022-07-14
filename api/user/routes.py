@@ -904,8 +904,13 @@ def api_create_a_new_list():
         ret = {'galleries': [media_list.serialize()], 'username': current_user.username, 'duplicated': True}
         return ret
 
-    ret = g.create(current_user.username, gallery_name, json)
-    ret['username'] = current_user.username
+    media_list = g.create(current_user.username, gallery_name, json)
+
+    if not media_list:
+        return get_response_error_formatted(400, {'error_msg': "Wrong parameters."})
+
+    my_dict = mongo_to_dict_helper(media_list)
+    ret = {"galleries": [my_dict], 'username': current_user.username}
 
     current_user.save(validate=False)
     return get_response_formatted(ret)

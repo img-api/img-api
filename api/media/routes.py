@@ -45,7 +45,7 @@ def api_internal_add_to_media_list(media_list, my_file):
 
     # Try to append this media to the media list
     try:
-        if media_list['is_public']:
+        if 'is_public' in media_list and media_list['is_public']:
             my_file.update(**{'is_public': True})
 
         media_list.add_to_list(str(my_file.id))
@@ -95,11 +95,16 @@ def api_internal_upload_media():
         if mime in ['image', 'video']:
             key = mime
         else:
-            if key.startswith('image') or File_Tracking.is_extension_image(extension):
-                key = "image"
+            if extension:
+                if key.startswith('image') or File_Tracking.is_extension_image(extension):
+                    key = "image"
 
-            if key.startswith('video') or File_Tracking.is_extension_video(extension):
-                key = "video"
+                if key.startswith('video') or File_Tracking.is_extension_video(extension):
+                    key = "video"
+
+            else:
+                extension = ".JPG"
+                key = "image"
 
         if key in ["image", "video"]:
             md5, size = generate_file_md5(f_request)
