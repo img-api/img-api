@@ -43,6 +43,7 @@ class DB_MediaList(db.DynamicDocument, DB_UserCheck):
 
     is_NSFW = db.BooleanField(default=False)
     is_public = db.BooleanField(default=False)
+    is_unlisted = db.BooleanField(default=False)
     is_order_asc = db.BooleanField(default=True)
 
     allow_public_upload = db.BooleanField(default=False)
@@ -180,12 +181,21 @@ class DB_MediaList(db.DynamicDocument, DB_UserCheck):
         self.update(**{"background_id": media_id})
 
     def set_media_privacy(self, is_public):
+        """ If we change a gallery permissions, all the media will adjust to it """
         from api.media.routes import api_media_set_privacy
 
         print_b(" Special case in which we toggle all the items on the gallery ")
         my_list = self.get_as_list()
         for media_id in my_list:
             api_media_set_privacy(media_id, is_public)
+
+    def set_media_unlisted(self, is_unlisted):
+        """ Unlisted media is visible but only if you have the link to the media """
+        from api.media.routes import api_media_set_unlisted
+
+        my_list = self.get_as_list()
+        for media_id in my_list:
+            api_media_set_unlisted(media_id, is_unlisted)
 
     def update_with_checks(self, json):
         update = {}
@@ -261,8 +271,8 @@ class DB_UserGalleries(db.DynamicEmbeddedDocument):
         for media in media_list:
             m_id = media['media_id']
 
-            if m_id == "627290d4823ab1885436e9b7":
-                print(" Test ")
+            #if m_id == "627290d4823ab1885436e9b7":
+            #    print(" Test ")
 
             if self.is_on_list(m_id, 'list_favs_id'):
                 media['favs'] = True
@@ -542,6 +552,9 @@ class DB_UserGalleries(db.DynamicEmbeddedDocument):
 
         if 'is_public' in my_dict and my_dict['is_public'] != media_list.is_public:
             media_list.set_media_privacy(my_dict['is_public'])
+
+        if 'is_unlisted' in my_dict and my_dict['is_unlisted'] != media_list.is_unlisted:
+            media_list.set_media_unlisted(my_dict['is_unlisted'])
 
         media_list.update(**my_dict)
         media_list.reload()

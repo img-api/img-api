@@ -55,7 +55,7 @@ def api_get_galleries(gallery_type):
 
     """
 
-    the_list = DB_MediaList.objects(is_public=True).exclude('media_list')
+    the_list = DB_MediaList.objects(is_public=True, is_unlisted=False).exclude('media_list')
     if not the_list:
         return abort(404, "No public galleries")
 

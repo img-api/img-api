@@ -751,7 +751,7 @@ def api_fetch_from_url():
     return get_response_formatted(ret)
 
 
-def api_media_set_privacy(media_id, is_public):
+def api_set_media_update_currentuser(media_id, update):
     media_file = File_Tracking.objects(id=media_id).first()
     if not media_file:
         return False
@@ -760,8 +760,16 @@ def api_media_set_privacy(media_id, is_public):
     if not media_file.is_current_user():
         return False
 
-    media_file.update(**{"is_public": is_public})
+    media_file.update(**update)
     return True
+
+
+def api_media_set_privacy(media_id, is_public):
+    return api_set_media_update_currentuser(media_id, {"is_public": is_public})
+
+
+def api_media_set_unlisted(media_id, is_unlisted):
+    return api_set_media_update_currentuser(media_id, {"is_unlisted": is_unlisted})
 
 
 def api_get_media_id(media_id):

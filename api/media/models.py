@@ -49,6 +49,7 @@ class File_Tracking(DB_UserCheck, db.DynamicDocument):
     is_anon = db.BooleanField(default=False)
     is_cover = db.BooleanField(default=False)
     is_public = db.BooleanField(default=False)
+    is_unlisted = db.BooleanField(default=False)
     is_profile = db.BooleanField(default=False)
 
     no_views = db.LongField()
@@ -58,6 +59,8 @@ class File_Tracking(DB_UserCheck, db.DynamicDocument):
     comments = db.ListField(db.StringField())
     tags = db.ListField(db.StringField(), default=list)
     auto_tags = db.ListField(db.StringField(), default=list)
+
+    actors = db.ListField(db.StringField(), default=list)
 
     SAFE_KEYS = ["is_cover", "is_public", "tags", "is_profile", "is_NSFW"]
 
@@ -172,6 +175,7 @@ class File_Tracking(DB_UserCheck, db.DynamicDocument):
             'is_anon': self.is_anon,
             'is_cover': self.is_cover,
             'is_profile': self.is_profile,
+            'is_unlisted': self.is_unlisted,
             'is_NSFW': self.is_NSFW,
             'file_size': self.file_size,
             'file_type': self.file_type,
@@ -179,6 +183,9 @@ class File_Tracking(DB_UserCheck, db.DynamicDocument):
             'username': self.username,
             'media_id': str(self.id),
             'creation_date': time.mktime(self.creation_date.timetuple()),
+            'actors': self.actors,
+            'tags': self.tags,
+            'auto_tags': self.auto_tags,
         }
 
         for key in self:
