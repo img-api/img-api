@@ -45,8 +45,16 @@ def api_internal_add_to_media_list(media_list, my_file):
 
     # Try to append this media to the media list
     try:
+        update = {}
+
         if 'is_public' in media_list and media_list['is_public']:
-            my_file.update(**{'is_public': True})
+            update['is_public'] = True
+
+        if 'is_unlisted' in media_list and media_list['is_unlisted']:
+            update['is_unlisted'] = True
+
+        if update:
+            my_file.update(**update)
 
         media_list.add_to_list(str(my_file.id))
     except Exception as e:
