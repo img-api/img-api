@@ -265,24 +265,6 @@ class DB_UserGalleries(db.DynamicEmbeddedDocument):
 
         return media_list.is_on_list(media_id)
 
-    def populate(self, media_list):
-        """ Adds if the user liked or disliked the media """
-
-        for media in media_list:
-            m_id = media['media_id']
-
-            #if m_id == "627290d4823ab1885436e9b7":
-            #    print(" Test ")
-
-            if self.is_on_list(m_id, 'list_favs_id'):
-                media['favs'] = True
-
-            if self.is_on_list(m_id, 'list_likes_id'):
-                media['like'] = True
-
-            if self.is_on_list(m_id, 'list_dislikes_id'):
-                media['dislike'] = True
-
     def get_media_list_by_name_or_id(self, media_list_id):
         if len(media_list_id) == 24:
             return self.get_media_list(media_list_id)
@@ -490,7 +472,7 @@ class DB_UserGalleries(db.DynamicEmbeddedDocument):
                 continue
 
             my_list = DB_MediaList.objects(pk=value).first()
-            if my_list and my_list.is_public:
+            if my_list and (my_list.is_public and not my_list.is_unlisted):
                 ret[key] = value
 
         return {'galleries': self.clean_dict(ret)}
