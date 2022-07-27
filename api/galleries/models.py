@@ -445,6 +445,22 @@ class DB_UserGalleries(db.DynamicEmbeddedDocument):
 
         return ret
 
+
+    def populate(self, media_list):
+        """ Adds if the user liked or disliked the media """
+
+        for media in media_list:
+            m_id = media['media_id']
+
+            if self.is_on_list(m_id, 'list_favs_id'):
+                media['favs'] = True
+
+            if self.is_on_list(m_id, 'list_likes_id'):
+                media['like'] = True
+
+            if self.is_on_list(m_id, 'list_dislikes_id'):
+                media['dislike'] = True
+
     @staticmethod
     def clean_dict(ret):
         """ Removes the extra information list_< name >_id """
