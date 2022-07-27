@@ -49,12 +49,18 @@ def api_internal_add_to_media_list(media_list, my_file):
 
         if 'is_public' in media_list and media_list['is_public']:
             update['is_public'] = True
+        else:
+            # We don't allow unlisted for files which are not public
+            update['is_unlisted'] = False
 
         if 'is_unlisted' in media_list and media_list['is_unlisted']:
+            # Unlisted files are public
             update['is_unlisted'] = True
+            update['is_public'] = True
 
         if update:
             my_file.update(**update)
+            my_file.reload()
 
         media_list.add_to_list(str(my_file.id))
     except Exception as e:
@@ -233,9 +239,7 @@ def api_internal_upload_media():
                 print_exception(e, "Crashed updating info")
 
             api_internal_add_to_media_list(media_list, my_file)
-
-            new_file['media_id'] = str(my_file.id)
-            uploaded_ft.append(new_file)
+            uploaded_ft.append(my_file.serialize())
 
     if len(uploaded_ft) == 0:
         return get_response_error_formatted(500, {"error_msg": "No files found on upload"})
@@ -607,7 +611,7 @@ def api_get_user_photostream(user_id):
     if user_id == username:
         query = Q(username=username)
     else:
-        query = Q(username=user_id) & Q(is_public=True)
+        query = Q(username=user_id) & Q(is_public=True) & (Q(is_unlisted=False) | Q(is_unlisted=None))
 
     op = File_Tracking.objects(query)
 

@@ -62,7 +62,7 @@ class File_Tracking(DB_UserCheck, db.DynamicDocument):
 
     actors = db.ListField(db.StringField(), default=list)
 
-    SAFE_KEYS = ["is_cover", "is_public", "tags", "is_profile", "is_NSFW"]
+    SAFE_KEYS = ["is_cover", "is_public", "is_unlisted", "tags", "is_profile", "is_NSFW"]
 
     def __init__(self, *args, **kwargs):
         super(File_Tracking, self).__init__(*args, **kwargs)
@@ -139,10 +139,19 @@ class File_Tracking(DB_UserCheck, db.DynamicDocument):
             return False
 
         # My own fields that can be edited:
-        if not key.startswith('my_') and key not in ["is_public", "tags"]:
+        if not key.startswith('my_') and key not in self.SAFE_KEYS:
             return False
 
-        self.update(**{key: value}, validate=False)
+        value = get_value_type_helper(self, key, value)
+
+        update = {key: value}
+
+        if key == 'is_unlisted' and value == True:
+            update['is_public'] = True
+
+        if update:
+            self.update(**update, validate=False)
+
         return True
 
     def update_with_checks(self, json):

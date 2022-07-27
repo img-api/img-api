@@ -526,6 +526,10 @@ class DB_UserGalleries(db.DynamicEmbeddedDocument):
             "list_type": "gallery",
         })
 
+        # Unlisted galleries are public by default
+        if 'is_unlisted' in my_dict and my_dict['is_unlisted']:
+            my_dict['is_public'] = True
+
         my_list = DB_MediaList(**my_dict)
         my_list.save().reload()
         self['list_' + gallery_name + '_id'] = str(my_list.id)
