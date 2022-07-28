@@ -1,6 +1,8 @@
 from app.root import blueprint
 from api import get_response_formatted
 from flask import render_template, redirect
+from mongoengine.queryset import QuerySet
+from mongoengine.queryset.visitor import Q
 
 
 @blueprint.route('/test', methods=['GET', 'POST'])
@@ -15,7 +17,8 @@ def root_main_render():
     """ Returns the main HTML site """
     from api.media.models import File_Tracking
 
-    files = File_Tracking.objects(is_public=True)
+    query = Q(is_public=True) & (Q(is_unlisted=False) | Q(is_unlisted=None))
+    files = File_Tracking.objects(query)
 
     display = []
 

@@ -55,7 +55,9 @@ def api_get_galleries(gallery_type):
 
     """
 
-    the_list = DB_MediaList.objects(is_public=True, is_unlisted=False).exclude('media_list')
+    query = Q(is_public=True) & (Q(is_unlisted=False) | Q(is_unlisted=None))
+
+    the_list = DB_MediaList.objects(query).exclude('media_list')
     if not the_list:
         return abort(404, "No public galleries")
 
@@ -105,7 +107,7 @@ def api_fetch_gallery_with_media_category(media_category):
     page = int(request.args.get('page', 0))
     offset = page * items
 
-    query = Q(is_public=True)
+    query = Q(is_public=True) & (Q(is_unlisted=False) | Q(is_unlisted=None))
 
     # Skip visited media
     try:
