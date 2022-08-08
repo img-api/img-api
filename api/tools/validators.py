@@ -76,6 +76,7 @@ def check_email(email):
 
 
 def get_validated_email(email):
+    email = email.strip().lower()
     # https://stackoverflow.com/questions/8022530/how-to-check-for-valid-email-address
 
     if not validators.email(email):

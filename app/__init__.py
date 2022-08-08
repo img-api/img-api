@@ -1,6 +1,7 @@
 from api.print_helper import *
 from importlib import import_module
 
+
 def register_app_blueprints(app):
     """ Loads all the modules for the website APP """
 
@@ -11,6 +12,7 @@ def register_app_blueprints(app):
             'media',
             'setup',
             'landing',
+            'business',
     ):
         module = import_module('app.{}.routes'.format(module_name))
         app.register_blueprint(module.blueprint)
