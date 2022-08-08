@@ -225,4 +225,4 @@ def api_get_result_job(job_id):
 
     post_fix = get_postfix(res['operation'], res['transformation'])
     abs_path = File_Tracking.get_media_path() + my_file.file_path + post_fix
-    return send_file(abs_path, attachment_filename=my_file.file_name + post_fix)
+    return send_file(abs_path, download_name=my_file.file_name + post_fix)
