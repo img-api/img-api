@@ -365,7 +365,7 @@ def api_dynamic_conversion(my_file, abs_path, relative_path, extension, thumbnai
     final_path = abs_path + extra
     if cache_file and os.path.exists(final_path):
         if request.args.get('no_redirect'):
-            return send_file(final_path, attachment_filename=attachment_filename + extra)
+            return send_file(final_path, download_name=attachment_filename + extra)
 
         return redirect("/static/MEDIA_FILES/" + relative_path + extra)
 
@@ -394,7 +394,7 @@ def api_dynamic_conversion(my_file, abs_path, relative_path, extension, thumbnai
             return send_file(bit_image,
                              mimetype='image/' + extension,
                              as_attachment=True,
-                             attachment_filename=attachment_filename + extra)
+                             download_name=attachment_filename + extra)
 
     except Exception as exc:
         print_exception(exc, "CRASH")
@@ -539,7 +539,7 @@ def api_get_media(media_id, image_only=False):
                                       my_file.file_name, True)
 
     if request.args.get('no_redirect'):
-        return send_file(abs_path + relative_path, attachment_filename=my_file.file_name)
+        return send_file(abs_path + relative_path, download_name=my_file.file_name)
 
     return redirect("/static/MEDIA_FILES/" + relative_path)
 
