@@ -132,4 +132,11 @@ def api_apply_stamp(username, biz_name, encrypted_date):
         ret.update({'error_msg': "Stamp expired and is GONE"})
         return get_response_error_formatted(410, ret)
 
+
+    # Find user if there is an user
+
+    # Increment the stamps amount
+
+    #
+
     return get_response_formatted(ret)
