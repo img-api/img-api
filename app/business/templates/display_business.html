@@ -1,0 +1,57 @@
+{% extends "base_site.html" %}
+{% block title %} IMG - API Where your images come to life! {% endblock title %}
+
+{% block content %}
+<div class='container'>
+
+    SHOW BUSINESS
+    <div id='main_row' style=''>
+        <div style='margin-top: 7px'></div>
+
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th scope="col">Stamp</th>
+                    <th scope="col">Name</th>
+                    <th scope="col">Email</th>
+                    <th scope="col">Clients</th>
+                    <th scope="col">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                <td>
+                {% if current_user.username == business.username %}
+                    <img src="/api/biz/get_stamp/{{current_user.username}}/{{business.safe_name}}">
+                {% else %}
+                    NO QR
+                {% endif %}
+                </td>
+
+                    <td><a href="/business/{{current_user.username}}/{{business.safe_name}}">{{ business.name }}</a></td>
+                    <td>{{ business.email }}</td>
+                    <td>0</td>
+                    <td><a href="/api/biz/remove/{{business.id}}"><i class='fa fa-times'></i> Delete</a></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+</div>
+{% endblock content %}
+
+{% block footer %}
+<footer class="bg-dark text-center text-white footer_small">
+    <!-- Copyright -->
+    <div class="text-center p-3" style="background-color: rgba(0, 0, 0, 0.2);">
+        ©2022 Copyright:
+        <a class="text-white" href="http://engineer.blue">Sergio A. Martinez</a>
+    </div>
+    <!-- Copyright -->
+</footer>
+{% endblock %}
+
+{% block javascripts %}
+{{ super() }}
+<script src="{{ url_for('app_business_blueprint.static', filename='business.js') }}"></script>
+{% endblock javascripts %}

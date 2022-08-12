@@ -1,5 +1,7 @@
 #!/bin/bash
 
+cd "${BASH_SOURCE%/*}"
+
 if [ ! -d ".venv" ]
 then
    echo "INSTALLING VENV "
@@ -7,8 +9,6 @@ then
 fi
 
 echo "UPDATING IMG-API"
-
-cd "${BASH_SOURCE%/*}"
 
 . .venv/bin/activate
 

@@ -25,3 +25,7 @@ flask-caching
 Flask-CacheControl
 
 html_sanitizer
+qrcode
+Pillow
+cryptography
+rsa
