@@ -117,7 +117,7 @@ class File_Tracking(DB_UserCheck, db.DynamicDocument):
         abs_path = self.get_media_path() + self.file_path
         if not os.path.exists(abs_path):
             print(" FILE NOT FOUND - DELETE DATABASE ENTRY ")
-            self.delete()
+            #self.delete()
             return False
 
         return True

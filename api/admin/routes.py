@@ -1,7 +1,11 @@
+import os
+import ffmpeg
 from api.admin import blueprint
+from api.print_helper import *
 from api import get_response_formatted
 from flask import current_app, url_for
 
+from api.media.models import File_Tracking
 
 def has_no_empty_params(rule):
     defaults = rule.defaults if rule.defaults is not None else ()
@@ -58,3 +62,122 @@ def site_map():
 
     # links is now a list of url, endpoint tuples
     return get_response_formatted({'status': "success", 'site_map': links})
+
+
+def reindex_disk_file(username, checksum_md5, file_name, extension, relative_path, absolute_path):
+    from wand.image import Image
+
+    key = None
+    if File_Tracking.is_extension_image(extension):
+        key = "image"
+
+    if File_Tracking.is_extension_video(extension):
+        key = "video"
+
+    if not key:
+        return
+
+    size = os.path.getsize(absolute_path)
+    if size == 0:
+        return
+
+    info = {}
+
+    if key == "image":
+        image = Image(filename=absolute_path)
+
+        print(" Image orientation " + str(image.orientation))
+        # Image is rotated internally, we have to invert our dimensions
+        if image.orientation in ['right_top', 'top_right', 'right_bottom', 'bottom_right']:
+            print(" Rotate Image ")
+            info['width'] = image.height
+            info['height'] = image.width
+        else:
+            info['width'] = image.width
+            info['height'] = image.height
+
+    if key == "video":
+        probe = ffmpeg.probe(absolute_path)
+        video_stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'video'),
+                            None)
+        info['width'] = int(video_stream['width'])
+        info['height'] = int(video_stream['height'])
+        info['duration'] = float(video_stream['duration'])
+
+    new_file = {
+        'info': info,
+        'file_name': file_name,
+        'file_path': relative_path,
+        'file_type': key,
+        'file_size': size,
+        'file_format': "." + extension,
+        'checksum_md5': checksum_md5,
+        'username': username,
+        'is_anon': False,
+        'is_public': True
+    }
+
+    my_file = File_Tracking(**new_file)
+    my_file.save()
+
+@blueprint.route('/reindex', methods=['GET', 'DELETE'])
+def api_disaster_recovery():
+    from flask_login import current_user  # Required by pytest, otherwise client crashes on CI
+
+    if not current_user.is_authenticated:
+        return get_response_error_formatted(403, {'error_msg': "Anonymous users are not allowed."})
+
+    if current_user.username != "sergioamr":
+        return get_response_error_formatted(403, {'error_msg': "This user is not allowed to perform this."})
+
+    path = current_app.config['MEDIA_PATH']
+    l = len(path)
+
+    last_check = ""
+    for root, dirs, files in os.walk(path):
+        for file in files:
+            file_path = os.path.join(root, file)[l:]
+            arr = file_path.split("/")
+
+            if len(arr) == 1:
+                continue
+
+            username = arr[0]
+            if username in ['oinktv']:
+                continue
+
+            media_file = arr[1]
+
+            if ".PREVIEW" not in media_file:
+                continue
+
+            marr = media_file.split(".")
+
+            md5 = marr[0]
+            extension = marr[1]
+            file_name = md5 + "." + extension
+
+            relative_path = username + "/" + file_name
+            #print_b("MEDIA [" + relative_path + "] ")
+
+            if last_check == relative_path:
+                continue
+
+            last_check = relative_path
+
+            media_file = File_Tracking.objects(file_path=relative_path).first()
+
+            if media_file:
+                #print_b("FILE OK [" + username + "] " + relative_path)
+                continue
+
+            print_r("FILE LOST [" + username + "] " + relative_path)
+
+            abs_path = os.path.join(root, file_name)
+            try:
+                reindex_disk_file(username, md5, file_name, extension, relative_path, abs_path)
+            except Exception as e:
+                print_exception(e, "Crash")
+
+    ret = {'status': 'success'}
+    return get_response_formatted(ret)
