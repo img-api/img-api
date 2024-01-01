@@ -226,6 +226,7 @@ def register_api_blueprints(app):
             'admin',
             'media',
             'actors',
+            'events',
             'content',
             'business',
             'galleries',
