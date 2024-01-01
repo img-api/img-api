@@ -45,6 +45,7 @@ login_manager.init_app(app)
 # Swagger and documentation
 
 app.json_encoder = LazyJSONEncoder  # Required by swagger
+"""
 app.config['SWAGGER'] = {'title': 'IMG API', 'DEFAULT_MODEL_DEPTH': -1}
 
 swagger_template = dict(
@@ -81,6 +82,7 @@ swagger_config = {
 
 template = dict(swaggerUiPrefix=LazyString(lambda: request.environ.get('HTTP_X_SCRIPT_NAME', '')))
 swagger = Swagger(app, template=swagger_template, config=swagger_config)
+"""
 
 # Blue prints section
 from app import register_app_blueprints
