@@ -1,0 +1,9 @@
+{
+    "VER": "Config example",
+    "DEBUG": true,
+    "SECRET_KEY": "mysecret_key_loaded_from_the_system",
+    "MONGODB_SETTINGS": {
+        "host": "mongodb://localhost/development",
+        "port": 27017
+    }
+}

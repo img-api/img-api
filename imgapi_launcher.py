@@ -2,7 +2,7 @@ import os
 import werkzeug
 import traceback
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, json
 
 from flasgger import Swagger, LazyString, LazyJSONEncoder
 from flasgger import swag_from
@@ -17,10 +17,20 @@ CORS(app)
 
 # Enable CORS on the entire application
 
-MONGODB_SETTINGS = {'host': 'localhost', 'port': 27017}
+MONGODB_SETTINGS = {'host': 'mongodb://localhost/demo', 'port': 27017}
 
 app.config.update(DEBUG=True, MONGODB_SETTINGS=MONGODB_SETTINGS, SECRET_KEY="mysecret_key_loaded_from_the_system")
 
+# Path to the configuration file
+config_path = os.path.expanduser('~/.imgapi.json')
+
+# Check if the file exists
+if os.path.exists(config_path):
+    with open(config_path) as config_file:
+        config_data = json.load(config_file)
+        app.config.update(config_data)
+else:
+    print("Config file not found")
 
 # Database initialization
 
