@@ -41,6 +41,9 @@ def get_value_type_helper(obj, key, value):
 
         return False
 
+    if isinstance(field, float):
+        return float(value)
+
     if isinstance(field, int):
         return int(value)
 
