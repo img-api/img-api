@@ -24,12 +24,27 @@ from mongoengine.queryset.visitor import Q
 
 @blueprint.route('/get/<string:event_id>', methods=['GET'])
 def api_get_event(event_id):
-    from flask_login import current_user  # Required by pytest, otherwise client crashes on CI
+    from flask_login import current_user
     """
     """
 
     q = Q(username=current_user.username) & Q(id=event_id)
     event = DB_Event.objects(q).first()
 
-    ret = {'status': 'success', 'event_id': event_id, 'events': event}
+    ret = {'status': 'success', 'event_id': event_id, 'event': event}
+    return get_response_formatted(ret)
+
+@blueprint.route('/create', methods=['POST'])
+def api_create_event():
+    from flask_login import current_user
+
+    if not request.headers['Content-Type'] == 'application/json':
+        return get_response_error_formatted(400, {'error_msg': "Wrong call."})
+
+    json_ = request.json
+
+    event = DB_Event(**json_)
+    event.save(validate=False)
+
+    ret = {'status': 'success', 'event_id': order.id, 'event': event}
     return get_response_formatted(ret)

@@ -76,6 +76,29 @@ def get_response_error_formatted(status, content, is_warning=False):
     return response
 
 
+def api_get_token_from_request():
+    token = request.args.get("key")
+    if token:
+        return token
+
+    try:
+        if request.form and 'key' in request.form:
+            return request.form["key"]
+
+        if 'Content-Type' in request.headers:
+            if request.headers['Content-Type'] != 'application/json':
+                print_r("WRONG CONTENT TYPE" + request.headers['Content-Type'])
+                return None
+
+            if hasattr(request, 'json') and request.json and 'key' in request.json:
+                return request.json["key"]
+
+    except Exception as e:
+        print_exception(e, "CRASH")
+
+    return None
+
+
 def api_key_or_login_required(func):
     """
     Decorator for views that checks that the api call is in there, redirecting
@@ -100,11 +123,7 @@ def api_key_or_login_required(func):
             if current_user.is_authenticated and current_user.active:
                 return func(*args, **kwargs)
 
-            token = request.args.get("key")
-            if not token:
-                if 'key' in request.form:
-                    token = request.form["key"]
-
+            token = api_get_token_from_request()
             if not token:
                 return get_response_error_formatted(401, {
                     'error_msg': "No user found, please login or create an account.",
@@ -156,11 +175,7 @@ def api_key_login_or_anonymous(func):
     def decorated_view(*args, **kwargs):
 
         try:
-            token = request.args.get("key")
-            if not token:
-                if 'key' in request.form:
-                    token = request.form["key"]
-
+            token = api_get_token_from_request()
             if not token:
                 return func(*args, **kwargs)
 
