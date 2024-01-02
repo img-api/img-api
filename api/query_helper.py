@@ -41,6 +41,9 @@ def get_value_type_helper(obj, key, value):
 
         return False
 
+    if isinstance(field, float):
+        return float(value)
+
     if isinstance(field, int):
         return int(value)
 
@@ -180,6 +183,9 @@ def clean_dict(mykey, obj):
 
 
 def has_iterator(obj):
+    if hasattr(obj, '_result_cache'): # Not sure why do I have to check this, on previous versions the iterator was enough.
+        return True
+
     if (hasattr(obj, '__iter__') and hasattr(obj, 'next') and  # or __next__ in Python 3
             callable(obj.__iter__) and obj.__iter__() is obj):
         return True
@@ -198,13 +204,19 @@ def mongo_to_dict_helper(obj, filter_out=None, add_empty_lists=True):
 
     return_data = {}
 
+    if isinstance(obj, bool) or isinstance(obj, str) or isinstance(obj, float) or isinstance(obj, int):
+        return obj
+
     if not obj:
         print_alert("mongo_to_dict_helper - No data to return ")
         return return_data
 
     try:
         if isinstance(obj, dict):
-            return obj
+            ret = {}
+            for k, v in obj.items():
+                ret[k] = mongo_to_dict_helper(v)
+            return ret
 
         for key_, value in obj.__dict__.items():
             if key_[0:1] == "_":
