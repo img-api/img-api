@@ -20,13 +20,24 @@ from .models import DB_Event
 
 from mongoengine.queryset import QuerySet
 from mongoengine.queryset.visitor import Q
+from api.query_helper import mongo_to_dict_helper
 
 
-@blueprint.route('/get/<string:event_id>', methods=['GET'])
+@blueprint.route('/get/<string:event_id>', methods=['GET', 'POST'])
+@api_key_or_login_required
 def api_get_event(event_id):
     from flask_login import current_user
     """
     """
+
+    if event_id == "all":
+        if current_user.username == "sergioamr":
+            events = DB_Event.objects()
+        else:
+            events = DB_Event.objects(username=current_user.username)
+
+        ret = {'status': 'success', 'event_id': event_id, 'events': events}
+        return get_response_formatted(ret)
 
     q = Q(username=current_user.username) & Q(id=event_id)
     event = DB_Event.objects(q).first()
@@ -34,11 +45,13 @@ def api_get_event(event_id):
     ret = {'status': 'success', 'event_id': event_id, 'event': event}
     return get_response_formatted(ret)
 
+
 @blueprint.route('/create', methods=['POST'])
+@api_key_or_login_required
 def api_create_event():
     from flask_login import current_user
 
-    if not request.headers['Content-Type'] == 'application/json':
+    if (ctype := request.headers.get('Content-Type')) != 'application/json':
         return get_response_error_formatted(400, {'error_msg': "Wrong call."})
 
     json_ = request.json
@@ -46,5 +59,5 @@ def api_create_event():
     event = DB_Event(**json_)
     event.save(validate=False)
 
-    ret = {'status': 'success', 'event_id': order.id, 'event': event}
+    ret = {'status': 'success', 'event': mongo_to_dict_helper(event)}
     return get_response_formatted(ret)

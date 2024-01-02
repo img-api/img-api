@@ -10,12 +10,14 @@ from flask import current_app
 from flask_login import current_user
 from api.user.user_check import DB_UserCheck
 
-class DB_Event(db.DynamicDocument, DB_UserCheck):
+class DB_Event(DB_UserCheck, db.DynamicDocument):
     """ Class to create an event
 
     """
     meta = {
         'strict': False,
+        "auto_create_index": True,
+        "index_background": True,
     }
 
     title = db.StringField()
@@ -50,5 +52,4 @@ class DB_Event(db.DynamicDocument, DB_UserCheck):
 
     def serialize(self):
         ret = mongo_to_dict_helper(self)
-
         return ret
