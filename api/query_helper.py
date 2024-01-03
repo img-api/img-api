@@ -5,6 +5,7 @@ from imgapi_launcher import db
 
 from datetime import datetime
 
+
 def get_value_from_text(value):
     if value is bool:
         return value
@@ -31,7 +32,18 @@ def get_value_type_helper(obj, key, value):
 
     field = obj[key]
 
-    if isinstance(field, bool):
+    if isinstance(field, db.DateTimeField) or isinstance(field, datetime):
+        # We round up to a second our timestamps.
+        try:
+            if isinstance(value, datetime):
+                return value
+
+            return datetime.fromtimestamp(int(float(value)))
+        except Exception as e:
+            print_exception(e, "CRASHED")
+            return None
+
+    if isinstance(field, bool) or isinstance(field, db.BooleanField):
         if isinstance(value, bool):
             return value
 
@@ -44,19 +56,24 @@ def get_value_type_helper(obj, key, value):
 
         return False
 
-    if isinstance(field, float):
+    if isinstance(field, float) or isinstance(field, db.FloatField):
         return float(value)
 
-    if isinstance(field, int):
+    if isinstance(field, int) or isinstance(field, db.IntField) or isinstance(field, db.LongField):
         return int(value)
 
-    if isinstance(field, list):
+    if isinstance(field, list) or isinstance(field, db.ListField):
         if isinstance(value, list):
             return value
 
+        print_r(" List not implemeted properly yet ")
         return [value]
 
     if isinstance(field, datetime):
+        return value
+
+    if isinstance(field, str):
+        value = value.strip()
         return value
 
     return value
@@ -186,7 +203,8 @@ def clean_dict(mykey, obj):
 
 
 def has_iterator(obj):
-    if hasattr(obj, '_result_cache'): # Not sure why do I have to check this, on previous versions the iterator was enough.
+    if hasattr(obj,
+               '_result_cache'):  # Not sure why do I have to check this, on previous versions the iterator was enough.
         return True
 
     if (hasattr(obj, '__iter__') and hasattr(obj, 'next') and  # or __next__ in Python 3

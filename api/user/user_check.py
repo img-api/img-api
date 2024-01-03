@@ -3,6 +3,8 @@ from flask_login import current_user
 
 from datetime import datetime
 
+from api.query_helper import get_value_type_helper
+
 
 class DB_UserCheck():
     username = db.StringField()
@@ -39,3 +41,27 @@ class DB_UserCheck():
 
         ret = super(DB_UserCheck, self).save(*args, **kwargs)
         return ret
+
+    def set_key_value(self, key, value):
+        if not self.is_current_user():
+            return False
+
+        # We don't let an user to update the username of an object
+        if key == "username" and current_user.username != "admin":
+            return False
+
+        if not self.creation_date:
+            self.creation_date = datetime.now()
+
+        value = get_value_type_helper(self, key, value)
+
+        # No changes to the value, just return
+        if value == self[key]:
+            return True
+
+        update = {key: value}
+        if update:
+            self.update(**update, validate=False)
+            self.reload()
+
+        return True

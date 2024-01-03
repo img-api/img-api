@@ -330,14 +330,18 @@ class User(UserMixin, db.Document):
         if not key.startswith('my_') and key not in self.public_keys:
             return False
 
+        # We don't let the user to change its name, but it should be already cought on the previous check for public_keys
+        if key == "username":
+            return False
+
         value = get_value_type_helper(self, key, value)
 
         if value != self[key]:
             self.update(**{key: value})
             self.reload()
 
-            if key == "is_media_public":
-                self.set_is_media_public(value)
+        if key == "is_media_public":
+            self.set_is_media_public(value)
 
         return True
 

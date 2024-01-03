@@ -2,9 +2,11 @@ import io
 import os
 import time
 import ffmpeg
-from datetime import datetime
 import validators
 
+from datetime import datetime
+
+from api import sanitizer
 from api.events import blueprint
 from api.api_redis import api_rq
 
@@ -60,8 +62,9 @@ def api_set_event_key(media_id, my_key):
         return get_response_error_formatted(403, {'error_msg': "This user is not allowed to perform this action."})
 
     value = request.args.get("value", None)
-    if not value and 'value' in request.json:
-        value = request.json['value']
+    if not value:
+        if hasattr(request, "json") and 'value' in request.json:
+            value = request.json['value']
 
     if value == None:
         return get_response_error_formatted(400, {'error_msg': "Wrong parameters."})

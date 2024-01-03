@@ -10,6 +10,8 @@ from flask import current_app
 from flask_login import current_user
 from api.user.user_check import DB_UserCheck
 
+from api.query_helper import get_value_type_helper
+
 class DB_Event(DB_UserCheck, db.DynamicDocument):
     """ Class to create an event
 
@@ -38,17 +40,6 @@ class DB_Event(DB_UserCheck, db.DynamicDocument):
         ret = super(DB_Event, self).save(*args, **kwargs)
         ret.reload()
         return ret
-
-    def set_key_value(self, key, value):
-        if not self.is_current_user():
-            return False
-
-        value = get_value_type_helper(self, key, value)
-        if value != self[key]:
-            self.update(**{key: value}, validate=False)
-            self.reload()
-
-        return True
 
     def serialize(self):
         ret = mongo_to_dict_helper(self)

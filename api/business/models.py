@@ -70,20 +70,11 @@ class DB_Business(DB_UserCheck, db.DynamicDocument):
         return super(DB_Business, self).delete(*args, **kwargs)
 
     def set_key_value(self, key, value):
-        if not self.is_current_user():
-            return False
-
         # My own fields that can be edited:
         if not key.startswith('my_') and key not in self.SAFE_KEYS:
             return False
 
-        value = get_value_type_helper(self, key, value)
-        update = {key: value}
-
-        if update:
-            self.update(**update, validate=False)
-
-        return True
+        return super(DB_Business, self).set_key_value(key, value)
 
     def serialize(self):
         """ Cleanup version of the media file so don't release confidential information """
