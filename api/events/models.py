@@ -23,7 +23,6 @@ class DB_Event(DB_UserCheck, db.DynamicDocument):
     title = db.StringField()
     gallery_id = db.StringField()
 
-    creation_date = db.DateTimeField()
     end_date = db.DateTimeField()
 
     last_access_date = db.DateTimeField()
