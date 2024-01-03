@@ -31,7 +31,7 @@ def api_get_event(event_id):
     """
 
     if event_id == "all":
-        if current_user.username == "sergioamr":
+        if current_user.username == "admin":
             events = DB_Event.objects()
         else:
             events = DB_Event.objects(username=current_user.username)
@@ -41,6 +41,31 @@ def api_get_event(event_id):
 
     q = Q(username=current_user.username) & Q(id=event_id)
     event = DB_Event.objects(q).first()
+
+    ret = {'status': 'success', 'event_id': event_id, 'event': event}
+    return get_response_formatted(ret)
+
+
+@blueprint.route('/rm/<string:event_id>', methods=['GET', 'POST'])
+@api_key_or_login_required
+def api_remove_event(event_id):
+    from flask_login import current_user
+    """
+    """
+
+    if event_id == "all":
+        if current_user.username == "admin":
+            events = DB_Event.objects()
+        else:
+            events = DB_Event.objects(username=current_user.username)
+
+        events.delete()
+        ret = {'status': 'success', 'event_id': event_id, 'events': events}
+        return get_response_formatted(ret)
+
+    q = Q(username=current_user.username) & Q(id=event_id)
+    event = DB_Event.objects(q).first()
+    event.delete()
 
     ret = {'status': 'success', 'event_id': event_id, 'event': event}
     return get_response_formatted(ret)

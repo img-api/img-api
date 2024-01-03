@@ -932,10 +932,14 @@ def api_set_media_private_posts_json(media_id, privacy_mode):
     return get_response_formatted(ret)
 
 
+@blueprint.route('/posts/<string:media_id>/set/<string:my_key>', methods=['GET', 'POST'])
 @blueprint.route('/<string:media_id>/set/<string:my_key>', methods=['GET', 'POST'])
 @api_key_or_login_required
 def api_set_media_key(media_id, my_key):
     from flask_login import current_user  # Required by pytest, otherwise client crashes on CI
+
+    if my_key in ["private", "public"]:
+        return api_set_media_private_posts_json(media_id, my_key)
 
     media_file = File_Tracking.objects(id=media_id).first()
 
