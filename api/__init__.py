@@ -143,7 +143,6 @@ def get_response_error_formatted(status, content, is_warning=False):
         4xx: You failed up
         5xx: I failed up
     """
-
     content['api'] = API_VERSION
 
     content['status'] = 'error'

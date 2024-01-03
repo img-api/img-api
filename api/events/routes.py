@@ -2,7 +2,7 @@ import io
 import os
 import time
 import ffmpeg
-import datetime
+from datetime import datetime
 import validators
 
 from api.events import blueprint

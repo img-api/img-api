@@ -1,6 +1,3 @@
-import time
-import datetime
-
 from flask import Blueprint
 
 blueprint = Blueprint('api_jobs_blueprint',
