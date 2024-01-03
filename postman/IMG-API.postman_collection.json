@@ -1,0 +1,231 @@
+{
+	"info": {
+		"_postman_id": "055a0572-1233-49de-92a8-4c4ac7c2ad46",
+		"name": "IMG-API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "TOKEN",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://img-api.com:5111/api/user/token",
+					"protocol": "http",
+					"host": [
+						"img-api",
+						"com"
+					],
+					"port": "5111",
+					"path": [
+						"api",
+						"user",
+						"token"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "CREATE EVENT",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"title\": \"Test 1\",\r\n    \"creation_date\": 1672750123,\r\n    \"end_date\": 1704286123,\r\n    \"progress\": 0.5,\r\n    \"priority\": 1\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://img-api.com:5111/api/events/create",
+					"protocol": "http",
+					"host": [
+						"img-api",
+						"com"
+					],
+					"port": "5111",
+					"path": [
+						"api",
+						"events",
+						"create"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "MODIFY EVENT",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"title\": \"Test 1\",\r\n    \"creation_date\": 1672750123,\r\n    \"end_date\": 1704286123,\r\n    \"progress\": 0.5,\r\n    \"priority\": 1\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://img-api.com:5111/api/events/create",
+					"protocol": "http",
+					"host": [
+						"img-api",
+						"com"
+					],
+					"port": "5111",
+					"path": [
+						"api",
+						"events",
+						"create"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "MODIFY EVENT DATE",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"title\": \"Test 1\",\r\n    \"creation_date\": 1672750123,\r\n    \"end_date\": 1704286123,\r\n    \"progress\": 0.5,\r\n    \"priority\": 1\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://img-api.com:5111/api/events/create",
+					"protocol": "http",
+					"host": [
+						"img-api",
+						"com"
+					],
+					"port": "5111",
+					"path": [
+						"api",
+						"events",
+						"create"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GET EVENTS",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"title\": \"Test\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://img-api.com:5111/api/events/all/get",
+					"protocol": "http",
+					"host": [
+						"img-api",
+						"com"
+					],
+					"port": "5111",
+					"path": [
+						"api",
+						"events",
+						"all",
+						"get"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "DELETE ALL",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"title\": \"Test\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://img-api.com:5111/api/events/all/rm",
+					"protocol": "http",
+					"host": [
+						"img-api",
+						"com"
+					],
+					"port": "5111",
+					"path": [
+						"api",
+						"events",
+						"all",
+						"rm"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"auth": {
+		"type": "apikey",
+		"apikey": [
+			{
+				"key": "in",
+				"value": "header",
+				"type": "string"
+			},
+			{
+				"key": "value",
+				"value": "TOKEN",
+				"type": "string"
+			},
+			{
+				"key": "key",
+				"value": "key",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	]
+}
