@@ -98,9 +98,6 @@ class File_Tracking(DB_UserCheck, db.DynamicDocument):
         return self.is_extension_video(self.file_format)
 
     def save(self, *args, **kwargs):
-        if not self.creation_date:
-            self.creation_date = datetime.now()
-
         ret = super(File_Tracking, self).save(*args, **kwargs)
         ret.reload()
         return ret
