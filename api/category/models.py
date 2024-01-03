@@ -12,7 +12,6 @@ class DB_Category(db.DynamicDocument):
         'strict': False,
     }
 
-    creation_date = db.DateTimeField()
     owner_username = db.StringField()
 
     is_public = db.BooleanField(default=False)
