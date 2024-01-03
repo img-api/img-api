@@ -242,7 +242,7 @@ def api_create_user_local():
                     'token': user.generate_auth_token()
                 }
 
-            return get_response_formatted(ret)
+                return get_response_formatted(ret)
 
         return get_response_error_formatted(
             401, {'error_msg': "The username and email combination does not match this user"})
