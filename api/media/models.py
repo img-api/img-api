@@ -1,6 +1,6 @@
 import os
 import time
-import datetime
+from datetime import datetime
 
 from mongoengine import *
 
@@ -99,7 +99,7 @@ class File_Tracking(DB_UserCheck, db.DynamicDocument):
 
     def save(self, *args, **kwargs):
         if not self.creation_date:
-            self.creation_date = datetime.datetime.now()
+            self.creation_date = datetime.now()
 
         ret = super(File_Tracking, self).save(*args, **kwargs)
         ret.reload()

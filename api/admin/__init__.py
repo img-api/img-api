@@ -1,6 +1,3 @@
-import time
-import datetime
-
 from flask import Blueprint
 
 blueprint = Blueprint('api_admin_blueprint',
@@ -8,3 +5,4 @@ blueprint = Blueprint('api_admin_blueprint',
                       url_prefix='/api/admin',
                       template_folder='templates',
                       static_folder='static')
+

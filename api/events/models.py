@@ -1,6 +1,6 @@
 import os
 import time
-import datetime
+from datetime import datetime
 
 from mongoengine import *
 
@@ -24,17 +24,18 @@ class DB_Event(DB_UserCheck, db.DynamicDocument):
     gallery_id = db.StringField()
 
     creation_date = db.DateTimeField()
-    last_access_date = db.DateTimeField()
     end_date = db.DateTimeField()
+
+    last_access_date = db.DateTimeField()
 
     progress = db.FloatField()      # Progress from 0 to 1
     priority = db.IntField()        # Position on the group list
 
     def save(self, *args, **kwargs):
         if not self.creation_date:
-            self.creation_date = datetime.datetime.now()
+            self.creation_date = datetime.now()
 
-        last_access_date = datetime.datetime.now()
+        last_access_date = datetime.now()
         ret = super(DB_Event, self).save(*args, **kwargs)
         ret.reload()
         return ret

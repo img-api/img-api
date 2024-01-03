@@ -1,6 +1,3 @@
-import time
-import datetime
-
 from api.category import blueprint
 from api.api_redis import api_rq
 

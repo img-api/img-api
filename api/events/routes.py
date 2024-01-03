@@ -23,7 +23,7 @@ from mongoengine.queryset.visitor import Q
 from api.query_helper import mongo_to_dict_helper
 
 
-@blueprint.route('/get/<string:event_id>', methods=['GET', 'POST'])
+@blueprint.route('/<string:event_id>/get', methods=['GET', 'POST'])
 @api_key_or_login_required
 def api_get_event(event_id):
     from flask_login import current_user
@@ -46,7 +46,34 @@ def api_get_event(event_id):
     return get_response_formatted(ret)
 
 
-@blueprint.route('/rm/<string:event_id>', methods=['GET', 'POST'])
+@blueprint.route('/<string:media_id>/set/<string:my_key>', methods=['GET', 'POST'])
+@api_key_or_login_required
+def api_set_event_key(media_id, my_key):
+    from flask_login import current_user  # Required by pytest, otherwise client crashes on CI
+
+    event = DB_Event.objects(id=media_id).first()
+
+    if not event:
+        return get_response_error_formatted(404, {'error_msg': "Missing."})
+
+    if not event.is_current_user():
+        return get_response_error_formatted(403, {'error_msg': "This user is not allowed to perform this action."})
+
+    value = request.args.get("value", None)
+    if not value and 'value' in request.json:
+        value = request.json['value']
+
+    if value == None:
+        return get_response_error_formatted(400, {'error_msg': "Wrong parameters."})
+
+    value = sanitizer.sanitize(value)
+    event.set_key_value(my_key, value)
+
+    ret = {'status': 'success', 'media_id': media_id, 'event': event}
+    return get_response_formatted(ret)
+
+
+@blueprint.route('/<string:event_id>/rm', methods=['GET', 'POST'])
 @api_key_or_login_required
 def api_remove_event(event_id):
     from flask_login import current_user

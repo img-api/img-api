@@ -1,6 +1,9 @@
+import math
+
 from api.print_helper import *
 from imgapi_launcher import db
 
+from datetime import datetime
 
 def get_value_from_text(value):
     if value is bool:
@@ -53,7 +56,7 @@ def get_value_type_helper(obj, key, value):
 
         return [value]
 
-    if isinstance(field, datetime.datetime):
+    if isinstance(field, datetime):
         return value
 
     return value
@@ -99,8 +102,8 @@ def mongo_get_value(return_data, field, field_name, data, filter_out, add_empty_
 
     elif isinstance(field, db.IntField) or isinstance(field, db.LongField):
         try:
-            if isinstance(data, datetime.datetime):
-                return_data[field_name] = datetime.datetime.timestamp(data)
+            if isinstance(data, datetime):
+                return_data[field_name] = datetime.timestamp(data)
             elif math.isnan(data):
                 return_data[field_name] = None
             else:
@@ -123,7 +126,7 @@ def mongo_get_value(return_data, field, field_name, data, filter_out, add_empty_
         return_data[field_name] = mylist
     elif isinstance(field, db.DateTimeField):
         try:
-            return_data[field_name] = datetime.datetime.timestamp(data)
+            return_data[field_name] = datetime.timestamp(data)
         except Exception as e:
             pass
 

@@ -1,7 +1,7 @@
 import os
 import time
 import shutil
-import datetime
+from datetime import datetime
 
 from mongoengine import *
 from api.print_helper import *
@@ -85,7 +85,6 @@ class User(UserMixin, db.Document):
     public_keys = ["first_name", "last_name", "is_public", "is_media_public", "email", "lang"]
 
     def check_in_usage(self):
-        from datetime import datetime
         try:
             elapsed = datetime.utcnow() - self.last_access_date if self.last_access_date else None
             if not elapsed or elapsed.total_seconds() > 1200:
@@ -109,7 +108,7 @@ class User(UserMixin, db.Document):
             it is safer to never return from that source and convert directly into an object
         """
         if not self.creation_date:
-            self.creation_date = datetime.datetime.utcnow()
+            self.creation_date = datetime.utcnow()
             self.update(**{"creation_date": self.creation_date})
 
         ret = {

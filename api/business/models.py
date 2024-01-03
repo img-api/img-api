@@ -3,7 +3,7 @@ import rsa
 import time
 import base64
 import shutil
-import datetime
+from datetime import datetime
 
 import urllib.parse
 
@@ -45,7 +45,7 @@ class DB_Business(DB_UserCheck, db.DynamicDocument):
 
     def save(self, *args, **kwargs):
         if not self.creation_date:
-            self.creation_date = datetime.datetime.now()
+            self.creation_date = datetime.now()
 
         if not self.username:
             self.username = current_user.username

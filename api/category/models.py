@@ -1,5 +1,5 @@
 import os
-import datetime
+from datetime import datetime
 
 from mongoengine import *
 
@@ -22,7 +22,7 @@ class DB_Category(db.DynamicDocument):
 
     def save(self, *args, **kwargs):
         if not self.creation_date:
-            self.creation_date = datetime.datetime.now()
+            self.creation_date = datetime.now()
 
         ret = super(DB_Category, self).save(*args, **kwargs)
         ret.reload()

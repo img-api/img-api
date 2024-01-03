@@ -1,6 +1,6 @@
 import os
 import time
-import datetime
+from datetime import datetime
 from functools import wraps
 from flask_caching import Cache
 
@@ -112,7 +112,7 @@ def get_response_formatted(input, pretty=True):
     content = api_clean(input)
 
     content['api'] = API_VERSION
-    content['time'] = str(datetime.datetime.now())
+    content['time'] = str(datetime.now())
     content['timestamp'] = int(time.time())
 
     if 'status' not in content:
@@ -148,7 +148,7 @@ def get_response_error_formatted(status, content, is_warning=False):
 
     content['status'] = 'error'
     content['error'] = status
-    content['time'] = str(datetime.datetime.now())
+    content['time'] = str(datetime.now())
     content['timestamp'] = int(time.time())
 
     if current_user.is_authenticated:

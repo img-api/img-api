@@ -3,7 +3,7 @@ import os
 import time
 import random
 import shutil
-import datetime
+from datetime import datetime
 
 from mongoengine import *
 from api.print_helper import *
@@ -127,7 +127,7 @@ class DB_MediaList(db.DynamicDocument, DB_UserCheck):
             print_r(" Duplicated ")
             return False
 
-        item = DB_ItemMedia(**{"media_id": media_id, "update_date": datetime.datetime.now()})
+        item = DB_ItemMedia(**{"media_id": media_id, "update_date": datetime.now()})
 
         # First item on the list will be the media cover
         if len(self.media_list) == 0 or not self.cover_id:

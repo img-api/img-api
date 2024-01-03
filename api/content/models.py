@@ -1,7 +1,7 @@
 import os
 import time
 import shutil
-import datetime
+from datetime import datetime
 
 from mongoengine import *
 from api import sanitizer
@@ -27,9 +27,9 @@ class DB_UserContent(DB_UserCheck, db.DynamicDocument):
 
     def save(self, *args, **kwargs):
         if not self.creation_date:
-            self.creation_date = datetime.datetime.now()
+            self.creation_date = datetime.now()
 
-        last_access_date = datetime.datetime.now()
+        last_access_date = datetime.now()
         ret = super(DB_UserContent, self).save(*args, **kwargs)
         ret.reload()
         return ret
