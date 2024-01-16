@@ -5,6 +5,7 @@ import traceback
 
 from flask import jsonify, request, json
 
+from datetime import datetime
 
 def file_as_blockiter(afile, blocksize=65536):
     with afile:
@@ -77,7 +78,7 @@ def json_clean(obj):
 
 
 def get_timestamp():
-    d = datetime.datetime.now()
+    d = datetime.now()
     unixtime = time.mktime(d.timetuple())
     return int(unixtime)
 

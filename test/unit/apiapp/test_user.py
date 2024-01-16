@@ -23,8 +23,13 @@ def test_user(client):
 
     user_token = ret.json['token']
 
+    print("TOKEN [" + user_token + "]")
+
+    # Replace credentials with token
+    TEST_CREDENTIALS = "key=" + user_token
+
     # Get if the user is logged in
-    ret = client.get("/api/user/token?key=" + user_token)
+    ret = client.get("/api/user/token?" + TEST_CREDENTIALS)
     assert ret.json['status'] == 'success'
 
     # Check if we have an invalid token. From now on every operation should go with this token
@@ -37,6 +42,8 @@ def test_user(client):
 
     # Get the favourite list from this user
     ret = client.get("/api/user/me/list/favs/get?" + TEST_CREDENTIALS)
+
+    print (ret.json)
 
     # It should be empty
     assert ret.json['status'] == 'success'

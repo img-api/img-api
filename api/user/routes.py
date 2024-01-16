@@ -3,7 +3,7 @@ import time
 import random
 import bcrypt
 import binascii
-import datetime
+from datetime import datetime
 import validators
 
 from api.user import blueprint
@@ -460,7 +460,7 @@ def generate_random_user():
     """
 
     random_name = generate_random_name()
-    password = random_name + str(datetime.datetime.now())
+    password = random_name + str(datetime.now())
     user_obj = {
         'password': bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).hex(),
         'username': random_name,

@@ -2,9 +2,11 @@ import io
 import os
 import time
 import ffmpeg
-import datetime
 import validators
 
+from datetime import datetime
+
+from api import sanitizer
 from api.events import blueprint
 from api.api_redis import api_rq
 
@@ -20,10 +22,23 @@ from .models import DB_Event
 
 from mongoengine.queryset import QuerySet
 from mongoengine.queryset.visitor import Q
-from api.query_helper import mongo_to_dict_helper
+from api.query_helper import mongo_to_dict_helper, build_query_from_request
 
 
-@blueprint.route('/get/<string:event_id>', methods=['GET', 'POST'])
+@blueprint.route('/query', methods=['GET', 'POST'])
+@api_key_or_login_required
+def api_get_query():
+    from flask_login import current_user
+    """
+    """
+
+    events = build_query_from_request(DB_Event)
+
+    ret = {'status': 'success', 'events': events}
+    return get_response_formatted(ret)
+
+
+@blueprint.route('/<string:event_id>/get', methods=['GET', 'POST'])
 @api_key_or_login_required
 def api_get_event(event_id):
     from flask_login import current_user
@@ -31,7 +46,7 @@ def api_get_event(event_id):
     """
 
     if event_id == "all":
-        if current_user.username == "sergioamr":
+        if current_user.username == "admin":
             events = DB_Event.objects()
         else:
             events = DB_Event.objects(username=current_user.username)
@@ -41,6 +56,59 @@ def api_get_event(event_id):
 
     q = Q(username=current_user.username) & Q(id=event_id)
     event = DB_Event.objects(q).first()
+
+    ret = {'status': 'success', 'event_id': event_id, 'event': event}
+    return get_response_formatted(ret)
+
+
+@blueprint.route('/<string:event_id>/set/<string:my_key>', methods=['GET', 'POST'])
+@api_key_or_login_required
+def api_set_event_key(event_id, my_key):
+    from flask_login import current_user  # Required by pytest, otherwise client crashes on CI
+
+    event = DB_Event.objects(id=event_id).first()
+
+    if not event:
+        return get_response_error_formatted(404, {'error_msg': "Missing."})
+
+    if not event.is_current_user():
+        return get_response_error_formatted(403, {'error_msg': "This user is not allowed to perform this action."})
+
+    value = request.args.get("value", None)
+    if not value:
+        if hasattr(request, "json") and 'value' in request.json:
+            value = request.json['value']
+
+    if value == None:
+        return get_response_error_formatted(400, {'error_msg': "Wrong parameters."})
+
+    value = sanitizer.sanitize(value)
+    event.set_key_value(my_key, value)
+
+    ret = {'status': 'success', 'event_id': event_id, 'event': event}
+    return get_response_formatted(ret)
+
+
+@blueprint.route('/<string:event_id>/rm', methods=['GET', 'POST'])
+@api_key_or_login_required
+def api_remove_event(event_id):
+    from flask_login import current_user
+    """
+    """
+
+    if event_id == "all":
+        if current_user.username == "admin":
+            events = DB_Event.objects()
+        else:
+            events = DB_Event.objects(username=current_user.username)
+
+        events.delete()
+        ret = {'status': 'success', 'event_id': event_id, 'events': events}
+        return get_response_formatted(ret)
+
+    q = Q(username=current_user.username) & Q(id=event_id)
+    event = DB_Event.objects(q).first()
+    event.delete()
 
     ret = {'status': 'success', 'event_id': event_id, 'event': event}
     return get_response_formatted(ret)

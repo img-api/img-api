@@ -1,6 +1,6 @@
 import os
 import redis
-import datetime
+from datetime import datetime
 
 from rq import Queue
 from rq.job import Job
@@ -14,7 +14,7 @@ class Remote_Task():
         self.conn = redis.from_url(redis_url)
         self.queue = Queue(connection=self.conn)
 
-        job = self.call("worker.is_worker_alive", "IMG-API " + str(datetime.datetime.now()))
+        job = self.call("worker.is_worker_alive", "IMG-API " + str(datetime.now()))
 
     def call(self, transform_name, media_path):
         job = self.queue.enqueue(transform_name, media_path, result_ttl=5000)

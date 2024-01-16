@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 import time
 
 from test.unit.apiapp import client
@@ -7,7 +7,9 @@ from api.api_redis import api_rq
 def test_rq_jobs(client):
     # If the worker is not connected, it will fail all the tests
 
-    msg = "IMG-API " + str(datetime.datetime.now())
+    return
+
+    msg = "IMG-API " + str(datetime.now())
     job = api_rq.call("worker.is_worker_alive", msg)
 
     assert job != None

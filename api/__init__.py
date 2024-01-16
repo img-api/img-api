@@ -1,6 +1,6 @@
 import os
 import time
-import datetime
+from datetime import datetime
 from functools import wraps
 from flask_caching import Cache
 
@@ -112,7 +112,7 @@ def get_response_formatted(input, pretty=True):
     content = api_clean(input)
 
     content['api'] = API_VERSION
-    content['time'] = str(datetime.datetime.now())
+    content['time'] = str(datetime.now())
     content['timestamp'] = int(time.time())
 
     if 'status' not in content:
@@ -143,12 +143,11 @@ def get_response_error_formatted(status, content, is_warning=False):
         4xx: You failed up
         5xx: I failed up
     """
-
     content['api'] = API_VERSION
 
     content['status'] = 'error'
     content['error'] = status
-    content['time'] = str(datetime.datetime.now())
+    content['time'] = str(datetime.now())
     content['timestamp'] = int(time.time())
 
     if current_user.is_authenticated:
@@ -211,11 +210,13 @@ def api_key_or_login_required(func):
         user = None
 
         try:
-            if current_user.is_authenticated and current_user.active:
-                return func(*args, **kwargs)
-
             token = api_get_token_from_request()
+
+            # Check if the user has a token and we let the user to swap identities in case it is not the same user.
             if not token:
+                if current_user.is_authenticated and current_user.active:
+                    return func(*args, **kwargs)
+
                 return get_response_error_formatted(401, {
                     'error_msg': "No user found, please login or create an account.",
                     "no_std": True

@@ -11,11 +11,11 @@ import sys
 import pathlib
 
 import traceback
-import datetime
 
 import threading
 import time
-import datetime
+
+from datetime import datetime
 import logging
 import re
 
@@ -80,8 +80,8 @@ def api_file_cache(func):
                 check = pathlib.Path(real_path)
 
                 if check.stat().st_mtime > cached.stat().st_mtime:
-                    s1 = datetime.datetime.fromtimestamp(check.stat().st_mtime)
-                    s2 = datetime.datetime.fromtimestamp(cached.stat().st_mtime)
+                    s1 = datetime.fromtimestamp(check.stat().st_mtime)
+                    s2 = datetime.fromtimestamp(cached.stat().st_mtime)
 
                     #if debug_cache:
                     #    print_r("CACHE INVALIDATE " + real_path + " " + str(s1) + " => CACHE " + str(s2))
