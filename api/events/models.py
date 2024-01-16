@@ -23,14 +23,19 @@ class DB_Event(DB_UserCheck, db.DynamicDocument):
     }
 
     title = db.StringField()
+    etype = db.StringField()
+
     gallery_id = db.StringField()
 
+    start_date = db.DateTimeField()
     end_date = db.DateTimeField()
 
     last_access_date = db.DateTimeField()
 
     progress = db.FloatField()      # Progress from 0 to 1
     priority = db.IntField()        # Position on the group list
+
+    is_public = db.BooleanField(default=False)
 
     def save(self, *args, **kwargs):
         if not self.creation_date:

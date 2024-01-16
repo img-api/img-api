@@ -22,7 +22,20 @@ from .models import DB_Event
 
 from mongoengine.queryset import QuerySet
 from mongoengine.queryset.visitor import Q
-from api.query_helper import mongo_to_dict_helper
+from api.query_helper import mongo_to_dict_helper, build_query_from_request
+
+
+@blueprint.route('/query', methods=['GET', 'POST'])
+@api_key_or_login_required
+def api_get_query():
+    from flask_login import current_user
+    """
+    """
+
+    events = build_query_from_request(DB_Event)
+
+    ret = {'status': 'success', 'events': events}
+    return get_response_formatted(ret)
 
 
 @blueprint.route('/<string:event_id>/get', methods=['GET', 'POST'])
@@ -48,12 +61,12 @@ def api_get_event(event_id):
     return get_response_formatted(ret)
 
 
-@blueprint.route('/<string:media_id>/set/<string:my_key>', methods=['GET', 'POST'])
+@blueprint.route('/<string:event_id>/set/<string:my_key>', methods=['GET', 'POST'])
 @api_key_or_login_required
-def api_set_event_key(media_id, my_key):
+def api_set_event_key(event_id, my_key):
     from flask_login import current_user  # Required by pytest, otherwise client crashes on CI
 
-    event = DB_Event.objects(id=media_id).first()
+    event = DB_Event.objects(id=event_id).first()
 
     if not event:
         return get_response_error_formatted(404, {'error_msg': "Missing."})
@@ -72,7 +85,7 @@ def api_set_event_key(media_id, my_key):
     value = sanitizer.sanitize(value)
     event.set_key_value(my_key, value)
 
-    ret = {'status': 'success', 'media_id': media_id, 'event': event}
+    ret = {'status': 'success', 'event_id': event_id, 'event': event}
     return get_response_formatted(ret)
 
 

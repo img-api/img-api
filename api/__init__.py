@@ -210,11 +210,13 @@ def api_key_or_login_required(func):
         user = None
 
         try:
-            if current_user.is_authenticated and current_user.active:
-                return func(*args, **kwargs)
-
             token = api_get_token_from_request()
+
+            # Check if the user has a token and we let the user to swap identities in case it is not the same user.
             if not token:
+                if current_user.is_authenticated and current_user.active:
+                    return func(*args, **kwargs)
+
                 return get_response_error_formatted(401, {
                     'error_msg': "No user found, please login or create an account.",
                     "no_std": True
