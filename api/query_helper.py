@@ -14,6 +14,7 @@ from flask import abort, request
 
 from flask_login import current_user
 
+
 def get_adaptive_value(key, value):
     # Just check if true or false and change accordingly
     if key.find("date") != -1:
@@ -28,6 +29,21 @@ def get_adaptive_value(key, value):
         return False
 
     return value
+
+
+class DB_DateTimeFieldTimestamp(db.DateTimeField):
+
+    def to_mongo(self, value):
+        if isinstance(value, int):
+            value = datetime.fromtimestamp(int(value))
+
+        return super().to_mongo(value)
+
+    def to_python(self, value):
+        if isinstance(value, int):
+            value = datetime.fromtimestamp(int(value))
+
+        return super().to_python(value)
 
 
 def get_timestamp():
@@ -391,6 +407,9 @@ def mongo_to_dict_helper(obj, filter_out=None, add_empty_lists=True):
             if field_name in obj._data:
                 data = obj._data[field_name]
                 field = obj._fields[field_name]
+                if field_name == "start_date":
+                    print(" TEST ")
+
                 mongo_get_value(return_data, field, field_name, data, filter_out, add_empty_lists)
 
     except Exception as e:
