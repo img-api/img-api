@@ -10,7 +10,7 @@ from flask import current_app
 from flask_login import current_user
 from api.user.user_check import DB_UserCheck
 
-from api.query_helper import get_value_type_helper
+from api.query_helper import get_value_type_helper, DB_DateTimeFieldTimestamp
 
 class DB_Event(DB_UserCheck, db.DynamicDocument):
     """ Class to create an event
@@ -27,8 +27,8 @@ class DB_Event(DB_UserCheck, db.DynamicDocument):
 
     gallery_id = db.StringField()
 
-    start_date = db.DateTimeField()
-    end_date = db.DateTimeField()
+    start_date = DB_DateTimeFieldTimestamp()
+    end_date = DB_DateTimeFieldTimestamp()
 
     last_access_date = db.DateTimeField()
 
@@ -41,7 +41,8 @@ class DB_Event(DB_UserCheck, db.DynamicDocument):
         if not self.creation_date:
             self.creation_date = datetime.now()
 
-        last_access_date = datetime.now()
+        self.last_access_date = datetime.now()
+
         ret = super(DB_Event, self).save(*args, **kwargs)
         ret.reload()
         return ret
