@@ -17,13 +17,7 @@ from api.query_helper import mongo_to_dict_helper
 API_VERSION = "0.50pa"
 
 cache = Cache(config={'CACHE_TYPE': 'SimpleCache'})
-
-from html_sanitizer import Sanitizer
-
-sanitizer = Sanitizer()
-
 api_ignore_list = ['tracking']
-
 
 def api_clean_recursive(content, output):
     """ Cleans a dictionary of keys which are private.

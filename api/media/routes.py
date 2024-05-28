@@ -956,7 +956,7 @@ def api_set_media_key(media_id, my_key):
     if value == None:
         return get_response_error_formatted(400, {'error_msg': "Wrong parameters."})
 
-    value = sanitizer.sanitize(value)
+    value = clean_html(value)
     media_file.set_key_value(my_key, value)
 
     ret = {'status': 'success', 'media_id': media_id, 'media_list': [media_file.serialize()]}

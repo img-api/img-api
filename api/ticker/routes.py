@@ -7,8 +7,6 @@ import validators
 import pandas as pd
 
 from datetime import datetime
-
-from api import sanitizer
 from api.ticker import blueprint
 from api.api_redis import api_rq
 
@@ -84,7 +82,7 @@ def api_set_ticker_key(ticker_id, my_key):
     if value == None:
         return get_response_error_formatted(400, {'error_msg': "Wrong parameters."})
 
-    value = sanitizer.sanitize(value)
+    value = clean_html(value)
     ticker.set_key_value(my_key, value)
 
     ret = {'status': 'success', 'ticker_id': ticker_id, 'ticker': ticker}

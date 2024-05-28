@@ -82,7 +82,7 @@ def api_set_event_key(event_id, my_key):
     if value == None:
         return get_response_error_formatted(400, {'error_msg': "Wrong parameters."})
 
-    value = sanitizer.sanitize(value)
+    value = clean_html(value)
     event.set_key_value(my_key, value)
 
     ret = {'status': 'success', 'event_id': event_id, 'event': event}

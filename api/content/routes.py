@@ -34,7 +34,9 @@ def api_set_content_key(my_section, my_key):
     if value == None:
         return get_response_error_formatted(400, {'error_msg': "Wrong parameters."})
 
-    if not content.set_key_value(my_key, sanitizer.sanitize(value)):
+    value = clean_html(value)
+
+    if not content.set_key_value(my_key, value):
         return get_response_error_formatted(400, {'error_msg': "Something went wrong saving this key."})
 
     ret = content.serialize()
@@ -51,7 +53,7 @@ def api_update_content(my_section):
         if len(data[key]) > 4 * 4096:
             return get_response_error_formatted(400, {'error_msg': "Too much content!"})
 
-        data[key] = sanitizer.sanitize(data[key])
+        data[key] = clean_html(data[key])
 
     data['section'] = my_section
     data['username'] = current_user.username
