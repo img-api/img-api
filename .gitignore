@@ -1,3 +1,6 @@
+yfinance.cache
+yfinance_cache.*
+
 1
 
 # Byte-compiled / optimized / DLL files

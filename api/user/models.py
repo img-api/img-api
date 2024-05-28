@@ -63,6 +63,15 @@ class User(UserMixin, db.Document):
     first_name = db.StringField(default="")
     last_name = db.StringField(default="")
 
+    # Profile details
+    company = db.StringField(default="")
+    about_me = db.StringField(default="")
+    phone_number = db.StringField(default="")
+    address = db.StringField(default="")
+    country = db.StringField(default="")
+    city = db.StringField(default="")
+    postal_code = db.StringField(default="")
+
     profile_mid = db.StringField()
 
     lang = db.StringField(default="EN")
@@ -82,7 +91,10 @@ class User(UserMixin, db.Document):
     list_subscriptions = db.EmbeddedDocumentListField(DB_UserSubscription, default=[])
 
     # Users can modify directly fields which start with my_ or in the list of public variables
-    public_keys = ["first_name", "last_name", "is_public", "is_media_public", "email", "lang"]
+    public_keys = [
+        "first_name", "last_name", "is_public", "is_media_public", "email", "lang", "company", "about_me", "address",
+        "city", "country", "postal_code"
+    ]
 
     def check_in_usage(self):
         try:
@@ -113,8 +125,6 @@ class User(UserMixin, db.Document):
 
         ret = {
             'username': self.username,
-            'first_name': self.first_name,
-            'last_name': self.last_name,
             'profile_mid': self.profile_mid,
             'lang': self.lang,
             'is_anon': self.is_anon,
@@ -127,6 +137,9 @@ class User(UserMixin, db.Document):
         if current_user.is_authenticated:
             if current_user.username == self.username:
                 ret['settings'] = mongo_to_dict_helper(self.settings)
+
+                for key in self.public_keys:
+                    ret[key] = self[key]
 
         return ret
 
@@ -336,7 +349,7 @@ class User(UserMixin, db.Document):
 
         value = get_value_type_helper(self, key, value)
 
-        if value != self[key]:
+        if not hasattr(self, key) or value != self[key]:
             self.update(**{key: value})
             self.reload()
 

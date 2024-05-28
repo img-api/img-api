@@ -333,6 +333,7 @@ def register_api_blueprints(app):
             'admin',
             'media',
             'actors',
+            'ticker',
             'events',
             'content',
             'business',

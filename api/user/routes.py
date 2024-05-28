@@ -916,5 +916,5 @@ def set_user_info(my_key):
     if not current_user.set_key_value(my_key, value):
         return get_response_error_formatted(400, {'error_msg': "Something went wrong saving this key."})
 
-    ret = current_user.serialize()
+    ret = { "user": current_user.serialize() }
     return get_response_formatted(ret)
