@@ -23,7 +23,7 @@ flask-mongoengine==1.0.0
 
 Flask-WTF==1.0.1
 future==0.18.2
-html-sanitizer==1.9.3
+
 idna==3.3
 importlib-metadata==4.11.4
 importlib-resources==5.7.1

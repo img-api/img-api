@@ -6,7 +6,6 @@ import validators
 
 from datetime import datetime
 
-from api import sanitizer
 from api.events import blueprint
 from api.api_redis import api_rq
 

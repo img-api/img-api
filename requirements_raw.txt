@@ -24,8 +24,9 @@ prompt_toolkit
 flask-caching
 Flask-CacheControl
 
-html_sanitizer
+
 qrcode
 Pillow
 cryptography
 rsa
+bleach
