@@ -25,6 +25,17 @@ from mongoengine.queryset.visitor import Q
 from api.query_helper import mongo_to_dict_helper, build_query_from_request
 
 
+@blueprint.route('/suggestions', methods=['GET', 'POST'])
+@api_key_or_login_required
+def api_get_suggestions():
+    query = request.args.get("query", None)
+    if not query:
+        ret = {'status': 'success', 'suggestions': []}
+        return get_response_formatted(ret)
+
+    ret = {'status': 'success', 'suggestions': ['NVO', 'NVDA']}
+    return get_response_formatted(ret)
+
 @blueprint.route('/query', methods=['GET', 'POST'])
 @api_key_or_login_required
 def api_get_query():
