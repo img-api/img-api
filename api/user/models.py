@@ -41,7 +41,7 @@ def user_loader(user_id):
     return None
 
 
-class User(UserMixin, db.Document):
+class User(UserMixin, db.DynamicDocument):
     meta = {
         'strict': False,
     }
@@ -90,6 +90,9 @@ class User(UserMixin, db.Document):
 
     list_subscriptions = db.EmbeddedDocumentListField(DB_UserSubscription, default=[])
 
+    # TODO: Special entries for an user. This should be dynamic, or be in settings.
+    my_debug_interface = db.BooleanField(default=False)
+
     # Users can modify directly fields which start with my_ or in the list of public variables
     public_keys = [
         "first_name", "last_name", "is_public", "is_media_public", "email", "lang", "company", "about_me", "address",
@@ -137,6 +140,11 @@ class User(UserMixin, db.Document):
         if current_user.is_authenticated:
             if current_user.username == self.username:
                 ret['settings'] = mongo_to_dict_helper(self.settings)
+
+                # My settings are dynamic and can be created by users to store personal information
+                for key in self:
+                    if (key.startswith("my_")):
+                        ret[key] = self[key]
 
                 for key in self.public_keys:
                     ret[key] = self[key]
@@ -350,7 +358,10 @@ class User(UserMixin, db.Document):
         value = get_value_type_helper(self, key, value)
 
         if not hasattr(self, key) or value != self[key]:
-            self.update(**{key: value})
+            if key.startswith("my_"):
+                self.update(**{key: value}, validate=False)
+            else:
+                self.update(**{key: value})
             self.reload()
 
         if key == "is_media_public":

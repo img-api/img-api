@@ -164,6 +164,9 @@ def get_value_from_text(value):
 
 def get_value_type_helper(obj, key, value):
     if key not in obj:
+        if isinstance(value, bool) or isinstance(value, int) or isinstance(value, float):
+            return value
+
         return str(value)
 
     field = obj[key]

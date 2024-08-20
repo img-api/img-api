@@ -911,7 +911,8 @@ def set_user_info(my_key):
     if value == None:
         return get_response_error_formatted(400, {'error_msg': "Wrong parameters."})
 
-    value = clean_html(value)
+    if isinstance(value, str):
+        value = clean_html(value)
 
     if not current_user.set_key_value(my_key, value):
         return get_response_error_formatted(400, {'error_msg': "Something went wrong saving this key."})
