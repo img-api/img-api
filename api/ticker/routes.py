@@ -25,6 +25,15 @@ from mongoengine.queryset.visitor import Q
 from api.query_helper import mongo_to_dict_helper, build_query_from_request
 
 
+@blueprint.route('/get_tickers_list', methods=['POST', 'GET'])
+#@api_key_or_login_required
+def api_index_fetch_tickers_list():
+    from .connector_yfinance import fetch_all_tickers_symbols
+    mylist = fetch_all_tickers_symbols()
+    ret = {'status': 'success', 'suggestions': mylist}
+    return get_response_formatted(ret)
+
+
 @blueprint.route('/suggestions', methods=['GET', 'POST'])
 @api_key_or_login_required
 def api_get_suggestions():
@@ -194,5 +203,11 @@ def api_get_info_ticker():
 
     ticker = fetch_tickers_info(ticker_name)
 
-    ret = {'status': 'success', 'ticker': ticker_name, 'info': ticker.info, 'news': ticker.news, 'options': ticker.options}
+    ret = {
+        'status': 'success',
+        'ticker': ticker_name,
+        'info': ticker.info,
+        'news': ticker.news,
+        'options': ticker.options
+    }
     return get_response_formatted(ret)

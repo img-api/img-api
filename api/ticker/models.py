@@ -67,7 +67,9 @@ class DB_Ticker(db.DynamicDocument):
 
     ticker = db.StringField()
     name = db.StringField()
+    exchange = db.StringField()
     sector = db.StringField()
+    industry = db.StringField()
 
     # Valuation measures
 

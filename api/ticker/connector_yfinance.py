@@ -1,5 +1,7 @@
 import requests_cache
 import yfinance as yf
+import pandas as pd
+
 from datetime import timedelta
 
 from requests import Session
@@ -20,6 +22,18 @@ request_session = CachedLimiterSession(
     bucket_class=MemoryQueueBucket,
     backend=SQLiteCache("yfinance.cache"),
 )
+
+def fetch_all_tickers_symbols():
+    # Read and print the stock tickers that make up S&P500
+    sp500 = pd.read_html(
+        'https://en.wikipedia.org/wiki/List_of_S%26P_500_companies')[0]
+    print(sp500.head())
+    sp500_tickers = sp500['Symbol'].tolist()
+
+    nasdaq_100 = pd.read_html('https://en.wikipedia.org/wiki/NASDAQ-100')[4]
+    nasdaq_100_tickers = nasdaq_100['Ticker'].tolist()
+
+    return sp500_tickers
 
 
 def fetch_tickers_info(ticker):
