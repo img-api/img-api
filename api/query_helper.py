@@ -378,25 +378,28 @@ def mongo_to_dict_helper(obj, filter_out=None, add_empty_lists=True):
                 ret[k] = mongo_to_dict_helper(v)
             return ret
 
-        for key_, value in obj.__dict__.items():
-            if key_[0:1] == "_":
-                continue
+        if hasattr(obj, '__dict__'):
+            for key_, value in obj.__dict__.items():
+                if key_[0:1] == "_":
+                    continue
 
-            if filter_out and key_ in filter_out:
-                continue
+                if filter_out and key_ in filter_out:
+                    continue
 
-            if isinstance(value, dict):
-                return_data[key_] = clean_dict(key_, value)
-            else:
-                return_data[key_] = value
+                if isinstance(value, dict):
+                    return_data[key_] = clean_dict(key_, value)
+                else:
+                    return_data[key_] = value
 
-                try:
-                    if math.isnan(value):
-                        return_data[key_] = 0
-                except:
-                    pass
+                    try:
+                        if math.isnan(value):
+                            return_data[key_] = 0
+                    except:
+                        pass
 
-        if ("_fields" not in obj):
+            return return_data
+
+        if not hasattr(obj, '__dict__') or "_fields" not in obj:
             return return_data
 
         for field_name in obj._fields:

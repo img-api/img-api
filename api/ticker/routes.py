@@ -36,6 +36,7 @@ def api_get_suggestions():
     ret = {'status': 'success', 'suggestions': ['NVO', 'NVDA']}
     return get_response_formatted(ret)
 
+
 @blueprint.route('/query', methods=['GET', 'POST'])
 @api_key_or_login_required
 def api_get_query():
@@ -181,4 +182,17 @@ def api_index_test_tickers():
             ticker_1m.save(validate=False)
 
     ret = {'status': 'success', 'ticker': mongo_to_dict_helper(ticker)}
+    return get_response_formatted(ret)
+
+
+@blueprint.route('/get_info', methods=['POST', 'GET'])
+#@api_key_or_login_required
+def api_get_info_ticker():
+    from .connector_yfinance import fetch_tickers_info
+
+    ticker_name = request.args.get("ticker", None)
+
+    ticker = fetch_tickers_info(ticker_name)
+
+    ret = {'status': 'success', 'ticker': ticker_name, 'info': ticker.info, 'news': ticker.news, 'options': ticker.options}
     return get_response_formatted(ret)
