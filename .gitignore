@@ -1,6 +1,8 @@
 yfinance.cache
 yfinance_cache.*
 
+*.pkl
+
 1
 
 # Byte-compiled / optimized / DLL files

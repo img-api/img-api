@@ -55,23 +55,43 @@ class DB_TickerPriceData(db.DynamicDocument):
     week_low_52 = db.FloatField()
 
 
-class DB_Ticker(db.DynamicDocument):
-    """ Class to create an event
+class DB_Company(db.DynamicDocument):
+    """ Class to create a Company
+    Large companies are in multiple exchanges.
 
     """
     meta = {
         'strict': False,
-        'indexes': ['ticker'],
+        'indexes': ['company_name'],
+        "index_background": True,
+    }
+
+    company_name = db.StringField()
+    country = db.StringField()
+    sector = db.StringField()
+    industry = db.StringField()
+
+    wikipedia = db.StringField()
+
+    def serialize(self):
+        return mongo_to_dict_helper(self)
+
+
+class DB_Ticker(db.DynamicDocument):
+    """ Class to create a Ticker, a ticker can be in any exchange.
+
+    """
+    meta = {
+        'strict': False,
+        'indexes': ['ticker', 'company_name'],
         "index_background": True,
     }
 
     ticker = db.StringField()
-    name = db.StringField()
-    exchange = db.StringField()
-    sector = db.StringField()
-    industry = db.StringField()
+    company_name = db.StringField()
 
-    # Valuation measures
+    exchange = db.StringField()
+    country = db.StringField()
 
     def serialize(self):
         return mongo_to_dict_helper(self)

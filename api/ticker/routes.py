@@ -18,18 +18,18 @@ from api.print_helper import *
 
 from api.tools import generate_file_md5, ensure_dir, is_api_call
 from api.user.routes import generate_random_user
-from .models import DB_Ticker, DB_TickerSimple, DB_TickerHighRes
+from .models import DB_Company, DB_Ticker, DB_TickerSimple, DB_TickerHighRes
 
 from mongoengine.queryset import QuerySet
 from mongoengine.queryset.visitor import Q
 from api.query_helper import mongo_to_dict_helper, build_query_from_request
 
 
-@blueprint.route('/get_tickers_list', methods=['POST', 'GET'])
+@blueprint.route('/index/list', methods=['POST', 'GET'])
 #@api_key_or_login_required
 def api_index_fetch_tickers_list():
-    from .connector_yfinance import fetch_all_tickers_symbols
-    mylist = fetch_all_tickers_symbols()
+    from .tickers_fetches import get_all_tickers_and_symbols
+    mylist = get_all_tickers_and_symbols()
     ret = {'status': 'success', 'suggestions': mylist}
     return get_response_formatted(ret)
 
@@ -37,12 +37,17 @@ def api_index_fetch_tickers_list():
 @blueprint.route('/suggestions', methods=['GET', 'POST'])
 @api_key_or_login_required
 def api_get_suggestions():
-    query = request.args.get("query", None)
+    from .tickers_fetches import get_all_tickers_and_symbols
+
+    query = request.args.get("query", "").upper()
     if not query:
         ret = {'status': 'success', 'suggestions': []}
         return get_response_formatted(ret)
 
-    ret = {'status': 'success', 'suggestions': ['NVO', 'NVDA']}
+    list = get_all_tickers_and_symbols()
+    filtered_recommendations = [rec for rec in list if query in rec]
+
+    ret = {'status': 'success', 'suggestions': filtered_recommendations}
     return get_response_formatted(ret)
 
 
@@ -152,7 +157,7 @@ def api_create_ticker():
     return get_response_formatted(ret)
 
 
-@blueprint.route('/index_test', methods=['POST', 'GET'])
+@blueprint.route('/index/test', methods=['POST', 'GET'])
 #@api_key_or_login_required
 def api_index_test_tickers():
     from .connector_yfinance import fetch_tickers_list
