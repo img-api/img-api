@@ -397,9 +397,9 @@ def mongo_to_dict_helper(obj, filter_out=None, add_empty_lists=True):
                     except:
                         pass
 
-            return return_data
+            #return return_data
 
-        if not hasattr(obj, '__dict__') or "_fields" not in obj:
+        if not hasattr(obj, '_fields') or "_fields" not in obj:
             return return_data
 
         for field_name in obj._fields:
