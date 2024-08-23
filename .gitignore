@@ -2,6 +2,8 @@ yfinance.cache
 yfinance_cache.*
 
 *.pkl
+*.cache
+*.sqlite
 
 1
 
