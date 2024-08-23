@@ -27,8 +27,8 @@ from api.tools.validators import get_validated_email
 @blueprint.route('/query', methods=['GET', 'POST'])
 #@api_key_or_login_required
 def api_company_get_query():
-    from flask_login import current_user
     """
+    Example of queries: https://dev.gputop.com/api/company/query?founded=1994
     """
 
     companies = build_query_from_request(DB_Company, global_api=True)
