@@ -24,6 +24,7 @@ from api.query_helper import mongo_to_dict_helper, build_query_from_request
 
 from api.tools.validators import get_validated_email
 
+
 @blueprint.route('/query', methods=['GET', 'POST'])
 #@api_key_or_login_required
 def api_company_get_query():
@@ -34,6 +35,43 @@ def api_company_get_query():
     companies = build_query_from_request(DB_Company, global_api=True)
 
     ret = {'status': 'success', 'companies': companies}
+    return get_response_formatted(ret)
+
+
+def company_get_suggestions(text, only_tickers=False):
+    """ """
+
+    # Don't destroy the database
+    if only_tickers and len(text) < 3:
+        return []
+
+    query = Q(company_name__icontains=text)
+    companies = DB_Company.objects(query)
+
+    if only_tickers:
+        tickers = []
+        for rec in companies:
+            for i in rec.exchange_tickers:
+                tickers.append(i.split(":")[1])
+
+        return tickers
+
+    return companies
+
+
+@blueprint.route('/suggestions', methods=['GET', 'POST'])
+#@api_key_or_login_required
+def api_company_get_suggestions():
+    """ """
+    query = request.args.get("query", "").upper()
+    if not query:
+        ret = {'status': 'success', 'suggestions': []}
+        return get_response_formatted(ret)
+
+    suggs = company_get_suggestions(query)
+
+    tickers = [{"company_name": rec.company_name, "exchange_tickers": rec.exchange_tickers} for rec in suggs]
+    ret = {'companies': tickers}
     return get_response_formatted(ret)
 
 

@@ -47,19 +47,27 @@ def api_index_fetch_tickers_list():
 
 
 @blueprint.route('/suggestions', methods=['GET', 'POST'])
-@api_key_or_login_required
+#@api_key_or_login_required
 def api_get_suggestions():
+    from itertools import chain
+
     from .tickers_fetches import get_all_tickers_and_symbols
+    from api.company.routes import company_get_suggestions
 
     query = request.args.get("query", "").upper()
     if not query:
         ret = {'status': 'success', 'suggestions': []}
         return get_response_formatted(ret)
 
-    list = get_all_tickers_and_symbols()
-    filtered_recommendations = [rec for rec in list if query in rec]
+    tickers = company_get_suggestions(query, only_tickers=True)
 
-    ret = {'status': 'success', 'suggestions': filtered_recommendations}
+    global_symbols = get_all_tickers_and_symbols()
+    filtered_recommendations = [rec for rec in global_symbols if query in rec]
+
+    merged_list = list(chain(tickers, filtered_recommendations))
+    unique_list = list(set(merged_list))
+
+    ret = {'status': 'success', 'suggestions': unique_list}
     return get_response_formatted(ret)
 
 
