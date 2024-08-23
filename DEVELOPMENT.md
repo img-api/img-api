@@ -10,7 +10,7 @@ http://dev.gputop.com:8080/?folder=/home/dev/img-api
 https://dev.gputop.com/api/company/query?founded=1994
 
 ## Find company by name
-https://gputop.com/api/company/query?company_name__contains=Apple
+https://gputop.com/api/company/query?company_name__icontains=nordisk
 
 ## Get all companies
 https://dev.gputop.com/api/company/get/ALL
