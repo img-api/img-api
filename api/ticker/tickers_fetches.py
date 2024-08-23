@@ -18,6 +18,8 @@ from .models import DB_Ticker
 from mongoengine.queryset import QuerySet
 from mongoengine.queryset.visitor import Q
 
+from .tickers_helpers import extract_exchange_ticker_from_url
+
 
 def get_data(url, cache_file, index):
     if os.path.exists(cache_file):
@@ -79,22 +81,35 @@ def clean_company_name(name):
 
 def update_needed(my_company, db_company):
     for key in my_company:
+        if key not in db_company:
+            return True
+
         if db_company[key] != my_company[key]:
             return True
 
     return False
 
 
-def create_or_update_company(my_company, exchange=None):
+def create_or_update_company(my_company, exchange=None, ticker=None):
+    db_company = None
 
-    query = Q(company_name=my_company['company_name'])
+    # We search first for the combination of ticker exchange in the format EXCHANGE:TICKER
+    if exchange and ticker:
+        query = Q(exchange_tickers=exchange + ":" + ticker)
+        db_company = DB_Company.objects(query).first()
 
-    db_company = DB_Company.objects(query).first()
     if not db_company:
-        print_b("Created: " + my_company['company_name'])
+        query = Q(company_name=my_company['company_name'])
+        db_company = DB_Company.objects(query).first()
 
+    if not db_company:
+        print_b("Created: " + str(exchange) + ":" + str(ticker) + " " + my_company['company_name'])
+
+        # For us it is important to track tickers and exchanges in which companies trade
         if exchange:
             my_company['exchanges'] = [exchange]
+            if ticker:
+                my_company['exchange_tickers'] = [exchange + ":" + ticker]
 
         db_company = DB_Company(**my_company)
         db_company.save(validate=False)
@@ -103,12 +118,9 @@ def create_or_update_company(my_company, exchange=None):
     # Update with the extra info if there is any
 
     # We append an exchange for a company if it is not there.
-    ex_update = False
-    if exchange and exchange not in db_company.exchanges:
-        ex_update = True
-        db_company.exchanges.append(exchange)
+    db_company.append_exchange(exchange, ticker)
 
-    if ex_update or update_needed(my_company, db_company):
+    if update_needed(my_company, db_company):
         print_b("Updated: " + my_company['company_name'])
         db_company.update(**my_company, validate=False)
 
@@ -160,9 +172,10 @@ def nasdaq_api_get_exchange(exchange):
         my_company = {
             "company_name": clean_company_name(row['name']),
             "nasdaq_url": "https://www.nasdaq.com" + row['url'],
-             # "market_cap": row["marketCap"], Market cap should go to the ticker
+            "source": "NASDAQ API",
+            # "market_cap": row["marketCap"], Market cap should go to the ticker
         }
-        db_company = create_or_update_company(my_company, exchange)
+        db_company = create_or_update_company(my_company, exchange.upper(), row['symbol'])
 
 
 def process_all_nasdaq():
@@ -195,9 +208,6 @@ def process_all_amex():
 
 
 def process_all_tickers_and_symbols():
-    process_all_nasdaq()
-    process_all_nyse()
-    process_all_amex()
 
     # Read and print the stock tickers that make up S&P500
     sp500 = get_data_with_links('https://en.wikipedia.org/wiki/List_of_S%26P_500_companies',
@@ -211,6 +221,11 @@ def process_all_tickers_and_symbols():
         cik = row['CIK'][0]
         cik = int(cik) if cik.isdigit() else 0
 
+        # URL https://www.nyse.com/quote/XNYS:MMM
+        exchange_url = row['Symbol'][1]
+
+        exchange, ticker = extract_exchange_ticker_from_url(exchange_url)
+
         my_company = {
             "company_name": clean_company_name(row['Security'][0]),
             "gics_sector": row['GICS Sector'][0],
@@ -218,10 +233,12 @@ def process_all_tickers_and_symbols():
             "founded": row['Founded'][0],
             "headquarters": row['Headquarters Location'][0],
             "wikipedia": "https://en.wikipedia.org/wiki" + row['Security'][1],
+            "exchange_url": exchange_url,
             "CIK": cik,  # CIK = Central Index Key
+            "source": "WIKIPEDIA",
         }
 
-        db_company = create_or_update_company(my_company)
+        db_company = create_or_update_company(my_company, exchange, ticker)
 
     # Symbol   Security GICS Sector  GICS Sub-Industry         Headquarters Location   Date added  CIK      Founded
     # MMM      3M       Industrials  Industrial ....           Saint Paul   Minnesota  1957-03-04  66740    1902
@@ -244,14 +261,20 @@ def process_all_tickers_and_symbols():
             "company_name": clean_company_name(row['Company'][0]),
             "gics_sector": row['GICS Sector'][0],
             "gics_sub_industry": row['GICS Sub-Industry'][0],
-            "wikipedia": "https://en.wikipedia.org/wiki" + row['Company'][1]
+            "wikipedia": "https://en.wikipedia.org/wiki" + row['Company'][1],
+            "source": "WIKIPEDIA",
         }
 
-        db_company = create_or_update_company(my_company, "nasdaq")
+        db_company = create_or_update_company(my_company, "NASDAQ", ticker.upper())
 
         # Save and reload so we get an ID. This operation is very slow
         ticker = row['Ticker'][0]
 
         print(f"Row {index}: Company = {db_company.company_name}, Ticker = {ticker}")
+
+
+    process_all_nasdaq()
+    process_all_nyse()
+    process_all_amex()
 
     return sp500_tickers

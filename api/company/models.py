@@ -53,8 +53,14 @@ class DB_Company(db.DynamicDocument):
     private_key = db.StringField()
     CIK = db.IntField()
 
+    # Where did we fetch the information
+    source = db.StringField()
+
     # List of exchanges in which this company trades, nasdaq, amex, etc
     exchanges = db.ListField(db.StringField(), default=list)
+
+    # Tickers that belong to a company and an exchange
+    exchange_tickers = db.ListField(db.StringField(), default=list)
 
     SAFE_KEYS = [
         "safe_name", "company_name", "country", "gics_sector", "gics_sub_industry",
@@ -169,3 +175,24 @@ class DB_Company(db.DynamicDocument):
 
         diff = current_time - timestamp
         return diff
+
+    def append_exchange(self, exchange, ticker=None):
+        # We append an exchange for a company if it is not there.
+        if not exchange:
+            return
+
+        exchange=exchange.upper()
+
+        ex_update = False
+        if exchange not in self.exchanges:
+            ex_update = True
+            self.exchanges.append(exchange)
+
+        if ticker:
+            ex = exchange + ":" + ticker
+            if ex not in self.exchange_tickers:
+                ex_update = True
+                self.exchange_tickers.append(ex)
+
+        if ex_update:
+            self.save(validate=False)

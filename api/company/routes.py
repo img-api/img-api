@@ -20,10 +20,25 @@ from api.company.models import DB_Company
 from mongoengine.queryset import QuerySet
 from mongoengine.queryset.visitor import Q
 
+from api.query_helper import mongo_to_dict_helper, build_query_from_request
+
 from api.tools.validators import get_validated_email
+
+@blueprint.route('/query', methods=['GET', 'POST'])
+#@api_key_or_login_required
+def api_company_get_query():
+    from flask_login import current_user
+    """
+    """
+
+    companies = build_query_from_request(DB_Company, global_api=True)
+
+    ret = {'status': 'success', 'events': companies}
+    return get_response_formatted(ret)
 
 
 @blueprint.route('/create', methods=['GET', 'POST'])
+#@api_key_or_login_required
 def api_create_business_for_user_local():
     """ Business creation
     ---

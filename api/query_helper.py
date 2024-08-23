@@ -436,7 +436,8 @@ def query_clean_reserved(args):
     return args
 
 
-def build_query_from_request(MyClass, args=None, get_all=False):
+def build_query_from_request(MyClass, args=None, get_all=False, global_api=False):
+    """ Global API means that the data doesn't belong to a particular user """
 
     order_by = None
 
@@ -472,10 +473,11 @@ def build_query_from_request(MyClass, args=None, get_all=False):
 
             query = build_query_from_url(args)
 
-            if not current_user.is_authenticated:
-                query = Q(is_public=True) & query
-            else:
-                query = (Q(username=current_user.username) | Q(is_public=True)) & query
+            if not global_api:
+                if not current_user.is_authenticated:
+                    query = Q(is_public=True) & query
+                else:
+                    query = (Q(username=current_user.username) | Q(is_public=True)) & query
 
             data = query_set.filter(query)
 
