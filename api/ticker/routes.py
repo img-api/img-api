@@ -18,11 +18,23 @@ from api.print_helper import *
 
 from api.tools import generate_file_md5, ensure_dir, is_api_call
 from api.user.routes import generate_random_user
-from .models import DB_Company, DB_Ticker, DB_TickerSimple, DB_TickerHighRes
+from .models import DB_Ticker, DB_TickerSimple, DB_TickerHighRes
 
 from mongoengine.queryset import QuerySet
 from mongoengine.queryset.visitor import Q
 from api.query_helper import mongo_to_dict_helper, build_query_from_request
+
+
+@blueprint.route('/index/process', methods=['POST', 'GET'])
+#@api_key_or_login_required
+def api_index_fetch_and_process_tickers_list():
+    """ It finds and processes all the tickers, creates all the companies,
+        this is the stub test for a service to discover and capture tickers and companies """
+    from .tickers_fetches import process_all_tickers_and_symbols
+
+    mylist = process_all_tickers_and_symbols()
+    ret = {'status': 'success', 'processed': mylist}
+    return get_response_formatted(ret)
 
 
 @blueprint.route('/index/list', methods=['POST', 'GET'])

@@ -55,43 +55,23 @@ class DB_TickerPriceData(db.DynamicDocument):
     week_low_52 = db.FloatField()
 
 
-class DB_Company(db.DynamicDocument):
-    """ Class to create a Company
-    Large companies are in multiple exchanges.
-
-    """
-    meta = {
-        'strict': False,
-        'indexes': ['company_name'],
-        "index_background": True,
-    }
-
-    company_name = db.StringField()
-    country = db.StringField()
-    sector = db.StringField()
-    industry = db.StringField()
-
-    wikipedia = db.StringField()
-
-    def serialize(self):
-        return mongo_to_dict_helper(self)
-
-
 class DB_Ticker(db.DynamicDocument):
     """ Class to create a Ticker, a ticker can be in any exchange.
 
     """
     meta = {
         'strict': False,
-        'indexes': ['ticker', 'company_name'],
+        'indexes': ['ticker', 'company_id', 'exchange'],
         "index_background": True,
     }
 
     ticker = db.StringField()
-    company_name = db.StringField()
+    company_id = db.StringField()
 
     exchange = db.StringField()
     country = db.StringField()
+
+    info = db.DynamicField()
 
     def serialize(self):
         return mongo_to_dict_helper(self)
@@ -135,6 +115,57 @@ class DB_TickerSimple(db.DynamicDocument):
     close = db.FloatField()
 
     start = db.DateTimeField()
+
+    def serialize(self):
+        return mongo_to_dict_helper(self)
+
+
+class DB_TickerUserOperation(db.DynamicDocument):
+    """ Users can record transactions like buying and selling so they can track performance
+        If they don't specify the price of acquisition or sale, it will generate automatically the value from market data.
+    """
+    meta = {
+        'strict': False,
+        "auto_create_index": True,
+        "index_background": True,
+    }
+
+    ticker_id = db.StringField()
+    is_sold = db.BooleanField()
+
+    price_purchase = db.FloatField()
+    price_sale = db.FloatField()
+
+    total_shares = db.IntField()
+
+    def serialize(self):
+        return mongo_to_dict_helper(self)
+
+
+class DB_TickerUserWatchlist(db.DynamicDocument):
+    """ User can create lists and add special information """
+    meta = {
+        'strict': False,
+        "auto_create_index": True,
+        "index_background": True,
+    }
+
+    list_name = db.StringField()
+    user_id = db.StringField()
+
+
+class DB_TickerUserSubscription(db.DynamicDocument):
+    """ User can suscribe tickers to lists """
+
+    meta = {
+        'strict': False,
+        "auto_create_index": True,
+        "index_background": True,
+    }
+
+    list_id = db.StringField()
+    ticker = db.StringField()
+    user_id = db.StringField()
 
     def serialize(self):
         return mongo_to_dict_helper(self)

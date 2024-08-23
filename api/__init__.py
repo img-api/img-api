@@ -330,7 +330,7 @@ def register_api_blueprints(app):
             'ticker',
             'events',
             'content',
-            'business',
+            'company',
             'galleries',
             'hello_world',
     ):
