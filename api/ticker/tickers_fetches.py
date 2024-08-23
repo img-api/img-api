@@ -85,18 +85,16 @@ def update_needed(my_company, db_company):
     return False
 
 
-def create_or_update_company(my_company):
+def create_or_update_company(my_company, exchange=None):
 
     query = Q(company_name=my_company['company_name'])
-    if 'gics_sector' in my_company:
-        query = Q(gics_sector=my_company['gics_sector']) & query
-
-    if 'gics_sub_industry' in my_company:
-        query = Q(gics_sector=my_company['gics_sub_industry']) & query
 
     db_company = DB_Company.objects(query).first()
     if not db_company:
         print_b("Created: " + my_company['company_name'])
+
+        if exchange:
+            my_company['exchanges'] = [exchange]
 
         db_company = DB_Company(**my_company)
         db_company.save(validate=False)
@@ -104,7 +102,13 @@ def create_or_update_company(my_company):
 
     # Update with the extra info if there is any
 
-    if update_needed(my_company, db_company):
+    # We append an exchange for a company if it is not there.
+    ex_update = False
+    if exchange and exchange not in db_company.exchanges:
+        ex_update = True
+        db_company.exchanges.append(exchange)
+
+    if ex_update or update_needed(my_company, db_company):
         print_b("Updated: " + my_company['company_name'])
         db_company.update(**my_company, validate=False)
 
@@ -155,11 +159,10 @@ def nasdaq_api_get_exchange(exchange):
     for row in rows:
         my_company = {
             "company_name": clean_company_name(row['name']),
-            "market_cap": row["marketCap"],
             "nasdaq_url": "https://www.nasdaq.com" + row['url'],
+             # "market_cap": row["marketCap"], Market cap should go to the ticker
         }
-
-        db_company = create_or_update_company(my_company)
+        db_company = create_or_update_company(my_company, exchange)
 
 
 def process_all_nasdaq():
@@ -182,7 +185,7 @@ def process_all_nyse():
         print_exception(e)
 
 
-def process_all_AMEX():
+def process_all_amex():
     """ Public api from nasdaq that provides all the results contains 298 records
     """
     try:
@@ -194,6 +197,7 @@ def process_all_AMEX():
 def process_all_tickers_and_symbols():
     process_all_nasdaq()
     process_all_nyse()
+    process_all_amex()
 
     # Read and print the stock tickers that make up S&P500
     sp500 = get_data_with_links('https://en.wikipedia.org/wiki/List_of_S%26P_500_companies',
@@ -243,7 +247,7 @@ def process_all_tickers_and_symbols():
             "wikipedia": "https://en.wikipedia.org/wiki" + row['Company'][1]
         }
 
-        db_company = create_or_update_company(my_company)
+        db_company = create_or_update_company(my_company, "nasdaq")
 
         # Save and reload so we get an ID. This operation is very slow
         ticker = row['Ticker'][0]

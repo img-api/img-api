@@ -53,6 +53,9 @@ class DB_Company(db.DynamicDocument):
     private_key = db.StringField()
     CIK = db.IntField()
 
+    # List of exchanges in which this company trades, nasdaq, amex, etc
+    exchanges = db.ListField(db.StringField(), default=list)
+
     SAFE_KEYS = [
         "safe_name", "company_name", "country", "gics_sector", "gics_sub_industry",
         "name", "email", "main_address", "main_address_1", "phone_number"]
