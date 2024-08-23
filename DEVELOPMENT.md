@@ -9,6 +9,9 @@ http://dev.gputop.com:8080/?folder=/home/dev/img-api
 ## Queries examples
 https://dev.gputop.com/api/company/query?founded=1994
 
+## Find company by name
+https://gputop.com/api/company/query?company_name__contains=Apple
+
 ## Get all companies
 https://dev.gputop.com/api/company/get/ALL
 

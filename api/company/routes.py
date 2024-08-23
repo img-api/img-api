@@ -33,7 +33,7 @@ def api_company_get_query():
 
     companies = build_query_from_request(DB_Company, global_api=True)
 
-    ret = {'status': 'success', 'events': companies}
+    ret = {'status': 'success', 'companies': companies}
     return get_response_formatted(ret)
 
 
