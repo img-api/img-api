@@ -45,12 +45,13 @@ def company_get_suggestions(text, only_tickers=False):
     if only_tickers and len(text) < 3:
         return []
 
-    query = Q(company_name__icontains=text)
+    query = Q(company_name__istartswith=text)
     companies = DB_Company.objects(query)
 
     if only_tickers:
         tickers = []
         for rec in companies:
+            print(" Rec " + rec.company_name)
             for i in rec.exchange_tickers:
                 tickers.append(i.split(":")[1])
 
@@ -70,8 +71,11 @@ def api_company_get_suggestions():
 
     suggs = company_get_suggestions(query)
 
-    tickers = [{"company_name": rec.company_name, "exchange_tickers": rec.exchange_tickers} for rec in suggs]
-    ret = {'companies': tickers}
+    #extra = [{"company_name": rec.company_name, "exchange_tickers": rec.exchange_tickers} for rec in suggs]
+    extra = [rec.exchange_tickers for rec in suggs]
+
+    suggestions = [rec.company_name for rec in suggs]
+    ret = {'suggestions': suggestions, 'extra': extra}
     return get_response_formatted(ret)
 
 

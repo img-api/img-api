@@ -95,6 +95,8 @@ def create_or_update_company(my_company, exchange=None, ticker=None):
 
     # We search first for the combination of ticker exchange in the format EXCHANGE:TICKER
     if exchange and ticker:
+        if ticker == "INTC":
+            print(" TEST ")
         query = Q(exchange_tickers=exchange + ":" + ticker)
         db_company = DB_Company.objects(query).first()
 
@@ -265,10 +267,8 @@ def process_all_tickers_and_symbols():
             "source": "WIKIPEDIA",
         }
 
-        db_company = create_or_update_company(my_company, "NASDAQ", ticker.upper())
-
-        # Save and reload so we get an ID. This operation is very slow
-        ticker = row['Ticker'][0]
+        ticker = row['Ticker'][0].upper()
+        db_company = create_or_update_company(my_company, "NASDAQ", ticker)
 
         print(f"Row {index}: Company = {db_company.company_name}, Ticker = {ticker}")
 
