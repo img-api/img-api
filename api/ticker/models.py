@@ -66,15 +66,27 @@ class DB_Ticker(db.DynamicDocument):
     }
 
     ticker = db.StringField()
+    status = db.StringField()
     company_id = db.StringField()
 
+    # We run batches of processes, and we set the frequency of checks
+    # so we can throttle the API calls according to the limits of the APIs we call to get info.
+    last_processed_date = db.DateTimeField()
+
     exchange = db.StringField()
-    country = db.StringField()
+
+    # TODO: This is a variable that we should populate depending on the exchange
+    region = db.StringField()
 
     info = db.DynamicField()
 
     def serialize(self):
         return mongo_to_dict_helper(self)
+
+    def set_state(self, state_msg):
+        """ Update a processing state """
+        self.update(**{'status': state_msg, 'last_processed_date': datetime.now()}, validate=False)
+        return self
 
 
 class DB_TickerHighRes(db.DynamicDocument):

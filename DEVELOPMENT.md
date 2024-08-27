@@ -20,5 +20,5 @@ https://dev.gputop.com/api/company/rm/ALL
 
 # FETCHES
 
-This slow query will fetch everything.
-https://dev.gputop.com/api/index/process
+This slow query will find all the companies it can and index everything.
+https://dev.gputop.com/api/index/discovery

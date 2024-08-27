@@ -23,17 +23,24 @@ from .models import DB_Ticker, DB_TickerSimple, DB_TickerHighRes
 from mongoengine.queryset import QuerySet
 from mongoengine.queryset.visitor import Q
 from api.query_helper import mongo_to_dict_helper, build_query_from_request
+from api.ticker.batch.workflow import ticker_process_batch
 
 
-@blueprint.route('/index/process', methods=['POST', 'GET'])
+@blueprint.route('/index/discovery', methods=['POST', 'GET'])
 #@api_key_or_login_required
 def api_index_fetch_and_process_tickers_list():
-    """ It finds and processes all the tickers, creates all the companies,
-        this is the stub test for a service to discover and capture tickers and companies """
-    from .tickers_fetches import process_all_tickers_and_symbols
+    """ It finds and indexes all the companies it can.
 
+        It create all the tickers and adds them into the fetching process
+
+        Creates all the companies,
+        This is the stub test for a service to discover and capture tickers and companies
+        To be divided into a discovery service.
+    """
+    from .tickers_fetches import process_all_tickers_and_symbols
     mylist = process_all_tickers_and_symbols()
-    ret = {'status': 'success', 'processed': mylist}
+
+    ret = {'processed': mylist}
     return get_response_formatted(ret)
 
 
@@ -42,8 +49,40 @@ def api_index_fetch_and_process_tickers_list():
 def api_index_fetch_tickers_list():
     from .tickers_fetches import get_all_tickers_and_symbols
     mylist = get_all_tickers_and_symbols()
-    ret = {'status': 'success', 'suggestions': mylist}
+
+    ret = {'suggestions': mylist}
     return get_response_formatted(ret)
+
+
+@blueprint.route('/index/batch/dry_run', methods=['GET', 'POST'])
+#@api_key_or_login_required
+def api_batch_dry_run():
+    """ We call the coordinator to process a batch of N tickers.
+        We don't store any value, this is a testing / development call.
+        This will call all the tickers that are older than
+        the configured date and download news, information, process videos, etc.
+    """
+
+    processed = ticker_process_batch(dry_run=True)
+    return get_response_formatted({'processed': processed})
+
+
+@blueprint.route('/index/batch/process', methods=['GET', 'POST'])
+#@api_key_or_login_required
+def api_batch_process():
+    """ We call the coordinator to process a batch of N tickers.
+
+        We update the ticker, create all the orders to fetch news sites
+        Call AI and get results.
+
+        This will call all the tickers that are older than
+        the configured date and download news, information, process videos, etc.
+
+        This should go into a crontab / process coordinator
+    """
+
+    processed = ticker_process_batch(dry_run=False)
+    return get_response_formatted({'processed': processed})
 
 
 @blueprint.route('/suggestions', methods=['GET', 'POST'])
@@ -236,3 +275,24 @@ def api_get_info_ticker():
         'options': ticker.options
     }
     return get_response_formatted(ret)
+
+
+@blueprint.route('/rm/<string:ticker_id>', methods=['GET', 'POST'])
+@blueprint.route('/remove/<string:ticker_id>', methods=['GET', 'POST'])
+# TODO: CHECK API ONLY ADMIN
+def api_remove_a_ticker_by_id(ticker_id):
+    """
+    """
+
+    if ticker_id == "ALL":
+        DB_Ticker.objects().delete()
+        ret = {'status': "deleted"}
+        return get_response_formatted(ret)
+
+    db_ticker = DB_Ticker.objects(id=ticker_id).first()
+
+    if not db_ticker:
+        return get_response_error_formatted(404, "Ticker not found")
+
+    db_ticker.delete()
+    return get_response_formatted({'status': "deleted"})

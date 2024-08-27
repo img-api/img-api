@@ -15,6 +15,7 @@ from flask import abort, request
 from flask_login import current_user
 from werkzeug.exceptions import BadRequest
 
+
 def get_adaptive_value(key, value):
     # Just check if true or false and change accordingly
     if key.find("date") != -1:
@@ -61,6 +62,72 @@ def date_to_unix(dt):
     """Converts a datetime object to unixtime"""
     unixtime = time.mktime(d.timetuple())
     return int(unixtime)
+
+
+def timestamp_get_verbose_date(mytime):
+    now = datetime.datetime.now()
+    diff = (now - mytime).seconds
+    if diff < 0:
+        return "now"
+
+    d = int(diff / (60 * 60 * 24))
+    if d <= 15:
+        if d == 1:
+            return "1 day ago"
+
+        if d > 1:
+            return "%d days ago" % d
+
+        h = int(diff / (60 * 60))
+        m = int(diff / 60)
+
+        if h == 1:
+            return "1 hour ago"
+
+        if h > 1:
+            return "%d hours ago" % h
+
+        if m < 5:
+            return "a moment ago"
+
+        if m == 0:
+            return "now"
+
+        return "%d minutes ago" % m
+
+    return mytime
+
+
+def month_string_to_number(string):
+    m = {
+        'jan': 1,
+        'feb': 2,
+        'mar': 3,
+        'apr': 4,
+        'may': 5,
+        'jun': 6,
+        'jul': 7,
+        'aug': 8,
+        'sep': 9,
+        'oct': 10,
+        'nov': 11,
+        'dec': 12
+    }
+
+    s = string.strip()[:3].lower()
+    try:
+        return m[s]
+    except:
+        raise ValueError('Not a month')
+
+
+def get_datetime_from_text(str):
+    try:
+        return dateutil.parser.parse(str)
+    except Exception as e:
+        print_exception(e, "DATEUTIL")
+
+    return str
 
 
 def get_timestamp_verbose(str):
