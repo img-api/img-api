@@ -44,10 +44,17 @@ class DB_Company(db.DynamicDocument):
     wikipedia = db.StringField()
 
     name = db.StringField()
+    long_name = db.StringField()
+    long_business_summary = db.StringField()
+
     email = db.StringField()
     main_address = db.StringField()
     main_address_1 = db.StringField()
+    city = db.StringField()
+    country = db.StringField()
+
     phone_number = db.StringField()
+    zip_code = db.StringField()
 
     public_key = db.StringField()
     private_key = db.StringField()

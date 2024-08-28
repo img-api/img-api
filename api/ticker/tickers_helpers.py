@@ -301,7 +301,7 @@ def tickers_unit_test():
             print_b(f"Test: {ticker} -> Expected: {expected}, Got: {result}, Passed: {result == expected}")
 
     # Reverse so if we give ASX:DYL we get DYL.AX
-    test_cases = [("DYL.AX", "ASX:DYL"), ("NASDAQ:INTC", "INTC"), ("NYSE:XXX", "NYE:XXX"), ("2330.T", "TSE:2330"),
+    test_cases = [("DYL.AX", "ASX:DYL"), ("NASDAQ:INTC", "INTC"), ("XXX", "NYSE:XXX"), ("2330.T", "TSE:2330"),
                   ("005930.KS", "KRX:005930")]
 
     for expected, ticker in test_cases:

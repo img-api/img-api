@@ -229,6 +229,34 @@ def get_value_from_text(value):
     return value
 
 
+def copy_replace_schema(source, destination, my_map):
+    """
+    Performs a copy of an object to another object changing the schema
+
+    new_schema = {
+        'website': 'website',
+        'long_name': 'longName',
+        'long_business_summary': 'longBusinessSummary',
+    }
+
+    Will perform the following operation:
+        destination['long_business_summary'] = source['longBusinessSummary']
+    """
+
+    for dst_key, src_key in my_map.items():
+        destination[dst_key] = source.get(src_key)
+
+    return destination
+
+def prepare_update_with_schema(source, my_map):
+    """
+        Helper to an update
+    """
+
+    destination = {}
+    return copy_replace_schema(source, destination, my_map)
+
+
 def get_value_type_helper(obj, key, value):
     if key not in obj:
         if isinstance(value, bool) or isinstance(value, int) or isinstance(value, float):

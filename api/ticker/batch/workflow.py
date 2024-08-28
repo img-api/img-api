@@ -42,9 +42,11 @@ def ticker_process_batch(end=None, dry_run=False, BATCH_SIZE=5):
     tickers = DB_Ticker.objects(query)[:BATCH_SIZE]
 
     for db_ticker in tickers:
-        if not dry_run:
-            db_ticker.set_state("PIPELINE_START")
+        db_ticker.set_state("PIPELINE_START", dry_run)
 
-        ticker_pipeline_process(db_ticker, dry_run=dry_run)
+        try:
+            ticker_pipeline_process(db_ticker, dry_run=dry_run)
+        except Exception as e:
+            print_exception(e, "CRASHED PROCESSING BATCH")
 
     return tickers

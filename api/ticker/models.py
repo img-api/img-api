@@ -83,10 +83,33 @@ class DB_Ticker(db.DynamicDocument):
     def serialize(self):
         return mongo_to_dict_helper(self)
 
-    def set_state(self, state_msg):
+    def set_state(self, state_msg, dry_run=False):
         """ Update a processing state """
+        if dry_run:
+            return self
+
         self.update(**{'status': state_msg, 'last_processed_date': datetime.now()}, validate=False)
         return self
+
+    def exchg_tick(self):
+        if not self.exchange: return self.ticker
+        return self.exchange + ":" + self.ticker
+
+    def get_company(self):
+        from api.company.models import DB_Company
+
+        if not self.company_id:
+            query = Q(exchange_tickers=exchange + ":" + ticker)
+        else:
+            query = Q(pk=self.company_id)
+
+        db_company = DB_Company.objects(query).first()
+
+        if not self.company_id and db_company:
+            self.company_id = str(db_company.id)
+            self.save(validate = False)
+
+        return db_company
 
 
 class DB_TickerHighRes(db.DynamicDocument):

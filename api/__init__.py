@@ -21,6 +21,7 @@ API_VERSION = "0.50pa"
 cache = Cache(config={'CACHE_TYPE': 'SimpleCache'})
 api_ignore_list = ['tracking']
 
+
 def api_clean_recursive(content, output):
     """ Cleans a dictionary of keys which are private.
         The only private key allowed is _id """
@@ -86,6 +87,7 @@ def api_clean_recursive(content, output):
             output[key] = value
 
     return output
+
 
 def api_clean(content):
     """ Cleans a dictionary of keys which are private. Also converts MONGO objects back to a dict that can be converted into json """
@@ -345,6 +347,7 @@ def handle_bad_request_with_html(e):
 
     return render_template('errors/page_{}.html'.format(e.code)), e.code
 
+
 def register_api_blueprints(app):
     """ Loads all the modules for the API """
     from importlib import import_module
@@ -359,6 +362,7 @@ def register_api_blueprints(app):
             'actors',
             'ticker',
             'events',
+            'people',
             'content',
             'company',
             'galleries',
@@ -374,4 +378,3 @@ def register_api_blueprints(app):
 
     # Cache
     cache.init_app(app)
-
