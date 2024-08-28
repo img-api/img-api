@@ -19,4 +19,3 @@ from mongoengine.queryset import QuerySet
 from mongoengine.queryset.visitor import Q
 
 from .tickers_helpers import extract_exchange_ticker_from_url
-

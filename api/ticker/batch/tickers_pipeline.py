@@ -19,13 +19,20 @@ from api.ticker.models import DB_Ticker
 from mongoengine.queryset import QuerySet
 from mongoengine.queryset.visitor import Q
 
+from api.ticker.connector_yfinance import fetch_tickers_info
 
 def ticker_pipeline_process(db_ticker, dry_run=False):
     """
         Our fetching pipeline will call different status
 
     """
+
     print_b("PROCESSING TICKER " + str(db_ticker.exchange) + ":" + str(db_ticker.ticker))
+
+
+    yfinance_ticker = fetch_tickers_info(ticker_name)
+
+
     if not dry_run:
         db_ticker.set_state("PROCESSED")
 

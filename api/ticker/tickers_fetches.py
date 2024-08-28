@@ -251,6 +251,13 @@ def process_all_amex():
     except Exception as e:
         print(e)
 
+def process_all_frankfurt_stock_exchange():
+    print(" FRANKFURT STOCK DE ")
+    # ticker_symbol = 'BMW.DE'  # Example: 'BMW.DE' for BMW on the Frankfurt Stock Exchange
+
+    # Download from here?
+    # https://www.deutsche-boerse-cash-market.com/dbcm-en/instruments-statistics/statistics/listes-companies
+
 
 def process_all_tickers_and_symbols():
     """
@@ -327,3 +334,4 @@ def process_all_tickers_and_symbols():
 
     print_h1(" DISCOVERY FINISHED ")
     return sp500_tickers
+

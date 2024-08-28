@@ -163,7 +163,9 @@ class DB_TickerUserWatchlist(db.DynamicDocument):
     }
 
     list_name = db.StringField()
-    user_id = db.StringField()
+    username = db.StringField()
+
+    exchange_tickers = db.ListField(db.StringField(), default=[])
 
 
 class DB_TickerUserSubscription(db.DynamicDocument):

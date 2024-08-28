@@ -18,7 +18,7 @@ from api.print_helper import *
 
 from api.tools import generate_file_md5, ensure_dir, is_api_call
 from api.user.routes import generate_random_user
-from .models import DB_Ticker, DB_TickerSimple, DB_TickerHighRes
+from .models import DB_Ticker, DB_TickerSimple, DB_TickerHighRes, DB_TickerUserWatchlist
 
 from mongoengine.queryset import QuerySet
 from mongoengine.queryset.visitor import Q
@@ -216,6 +216,21 @@ def api_create_ticker():
     return get_response_formatted(ret)
 
 
+@blueprint.route('/index/unit_test', methods=['POST', 'GET'])
+#@api_key_or_login_required
+def api_index_unit_test_tickers():
+    from .tickers_helpers import tickers_unit_test
+    return get_response_formatted(tickers_unit_test())
+
+
+@blueprint.route('/exchange/get_long/<string:name>', methods=['POST', 'GET'])
+#@api_key_or_login_required
+def api_get_exchange_verbose_long_name(name):
+    """ Returns a long name for the exchange so we can display it nicely """
+    from .tickers_helpers import get_exchange_verbose
+    return get_response_formatted({"exchange": name, "exchange_long_name": get_exchange_verbose(name)})
+
+
 @blueprint.route('/index/test', methods=['POST', 'GET'])
 #@api_key_or_login_required
 def api_index_test_tickers():
@@ -254,7 +269,7 @@ def api_index_test_tickers():
             ticker_1m = DB_TickerHighRes(**mdict)
             ticker_1m.save(validate=False)
 
-    ret = {'status': 'success', 'ticker': mongo_to_dict_helper(ticker)}
+    ret = {'ticker': mongo_to_dict_helper(ticker)}
     return get_response_formatted(ret)
 
 
@@ -296,3 +311,53 @@ def api_remove_a_ticker_by_id(ticker_id):
 
     db_ticker.delete()
     return get_response_formatted({'status': "deleted"})
+
+
+##########################################################################
+# An user watchlist is a list of tickers in the format EXCHANGE:TICKER
+
+
+def get_watchlist_or_create(name):
+    from flask_login import current_user
+    watchlist = DB_TickerUserWatchlist.objects(username=current_user.username, list_name=name).first()
+    if watchlist:
+        return watchlist
+
+    new_list = {"username": current_user.username, "list_name": name}
+
+    watchlist = DB_TickerUserWatchlist(**new_list)
+    watchlist.save(validate=False)
+    return watchlist
+
+
+@blueprint.route('/user/watchlist/get/<string:name>', methods=['GET', 'POST'])
+@api_key_or_login_required
+def api_user_watchlist(name):
+    """
+        Returns a list of tickers that the user is watching.
+    """
+
+    watchlist = get_watchlist_or_create(name)
+    ret = {'list_name': name, 'exchange_tickers': watchlist.exchange_tickers}
+    return get_response_formatted(ret)
+
+
+@blueprint.route('/user/watchlist/<string:operation>/<string:name>/<string:exchange_ticker>', methods=['GET', 'POST'])
+@api_key_or_login_required
+def api_user_watchlist_operation(operation, name, exchange_ticker):
+    from flask_login import current_user
+    """ Operations on lists
+    """
+
+    watchlist = get_watchlist_or_create(name)
+
+    if operation == "remove":
+        if exchange_ticker in watchlist.exchange_tickers:
+            watchlist.exchange_tickers.remove(exchange_ticker)
+    else:
+        if exchange_ticker not in watchlist.exchange_tickers:
+            watchlist.exchange_tickers.append(exchange_ticker)
+
+    watchlist.save()
+    ret = {'list_name': name, 'exchange_tickers': watchlist.exchange_tickers}
+    return get_response_formatted(ret)
