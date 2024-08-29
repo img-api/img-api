@@ -1,6 +1,6 @@
 import os
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from mongoengine import *
 
@@ -72,6 +72,7 @@ class DB_Ticker(db.DynamicDocument):
     # We run batches of processes, and we set the frequency of checks
     # so we can throttle the API calls according to the limits of the APIs we call to get info.
     last_processed_date = db.DateTimeField()
+    force_reindex = db.BooleanField(defult=False)
 
     exchange = db.StringField()
 
@@ -79,6 +80,14 @@ class DB_Ticker(db.DynamicDocument):
     region = db.StringField()
 
     info = db.DynamicField()
+
+    def reindex(self):
+        if self.force_reindex:
+            return
+
+        threshold_date = datetime.now() - timedelta(days=2)
+        if not self.last_processed_date or self.last_processed_date >= threshold_date:
+            self.update(**{'force_reindex': True})
 
     def serialize(self):
         return mongo_to_dict_helper(self)
@@ -88,7 +97,14 @@ class DB_Ticker(db.DynamicDocument):
         if dry_run:
             return self
 
-        self.update(**{'status': state_msg, 'last_processed_date': datetime.now()}, validate=False)
+        self.update(**{
+            'force_reindex': False,
+            'status': state_msg,
+            'last_processed_date': datetime.now()
+        },
+                    validate=False)
+
+        self.reload()
         return self
 
     def exchg_tick(self):
@@ -107,9 +123,13 @@ class DB_Ticker(db.DynamicDocument):
 
         if not self.company_id and db_company:
             self.company_id = str(db_company.id)
-            self.save(validate = False)
+            self.save(validate=False)
 
         return db_company
+
+    def save(self, *args, **kwargs):
+        ret = super(DB_Ticker, self).save(*args, **kwargs)
+        return ret
 
 
 class DB_TickerHighRes(db.DynamicDocument):

@@ -66,9 +66,10 @@ def ticker_pipeline_process(db_ticker, dry_run=False):
 
     myupdate = prepare_update_with_schema(info, new_schema)
 
-    company_officers = info['companyOfficers']
-    for officer in company_officers:
-        print_b(f"TODO: Create person {officer['name']} => {officer['title']}")
+    if 'companyOfficers' in info:
+        company_officers = info['companyOfficers']
+        for officer in company_officers:
+            print_b(f"TODO: Create person {officer['name']} => {officer['title']}")
 
 
     if not dry_run:

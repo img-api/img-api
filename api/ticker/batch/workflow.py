@@ -25,6 +25,7 @@ from .tickers_pipeline import ticker_pipeline_process
 
 # https://learn.temporal.io/getting_started/python/first_program_in_python/
 
+
 def ticker_process_batch(end=None, dry_run=False, BATCH_SIZE=5):
     """
     Gets a list of tickers and calls the different APIs to capture and process the data.
@@ -38,14 +39,32 @@ def ticker_process_batch(end=None, dry_run=False, BATCH_SIZE=5):
     if not end:
         end = get_timestamp_verbose("10 days")
 
-    query = Q(last_processed_date__lte=end) | Q(last_processed_date__lte=None)
+    query = Q(force_reindex=True)
     tickers = DB_Ticker.objects(query)[:BATCH_SIZE]
+    if tickers.count() == 0:
+        query = Q(last_processed_date__lte=end) | Q(last_processed_date__lte=None)
+        tickers = DB_Ticker.objects(query)[:BATCH_SIZE]
 
     for db_ticker in tickers:
         db_ticker.set_state("PIPELINE_START", dry_run)
 
         try:
             ticker_pipeline_process(db_ticker, dry_run=dry_run)
+        except Exception as e:
+            print_exception(e, "CRASHED PROCESSING BATCH")
+
+    return tickers
+
+
+def ticker_process_invalidate(ticker):
+
+    query = Q(ticker=ticker)
+    tickers = DB_Ticker.objects(query)
+    for db_ticker in tickers:
+        db_ticker.set_state("PIPELINE_START")
+
+        try:
+            ticker_pipeline_process(db_ticker)
         except Exception as e:
             print_exception(e, "CRASHED PROCESSING BATCH")
 

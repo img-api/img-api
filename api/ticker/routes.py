@@ -23,7 +23,7 @@ from .models import DB_Ticker, DB_TickerSimple, DB_TickerHighRes, DB_TickerUserW
 from mongoengine.queryset import QuerySet
 from mongoengine.queryset.visitor import Q
 from api.query_helper import mongo_to_dict_helper, build_query_from_request
-from api.ticker.batch.workflow import ticker_process_batch
+from api.ticker.batch.workflow import ticker_process_batch, ticker_process_invalidate
 
 
 @blueprint.route('/index/discovery', methods=['POST', 'GET'])
@@ -85,6 +85,16 @@ def api_batch_process():
     return get_response_formatted({'processed': processed})
 
 
+@blueprint.route('/<string:ticker>/update', methods=['GET', 'POST'])
+#@api_key_or_login_required
+def api_update_ticker(ticker):
+    """ We invalidate a ticker so we load everything.
+    """
+
+    processed = ticker_process_invalidate(ticker)
+    return get_response_formatted({'processed': processed})
+
+
 @blueprint.route('/suggestions', methods=['GET', 'POST'])
 #@api_key_or_login_required
 def api_get_suggestions():
@@ -100,11 +110,20 @@ def api_get_suggestions():
 
     tickers = company_get_suggestions(query, only_tickers=True)
 
-    global_symbols = get_all_tickers_and_symbols()
-    filtered_recommendations = [rec for rec in global_symbols if query in rec]
+    db_tickers = DB_Ticker.objects(ticker__istartswith=query)
+    filtered_recommendations = [rec.exchg_tick() for rec in db_tickers]
+
+    #global_symbols = get_all_tickers_and_symbols()
+    #filtered_recommendations = [rec for rec in global_symbols if query in rec]
 
     merged_list = list(chain(tickers, filtered_recommendations))
     unique_list = list(set(merged_list))
+
+    if len(query) >= 2:
+        print_b(" FORCE UPDATE ON THE LIST ")
+
+        for rec in db_tickers:
+            rec.reindex()
 
     ret = {'status': 'success', 'suggestions': unique_list}
     return get_response_formatted(ret)
@@ -319,6 +338,7 @@ def api_remove_a_ticker_by_id(ticker_id):
 
 def get_watchlist_or_create(name):
     from flask_login import current_user
+
     watchlist = DB_TickerUserWatchlist.objects(username=current_user.username, list_name=name).first()
     if watchlist:
         return watchlist
@@ -328,6 +348,21 @@ def get_watchlist_or_create(name):
     watchlist = DB_TickerUserWatchlist(**new_list)
     watchlist.save(validate=False)
     return watchlist
+
+
+@blueprint.route('/user/watchlist/rm/<string:name>', methods=['GET', 'POST'])
+@api_key_or_login_required
+def api_user_watchlist_delete(name):
+    """
+        Returns a list of tickers that the user is watching.
+    """
+    from flask_login import current_user
+
+    watchlist = get_watchlist_or_create(name)
+    DB_TickerUserWatchlist.objects(username=current_user.username, list_name=name).delete()
+
+    ret = {"deleted": name}
+    return get_response_formatted(ret)
 
 
 @blueprint.route('/user/watchlist/get/<string:name>', methods=['GET', 'POST'])

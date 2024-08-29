@@ -53,7 +53,7 @@ def company_get_suggestions(text, only_tickers=False):
         for rec in companies:
             print(" Rec " + rec.company_name)
             for i in rec.exchange_tickers:
-                tickers.append(i.split(":")[1])
+                tickers.append(i)
 
         return tickers
 
