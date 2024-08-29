@@ -45,7 +45,14 @@ def company_get_suggestions(text, only_tickers=False):
     if only_tickers and len(text) < 3:
         return []
 
-    query = Q(company_name__istartswith=text)
+    if len(text) > 3:
+        query = Q(company_name__icontains=text)
+    else:
+        query = Q(company_name__istartswith=text)
+
+    if len(text) <= 4:
+        query = query | Q(exchange_tickers__icontains=text)
+
     companies = DB_Company.objects(query)
 
     if only_tickers:
