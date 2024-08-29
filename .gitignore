@@ -7,6 +7,8 @@ yfinance_cache.*
 
 1
 
+packages.microsoft.gpg
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

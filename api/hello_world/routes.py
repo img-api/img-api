@@ -31,4 +31,5 @@ def api_hello_world():
                 type: integer
 
     """
+    print("hello world ")
     return get_response_formatted({'status': 'success', 'msg': 'hello world'})

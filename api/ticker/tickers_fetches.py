@@ -64,6 +64,94 @@ def get_all_tickers_and_symbols():
     return list(merged_set)
 
 
+def getPrices(ticker):
+        
+    '''searches for stock in database.
+    if stock is not present, adds stock to database'''
+    
+    ticker = yf.Ticker(f"{ticker}")
+    prices = ticker.history()
+    income_statement = ticker.income_stmt
+    balance_sheet = ticker.balance_sheet
+    cash_flow = ticker.cash_flow
+
+    return prices, income_statement, balance_sheet, cash_flow
+
+
+def getRatios(ticker):
+        
+    '''given a stock ticker, grab its balance sheet, 
+    income statement & cash flow statement and saves it into an excel file'''
+    
+    headers= {
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:87.0) Gecko/20100101 Firefox/87.0',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
+        'Cache-Control': 'max-age=0'
+    }
+    urls = {}
+    
+    
+    urls['ratio annually'] = f"https://stockanalysis.com/stocks/{ticker}/financials/ratios/"
+    urls['ratio quarterly'] = f"https://stockanalysis.com/stocks/{ticker}/financials/ratios/?period=quarterly"
+    
+    xlwriter = pd.ExcelWriter(f'financial_statements_{ticker}.xlsx', engine='xlsxwriter')
+    
+    for key in urls.keys():
+        response = requests.get(urls[key], headers=headers)
+        soup = BeautifulSoup(response.content, 'html.parser')
+        df = pd.read_html(str(soup), attrs={'data-test': 'fintable'})[0]
+        df.to_excel(xlwriter, sheet_name=key, index=False)
+    
+    xlwriter.save()
+
+def getNewsHeader(self, ticker):
+        
+    '''getting news from finviz'''
+    
+    #work in progress
+    
+    url = "https://finviz.com/quote.ashx?t={ticker}&p=d"
+    news_tables = {}
+    
+    req = Request(url=url, headers={"user-agent": "my-app"})
+    response = urlopen(req)
+    
+    html = BeautifulSoup(response, "html") 
+    news_table = html.find(id="news-table")
+    rows = news_table.findAll("tr")
+    links = []
+    for idx, row in enumerate(rows):
+        #get all links
+        title = row.a.text
+        date_data = row.td.text.split("")
+        if len(date_data) == 1:
+            time = date_data[0]
+        else:
+            date = date_data[0]
+            time = date_data[1]
+    
+    return ticker, date, time, title
+
+def getData(tickers = "default"):
+        
+    #work in progress
+    '''given a list of tickers, get data from the internet'''
+    if tickers == "default":
+        tickers = self.get_all_tickers_and_symbols()
+        self.tickers = tickers
+    data = {}
+    for ticker in tickers:
+        price, is_, bs, cf = self.getPrices(ticker)
+        ratios = self.getRatios(ticker)
+        news = self.getNews(ticker)
+        data[f"{ticker}"] = [price, is_, bs, cf, ratios, news]
+    return data
+    
+
+
 def clean_company_name(name):
     # Remove any text in parentheses and everything that follows
 
@@ -97,6 +185,7 @@ def create_or_update_company(my_company, exchange=None, ticker=None):
     if exchange and ticker:
         if ticker == "INTC":
             print(" TEST ")
+
         query = Q(exchange_tickers=exchange + ":" + ticker)
         db_company = DB_Company.objects(query).first()
 

@@ -236,3 +236,20 @@ def api_get_info_ticker():
         'options': ticker.options
     }
     return get_response_formatted(ret)
+
+
+@blueprint.route('/get_price', methods=['POST', 'GET'])
+#@api_key_or_login_required
+def api_get_ticker_get_price():
+    from .tickers_fetches import getPrices
+
+    ticker_name = request.args.get("ticker", None)
+
+    prices, income_statement, balance_sheet, cash_flow = getPrices(ticker_name)
+
+    ret = {
+        'status': 'success',
+        'ticker': ticker_name,
+        'income_statement': str(income_statement),
+    }
+    return get_response_formatted(ret)
