@@ -176,6 +176,7 @@ class DB_TickerSimple(db.DynamicDocument):
         "index_background": True,
     }
 
+    company_name = db.StringField()
     exchange_ticker = db.StringField()
     last_update = db.DateTimeField()
     price = db.FloatField()

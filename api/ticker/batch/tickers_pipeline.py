@@ -41,10 +41,11 @@ def ticker_update_financials(full_symbol, max_age_minutes=15):
     yticker = standardize_ticker_format_to_yfinance(full_symbol)
     yf_obj = fetch_tickers_info(yticker)
 
-    if not yf_obj['currentProce']:
+    if not yf_obj.info['currentPrice']:
         return fin
 
     new_schema = {
+        'company_name': 'longName',
         'price': 'currentPrice',
         'ratio': 'currentRatio',
         'day_low': 'dayLow',
