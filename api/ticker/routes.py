@@ -23,6 +23,8 @@ from .models import DB_Ticker, DB_TickerSimple, DB_TickerHighRes, DB_TickerUserW
 from mongoengine.queryset import QuerySet
 from mongoengine.queryset.visitor import Q
 from api.query_helper import mongo_to_dict_helper, build_query_from_request
+
+from api.ticker.batch.tickers_pipeline import ticker_update_financials
 from api.ticker.batch.workflow import ticker_process_batch, ticker_process_invalidate
 
 
@@ -374,6 +376,17 @@ def api_user_watchlist(name):
 
     watchlist = get_watchlist_or_create(name)
     ret = {'list_name': name, 'exchange_tickers': watchlist.exchange_tickers}
+
+    if request.args.get("add_financials", None) == "1":
+        fin = {}
+        for full_symbol in watchlist.exchange_tickers:
+            try:
+                fin[full_symbol] = ticker_update_financials(full_symbol)
+            except Exception as e:
+                print_exception(e, "CRASHED FINANCIAL UPDATES")
+
+        ret['financials'] = fin
+
     return get_response_formatted(ret)
 
 

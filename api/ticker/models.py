@@ -107,6 +107,16 @@ class DB_Ticker(db.DynamicDocument):
         self.reload()
         return self
 
+    def query_exchange_ticker(full_symbol):
+        from api.ticker.tickers_helpers import standardize_ticker_format
+
+        if ":" not in full_symbol:
+            full_symbol = standardize_ticker_format(full_symbol)
+
+        p = full_symbol.split(":")
+        query = Q(ticker=p[0]) & Q(exchange=p[1])
+        return query
+
     def exchg_tick(self):
         if not self.exchange: return self.ticker
         return self.exchange + ":" + self.ticker
@@ -157,7 +167,7 @@ class DB_TickerHighRes(db.DynamicDocument):
 
 
 class DB_TickerSimple(db.DynamicDocument):
-    """ Class to create an event
+    """ Closest update in the system for 'realtime' data
 
     """
     meta = {
@@ -166,10 +176,29 @@ class DB_TickerSimple(db.DynamicDocument):
         "index_background": True,
     }
 
-    ticker = db.StringField()
-    close = db.FloatField()
+    exchange_ticker = db.StringField()
+    last_update = db.DateTimeField()
+    price = db.FloatField()
+    ratio = db.FloatField()
+    day_low = db.FloatField()
+    day_high = db.FloatField()
+    current_open = db.FloatField()
+    previous_close = db.FloatField()
+    volume = db.FloatField()
+    bid = db.FloatField()
+    bid_size = db.FloatField()
 
-    start = db.DateTimeField()
+    def age_minutes(self, *args, **kwargs):
+        return (datetime.now() - self.last_update).total_seconds() / 60
+
+    def save(self, *args, **kwargs):
+        self.last_update = datetime.now()
+        return super(DB_TickerSimple, self).save(*args, **kwargs)
+
+    def update(self, *args, **kwargs):
+        self.last_update = datetime.now()
+        ret = super(DB_TickerSimple, self).update(*args, **kwargs)
+        return ret
 
     def serialize(self):
         return mongo_to_dict_helper(self)

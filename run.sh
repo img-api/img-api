@@ -12,12 +12,15 @@ export FLASK_DEBUG=1
 export FLASK_APP=imgapi_launcher.py
 export FLASK_PORT=5111
 
+pip3 install yfinance --upgrade
+
 while true; do
     echo " "
     echo "------------------------------"
     echo "------------ LAUNCH ----------"
     echo "------------------------------"
     echo " "
+
     flask run --host=0.0.0.0 -p $FLASK_PORT --with-threads
     sleep 10s
 done

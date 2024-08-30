@@ -172,8 +172,12 @@ def api_get_token_from_request():
                 print_r("WRONG CONTENT TYPE" + request.headers['Content-Type'])
                 return None
 
-            if hasattr(request, 'json') and request.json and 'key' in request.json:
-                return request.json["key"]
+            try:
+                if hasattr(request, 'json') and request.json and 'key' in request.json:
+                    return request.json["key"]
+            except Exception as e:
+                # The JSON parser crashes here in some calls, just ignore it.
+                pass
 
         if 'HTTP_KEY' in request.headers:
             return request.headers['HTTP_KEY']
