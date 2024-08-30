@@ -24,7 +24,7 @@ from api.query_helper import copy_replace_schema
 from api.ticker.tickers_helpers import standardize_ticker_format_to_yfinance
 
 
-def ticker_update_financials(full_symbol, max_age_minutes=15):
+def ticker_update_financials(full_symbol, max_age_minutes=5):
     """ This is a very slow ticker fetch system, we use yfinance here
         But we could call any of the other APIs
 

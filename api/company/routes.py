@@ -205,3 +205,29 @@ def api_apply_stamp(biz_name, encrypted_date):
     #
 
     return get_response_formatted(ret)
+
+
+@blueprint.route('/categories', methods=['GET', 'POST'])
+def company_explorer_categories():
+    exchange = request.args.get("exchange", "").upper()
+    group = request.args.get("group", "gics_sector")
+
+    pipeline = []
+    if exchange:
+        match_exchange = {
+            "$match": {
+                "exchanges": exchange,
+            }
+        }
+
+        pipeline.append(match_exchange)
+
+    pipeline.append({"$group": {"_id": "$" + group, "count": {"$sum": 1}}})
+    pipeline.append({"$sort": {"_id": 1}})
+
+    ret = {}
+
+    ret['result'] = list(DB_Company.objects.aggregate(*pipeline))
+    ret['pipeline'] = [pipeline]
+
+    return get_response_formatted(ret)
