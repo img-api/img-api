@@ -107,8 +107,9 @@ def getRatios(ticker):
     
     xlwriter.save()
 
-def getNewsHeader(self, ticker):
-        
+
+def getFinvizNews(ticker):
+    
     '''getting news from finviz'''
     
     #work in progress
@@ -118,22 +119,67 @@ def getNewsHeader(self, ticker):
     
     req = Request(url=url, headers={"user-agent": "my-app"})
     response = urlopen(req)
+
+    html = BeautifulSoup(response, "html.parser")
+    news = html.find_all("tr", class_ = "cursor-pointer has-label")
+    date = datetime.datetime.today()
     
-    html = BeautifulSoup(response, "html") 
-    news_table = html.find(id="news-table")
-    rows = news_table.findAll("tr")
-    links = []
-    for idx, row in enumerate(rows):
-        #get all links
-        title = row.a.text
-        date_data = row.td.text.split("")
+    newsLinks = {date: []}
+    
+    for n in news:
+        
+        date_data = n.td.text.strip().split(" ")
+        
         if len(date_data) == 1:
             time = date_data[0]
         else:
             date = date_data[0]
             time = date_data[1]
+            newsLinks[date] = []
+        
+        #compare datetime objects
+        #if time < threshold:
+        #    return {}
+        
+        
+        link = n.div.div.a["href"]
+        if "yahoo" in link:
+            continue
+        
+        #video extraction still under construction
+        #elif "youtube" in link:
+        #    text = extractVideo(link)
+        #else:
+        #construct this later
+        #    text = getNewsData(link)
+                
+        title = n.div.div.a.text
+                
+        #store
+        newsLinks[date].append([time, title, link, text])
     
-    return ticker, date, time, title
+    return {f"{ticker}": newsLinks}
+
+
+def getGoogleNews(ticker):
+
+'''get google news'''
+
+    def getGoogleNews(ticker):
+    gn = GoogleNews()
+    search = gn.search(f"{ticker}")
+    news = []
+    for i, item in enumerate(search["entries"]):
+        if "yahoo" in item["source"]["href"]:
+            continue
+        title = item["title"]
+        link = item["link"]
+        #text = extractText(link)
+        timestamp = item["published"]
+        news.append([timestamp, title, link])
+    return {f{"ticker"}: news}
+
+
 
 def getData(tickers = "default"):
         
