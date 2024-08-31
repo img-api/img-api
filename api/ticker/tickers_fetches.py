@@ -4,9 +4,15 @@ import re
 import requests
 import requests_cache
 
+import urllib
+from urllib.request import urlopen, Request
+from bs4 import BeautifulSoup
 import pandas as pd
 import yfinance as yf
+from youtube_transcript_api import YouTubeTranscriptApi as yta
+from pygooglenews import GoogleNews
 
+import datetime
 from datetime import timedelta
 
 from api.print_helper import *
@@ -78,6 +84,7 @@ def getPrices(ticker):
     return prices, income_statement, balance_sheet, cash_flow
 
 
+
 def getRatios(ticker):
         
     '''given a stock ticker, grab its balance sheet, 
@@ -108,57 +115,60 @@ def getRatios(ticker):
     xlwriter.save()
 
 
-def getFinvizNews(ticker):
-    
-    '''getting news from finviz'''
-    
-    #work in progress
-    
-    url = "https://finviz.com/quote.ashx?t={ticker}&p=d"
-    news_tables = {}
-    
+def getHtml(url):
     req = Request(url=url, headers={"user-agent": "my-app"})
     response = urlopen(req)
 
     html = BeautifulSoup(response, "html.parser")
-    news = html.find_all("tr", class_ = "cursor-pointer has-label")
-    date = datetime.datetime.today()
+    return html
+
+def getYahooNews(ticker):
+    ticker = yf.Ticker(f"{ticker}")
+    toLlama = []
+    for item in msft.news:
     
-    newsLinks = {date: []}
+    #for paywalled items: just scrape title
+    if "Barrons" or "MT Newswires" in item['publisher']:
+        toLlama.append(item["title"])
     
-    for n in news:
-        
-        date_data = n.td.text.strip().split(" ")
-        
-        if len(date_data) == 1:
-            time = date_data[0]
-        else:
-            date = date_data[0]
-            time = date_data[1]
-            newsLinks[date] = []
-        
-        #compare datetime objects
-        #if time < threshold:
-        #    return {}
-        
-        
-        link = n.div.div.a["href"]
-        if "yahoo" in link:
-            continue
-        
-        #video extraction still under construction
-        #elif "youtube" in link:
-        #    text = extractVideo(link)
-        #else:
-        #construct this later
-        #    text = getNewsData(link)
-                
-        title = n.div.div.a.text
-                
-        #store
-        newsLinks[date].append([time, title, link, text])
+    #investors.com: redirect
+    elif "Investor" in item["publisher"]:
+        #write logic here
+        pass
+    else:
+        html = getHtml(item["link"])
+        news = html.find_all("div", class_ = "caas-body")
+        news = news[0]
+        text = news.find_all("p")
+        article = ""
+        for item in text:
+            article += item.text
+        toLlama.append(article)
+    return toLlama
+
+def extractVideo(url):
+
+    '''takes a url as input, extracts video from YouTube. Still under construction'''
     
-    return {f"{ticker}": newsLinks}
+    url_data = urllib.parse.urlparse(url)
+    vid_id = url_data.query
+    transcript = ""
+    try:
+        data = yta.get_transcript(vid_id)
+
+        for value in data:
+            for key, val in value.items():
+                if key == "text":
+                    transcript += val
+        l = transcript.splitlines()
+        text = " ".join(l)
+        return text
+    except TranscriptsDisabled:
+        #what to do about the download?
+        audio_file = download(url)
+        model = whisper.load_model('base.en')
+        result = model.transcribe(audio_file)
+        return result["text"]
 
 
 def getGoogleNews(ticker):
