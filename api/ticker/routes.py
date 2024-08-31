@@ -24,7 +24,7 @@ from mongoengine.queryset import QuerySet
 from mongoengine.queryset.visitor import Q
 from api.query_helper import mongo_to_dict_helper, build_query_from_request
 
-from api.ticker.batch.tickers_pipeline import ticker_update_financials
+from api.ticker.batch.yfinance.ytickers_pipeline import ticker_update_financials
 from api.ticker.batch.workflow import ticker_process_batch, ticker_process_invalidate
 
 
@@ -87,7 +87,7 @@ def api_batch_process():
     return get_response_formatted({'processed': processed})
 
 
-@blueprint.route('/<string:ticker>/update', methods=['GET', 'POST'])
+@blueprint.route('/invalidate/<string:ticker>', methods=['GET', 'POST'])
 #@api_key_or_login_required
 def api_update_ticker(ticker):
     """ We invalidate a ticker so we load everything.

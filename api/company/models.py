@@ -80,7 +80,7 @@ class DB_Company(db.DynamicDocument):
         if not self.creation_date:
             self.creation_date = datetime.now()
 
-        last_update_date = datetime.now()
+        self.last_update_date = datetime.now()
 
         self.safe_name = self.get_safe_name(self.company_name)
         ret = super(DB_Company, self).save(*args, **kwargs)

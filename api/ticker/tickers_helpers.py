@@ -128,20 +128,6 @@ def extract_exchange_ticker_from_url(url):
     # If no pattern matches, return None
     return None, None
 
-
-def convert_to_internal_exchange_ticker(ticker):
-    """
-
-    Parameters:
-        url (str): The URL containing exchange and ticker information.
-
-    Returns:
-        tuple: A tuple containing the exchange and ticker symbol.
-               Returns (None, None) if not found.
-    """
-    return None, None
-
-
 def get_exchange_verbose(exchange_name):
     verbose_map = {
         'AX': 'Australian Securities Exchange',  # ASX

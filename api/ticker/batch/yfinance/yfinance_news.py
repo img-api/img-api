@@ -11,11 +11,15 @@ from datetime import timedelta
 
 from api.print_helper import *
 from api.company.models import DB_Company
-
-from .models import DB_Ticker
+from api.news.models import DB_News
 
 # Perform complex queries to mongo
 from mongoengine.queryset import QuerySet
 from mongoengine.queryset.visitor import Q
 
-from .tickers_helpers import extract_exchange_ticker_from_url
+
+def yfetch_process_news(item):
+    """
+    Downloads the news into disk
+    """
+    print(" Hello world ")

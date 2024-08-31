@@ -18,7 +18,8 @@ from api.ticker.models import DB_Ticker
 # Perform complex queries to mongo
 from mongoengine.queryset import QuerySet
 from mongoengine.queryset.visitor import Q
-from .tickers_pipeline import ticker_pipeline_process
+
+from .yfinance.ytickers_pipeline import yticker_pipeline_process
 
 # RAW basic implementation before going for a future implmentation using
 # Something like temporal.io
@@ -48,8 +49,10 @@ def ticker_process_batch(end=None, dry_run=False, BATCH_SIZE=5):
     for db_ticker in tickers:
         db_ticker.set_state("PIPELINE_START", dry_run)
 
+        # We process every ticker with a different pipeline.
+        # Parsers should self-register to provide support. TBD
         try:
-            ticker_pipeline_process(db_ticker, dry_run=dry_run)
+            yticker_pipeline_process(db_ticker, dry_run=dry_run)
         except Exception as e:
             print_exception(e, "CRASHED PROCESSING BATCH")
 
@@ -64,7 +67,7 @@ def ticker_process_invalidate(ticker):
         db_ticker.set_state("PIPELINE_START")
 
         try:
-            ticker_pipeline_process(db_ticker)
+            yticker_pipeline_process(db_ticker)
         except Exception as e:
             print_exception(e, "CRASHED PROCESSING BATCH")
 
