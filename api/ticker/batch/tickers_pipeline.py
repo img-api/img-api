@@ -24,7 +24,7 @@ from api.query_helper import copy_replace_schema
 from api.ticker.tickers_helpers import standardize_ticker_format_to_yfinance
 
 
-def ticker_update_financials(full_symbol, max_age_minutes=5):
+def ticker_update_financials(full_symbol, max_age_minutes=2):
     """ This is a very slow ticker fetch system, we use yfinance here
         But we could call any of the other APIs
 
@@ -39,10 +39,10 @@ def ticker_update_financials(full_symbol, max_age_minutes=5):
         return fin
 
     yticker = standardize_ticker_format_to_yfinance(full_symbol)
-    yf_obj = fetch_tickers_info(yticker)
+    yf_obj = fetch_tickers_info(yticker, no_cache=True)
 
-    if not yf_obj.info['currentPrice']:
-        return fin
+    #if not yf_obj.info['currentPrice']:
+    #    return fin
 
     new_schema = {
         'company_name': 'longName',
@@ -64,7 +64,6 @@ def ticker_update_financials(full_symbol, max_age_minutes=5):
         fin = DB_TickerSimple(**financial_data)
         fin.save(validate=False)
     else:
-
         fin.update(**financial_data, validate=False)
 
     return fin

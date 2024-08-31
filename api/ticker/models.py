@@ -190,14 +190,18 @@ class DB_TickerSimple(db.DynamicDocument):
     bid_size = db.FloatField()
 
     def age_minutes(self, *args, **kwargs):
-        return (datetime.now() - self.last_update).total_seconds() / 60
+
+        age = (datetime.now() - self.last_update).total_seconds() / 60
+        print(self.exchange_ticker + " => " + str(age))
+
+        return age
 
     def save(self, *args, **kwargs):
         self.last_update = datetime.now()
         return super(DB_TickerSimple, self).save(*args, **kwargs)
 
     def update(self, *args, **kwargs):
-        self.last_update = datetime.now()
+        kwargs['last_update'] = datetime.now()
         ret = super(DB_TickerSimple, self).update(*args, **kwargs)
         return ret
 

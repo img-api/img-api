@@ -301,7 +301,7 @@ def api_get_info_ticker():
 
     ticker_name = request.args.get("ticker", None)
 
-    ticker = fetch_tickers_info(ticker_name)
+    ticker = fetch_tickers_info(ticker_name, no_cache=True)
 
     ret = {
         'status': 'success',
@@ -399,7 +399,7 @@ def api_user_watchlist_operation(operation, name, exchange_ticker):
 
     watchlist = get_watchlist_or_create(name)
 
-    if operation == "remove":
+    if operation == "remove_ticker":
         if exchange_ticker in watchlist.exchange_tickers:
             watchlist.exchange_tickers.remove(exchange_ticker)
     else:
