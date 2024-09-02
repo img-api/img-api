@@ -115,35 +115,21 @@ def getRatios(ticker):
     xlwriter.save()
 
 
-def getHtml(url):
-    req = Request(url=url, headers={"user-agent": "my-app"})
-    response = urlopen(req)
-
-    html = BeautifulSoup(response, "html.parser")
-    return html
-
 def getYahooNews(ticker):
+    
+    "Takes a ticker as argument, gets the article from Yahoo News"
+    
     ticker = yf.Ticker(f"{ticker}")
     toLlama = []
-    for item in msft.news:
-    
-    #for paywalled items: just scrape title
-    if "Barrons" or "MT Newswires" in item['publisher']:
-        toLlama.append(item["title"])
-    
-    #investors.com: redirect
-    elif "Investor" in item["publisher"]:
-        #write logic here
-        pass
-    else:
-        html = getHtml(item["link"])
-        news = html.find_all("div", class_ = "caas-body")
-        news = news[0]
-        text = news.find_all("p")
-        article = ""
-        for item in text:
-            article += item.text
-        toLlama.append(article)
+    links = []
+    publishers = []
+    for item in ticker.news:
+        #work in progress
+        if item["publisher"] not in ["Barrons", "MT Newswires", "Investor Business Daily"]:
+            driver = webdriver.Firefox()
+            driver.get(item["link"])
+            article = driver.find_element(By.CLASS_NAME, "caas-body")
+            toLlama.append(article.text)
     return toLlama
 
 def extractVideo(url):
