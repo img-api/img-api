@@ -312,7 +312,7 @@ def configure_media_folder(app):
 
     # The media folder SHOULD not be inside the application folder.
     if not media_path:
-        media_path = app.root_path + "/MEDIA_FILES/"
+        media_path = app.root_path + "/DATA/MEDIA_FILES/"
 
         print("!-------------------------------------------------------------!")
         print("  WARNING MEDIA PATH IS NOT BEING DEFINED ")
@@ -354,6 +354,8 @@ def handle_bad_request_with_html(e):
 
 def register_api_blueprints(app):
     """ Loads all the modules for the API """
+    from api.news import configure_news_media_folder
+
     from importlib import import_module
     global cache
 
@@ -379,6 +381,7 @@ def register_api_blueprints(app):
         #print(" Registering API " + str(module_name))
 
     configure_media_folder(app)
+    configure_news_media_folder(app)
     init_redis(app)
 
     # Cache

@@ -17,9 +17,23 @@ from api.news.models import DB_News
 from mongoengine.queryset import QuerySet
 from mongoengine.queryset.visitor import Q
 
+from api.ticker.batch.html.html_helper import get_html, save_html_to_file
+
 
 def yfetch_process_news(item):
     """
     Downloads the news into disk
     """
-    print(" Hello world ")
+
+    print_b("NEWS -> " + item.link)
+
+    data_folder = item.get_data_folder()
+    print_b("DATA FOLDER: " + data_folder)
+
+    soup, raw_html = get_html(item.link)
+
+    filename = str(item.id) + ".html"
+    save_html_to_file(raw_html, filename, data_folder)
+
+    # Reindex because we haven't finish this code
+    item.set_state("WAITING_INDEX")

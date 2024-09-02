@@ -25,8 +25,8 @@ from mongoengine.queryset.visitor import Q
 from api.query_helper import mongo_to_dict_helper, build_query_from_request
 
 from api.ticker.batch.yfinance.ytickers_pipeline import ticker_update_financials
-from api.ticker.batch.workflow import ticker_process_batch, ticker_process_invalidate
-
+from api.ticker.batch.workflow import ticker_process_batch, ticker_process_invalidate, ticker_process_news_sites
+from api.ticker.tickers_helpers import standardize_ticker_format
 
 @blueprint.route('/index/discovery', methods=['POST', 'GET'])
 #@api_key_or_login_required
@@ -87,6 +87,18 @@ def api_batch_process():
     return get_response_formatted({'processed': processed})
 
 
+
+@blueprint.route('/index/batch/process_news', methods=['GET', 'POST'])
+#@api_key_or_login_required
+def api_batch_news_process():
+    """
+        Processes the links on the news folder, it will search for a batch of unprocess data and launch fetches
+    """
+
+    processed = ticker_process_news_sites()
+    return get_response_formatted({'processed': processed})
+
+
 @blueprint.route('/invalidate/<string:ticker>', methods=['GET', 'POST'])
 #@api_key_or_login_required
 def api_update_ticker(ticker):
@@ -95,6 +107,24 @@ def api_update_ticker(ticker):
 
     processed = ticker_process_invalidate(ticker)
     return get_response_formatted({'processed': processed})
+
+
+def get_full_symbol(ticker):
+    """ Converts a ticker like NVO into NYE:NVO """
+
+    db_ticker = DB_Ticker.objects(ticker=ticker).first()
+    if db_ticker:
+        ticker = db_ticker.full_symbol()
+
+    return standardize_ticker_format(ticker)
+
+
+@blueprint.route('/get_full_symbol/<string:ticker>', methods=['GET', 'POST'])
+def api_find_full_symbol(ticker):
+    """ We append NASDAQ or NSYE or whatever for a ticker"""
+
+    full_symbol = get_full_symbol(ticker)
+    return get_response_formatted({'full_symbol': full_symbol})
 
 
 @blueprint.route('/suggestions', methods=['GET', 'POST'])
@@ -113,7 +143,7 @@ def api_get_suggestions():
     tickers = company_get_suggestions(query, only_tickers=True)
 
     db_tickers = DB_Ticker.objects(ticker__istartswith=query)
-    filtered_recommendations = [rec.exchg_tick() for rec in db_tickers]
+    filtered_recommendations = [rec.full_symbol() for rec in db_tickers]
 
     #global_symbols = get_all_tickers_and_symbols()
     #filtered_recommendations = [rec for rec in global_symbols if query in rec]

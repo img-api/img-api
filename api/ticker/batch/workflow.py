@@ -14,17 +14,44 @@ from api.query_helper import *
 
 from api.company.models import DB_Company
 from api.ticker.models import DB_Ticker
+from api.news.models import DB_News
 
 # Perform complex queries to mongo
 from mongoengine.queryset import QuerySet
 from mongoengine.queryset.visitor import Q
 
 from .yfinance.ytickers_pipeline import yticker_pipeline_process
+from .yfinance.yfinance_news import yfetch_process_news
 
 # RAW basic implementation before going for a future implmentation using
 # Something like temporal.io
 
 # https://learn.temporal.io/getting_started/python/first_program_in_python/
+
+
+def ticker_process_news_sites(BATCH_SIZE=5):
+    """ Fetches all the news to be indexed and calls the API to fetch them
+        We don't have yet a self-registering plugin api so we will just call manually depending on the source.
+    """
+    query = Q(force_reindex=True)
+    news = DB_News.objects(query)[:BATCH_SIZE]
+    if news.count() == 0:
+        query = Q(status='WAITING_INDEX') | Q(status='INDEX_START')
+        news = DB_News.objects(query)[:BATCH_SIZE]
+
+    for item in news:
+        try:
+            item.set_state("INDEX_START")
+
+            if item.source == "YFINANCE":
+                yfetch_process_news(item)
+                continue
+
+        except Exception as e:
+            item.set_state("FETCH CRASHED, SEE LOGS!")
+            print_exception(e, "CRASHED FETCHING NEWS")
+
+    return news
 
 
 def ticker_process_batch(end=None, dry_run=False, BATCH_SIZE=5):

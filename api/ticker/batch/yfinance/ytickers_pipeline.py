@@ -14,7 +14,8 @@ from api.print_helper import *
 from api.query_helper import *
 
 from api.company.models import DB_Company
-from api.ticker.models import DB_Ticker
+
+from api.ticker.models import DB_Ticker, DB_TickerSimple
 from api.news.models import DB_News, DB_DynamicNewsRawData
 
 # Perform complex queries to mongo
@@ -23,7 +24,7 @@ from mongoengine.queryset.visitor import Q
 
 from api.query_helper import copy_replace_schema
 from api.ticker.connector_yfinance import fetch_tickers_info
-from api.ticker.tickers_helpers import standardize_ticker_format_to_yfinance
+from api.ticker.tickers_helpers import standardize_ticker_format_to_yfinance, standardize_ticker_format
 from api.ticker.batch.yfinance.yfinance_news import yfetch_process_news
 
 
@@ -31,8 +32,6 @@ def ticker_update_financials(full_symbol, max_age_minutes=2):
     """ This is a very slow ticker fetch system, we use yfinance here
         But we could call any of the other APIs
     """
-
-    from api.ticker.models import DB_TickerSimple
 
     fin = DB_TickerSimple.objects(exchange_ticker=full_symbol).first()
 
@@ -74,10 +73,11 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
     """
         Our fetching pipeline will call different status
     """
+    from api.ticker.routes import get_full_symbol
 
-    print_b("PROCESSING: " + db_ticker.exchg_tick())
+    print_b("PROCESSING: " + db_ticker.full_symbol())
 
-    yticker = standardize_ticker_format_to_yfinance(db_ticker.exchg_tick())
+    yticker = standardize_ticker_format_to_yfinance(db_ticker.full_symbol())
 
     db_ticker.set_state("YFINANCE", dry_run)
 
@@ -125,6 +125,7 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
             db_news = DB_News.objects(external_uuid=item['uuid']).first()
             if db_news:
                 # We don't update news that we already have in the system
+                print_b(" ALREADY INDEXED " + item['link'])
                 continue
 
             raw_data_id = 0
@@ -147,9 +148,17 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
             myupdate = prepare_update_with_schema(item, new_schema)
 
             # We need to convert between both systems
-            #related_tickers = []
-            #for ticker in news['relatedTickers']:
-            #    related_tickers.append()
+            related_tickers = []
+
+            for ticker in item['relatedTickers']:
+
+                if ticker == db_ticker.ticker:
+                    related_tickers.append(db_ticker.full_symbol())
+                else:
+                    full_symbol = get_full_symbol(ticker)
+                    related_tickers.append(full_symbol)
+
+            myupdate['related_exchange_tickers'] = related_tickers
 
             extra = {
                 'source': 'YFINANCE',
@@ -157,7 +166,7 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
                 'raw_data_id': raw_data_id,
             }
 
-            myupdate = { **myupdate, **extra }
+            myupdate = {**myupdate, **extra}
 
             db_news = DB_News(**myupdate).save(validate=False)
             yfetch_process_news(db_news)

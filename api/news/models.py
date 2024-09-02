@@ -22,6 +22,7 @@ from api.tools.signature_serializer import TimedJSONWebSignatureSerializer as Se
 from api.galleries.models import DB_UserGalleries
 from api.user.user_check import DB_UserCheck
 
+
 class DB_DynamicNewsRawData(db.DynamicDocument):
     meta = {
         'strict': False,
@@ -68,6 +69,9 @@ class DB_News(db.DynamicDocument):
     #           and navigate until getting the full news source.
     source = db.StringField()
 
+    # Storage where we cache the fetch
+    raw_files_path = db.StringField()
+
     # We store the raw data from the fetch so we can reprocess or extract extra info
     raw_data_id = db.StringField()
 
@@ -88,3 +92,25 @@ class DB_News(db.DynamicDocument):
 
         print(" DELETED News Data ")
         return super(DB_News, self).delete(*args, **kwargs)
+
+    def set_state(self, state_msg):
+        """ Update a processing state """
+
+        self.update(**{
+            'force_reindex': False,
+            'status': state_msg,
+            'last_visited_date': datetime.now()
+        },
+                    validate=False)
+
+        self.reload()
+        return self
+
+    def get_data_folder(self):
+        from api.tools import ensure_dir
+
+        path = current_app.config.get('DATA_NEWS_PATH', None)
+        path += self.source + "/" + str(self.id) + "/"
+        ensure_dir(path)
+
+        return path

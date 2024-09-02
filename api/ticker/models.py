@@ -117,9 +117,29 @@ class DB_Ticker(db.DynamicDocument):
         query = Q(ticker=p[0]) & Q(exchange=p[1])
         return query
 
-    def exchg_tick(self):
-        if not self.exchange: return self.ticker
-        return self.exchange + ":" + self.ticker
+    def full_symbol(self):
+        """ Helper to find our full_symbol, we also fix the MIC and Stock name confusion here """
+
+        from api.ticker.tickers_helpers import standardize_ticker_format, split_full_symbol
+
+        if not self.exchange:
+            return self.ticker
+
+        old_symbol = self.exchange + ":" + self.ticker
+        full_symbol = standardize_ticker_format(old_symbol)
+
+        if full_symbol != old_symbol:
+            exchange, stock = full_symbol.split(':')
+            update = {
+                'exchange': exchange,
+                'ticker': stock,
+            }
+            self.update(**update)
+
+        return full_symbol
+
+    def exchange_and_ticker(self):
+        return self.full_symbol()
 
     def get_company(self):
         from api.company.models import DB_Company

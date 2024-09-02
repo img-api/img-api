@@ -40,6 +40,169 @@ Example URL: https://www.tsx.com/company-directory/listed-companies/AAPL
 
 """
 
+mic_to_exchange = {
+    'XNYS': {
+        'full_name': 'New York Stock Exchange',
+        'abbreviation': 'NYSE',
+        'location': 'New York, USA'
+    },
+    'XNAS': {
+        'full_name': 'Nasdaq Stock Market',
+        'abbreviation': 'NASDAQ',
+        'location': 'New York, USA'
+    },
+    'XLON': {
+        'full_name': 'London Stock Exchange',
+        'abbreviation': 'LSE',
+        'location': 'London, UK'
+    },
+    'XTKS': {
+        'full_name': 'Tokyo Stock Exchange',
+        'abbreviation': 'TSE',
+        'location': 'Tokyo, Japan'
+    },
+    'XHKG': {
+        'full_name': 'Hong Kong Stock Exchange',
+        'abbreviation': 'HKEX',
+        'location': 'Hong Kong, China'
+    },
+    'XSHG': {
+        'full_name': 'Shanghai Stock Exchange',
+        'abbreviation': 'SSE',
+        'location': 'Shanghai, China'
+    },
+    'XSHE': {
+        'full_name': 'Shenzhen Stock Exchange',
+        'abbreviation': 'SZSE',
+        'location': 'Shenzhen, China'
+    },
+    'XTSE': {
+        'full_name': 'Toronto Stock Exchange',
+        'abbreviation': 'TSX',
+        'location': 'Toronto, Canada'
+    },
+    'XETR': {
+        'full_name': 'Deutsche Börse Xetra',
+        'abbreviation': 'Xetra',
+        'location': 'Frankfurt, Germany'
+    },
+    'XFRA': {
+        'full_name': 'Frankfurt Stock Exchange',
+        'abbreviation': 'Frankfurt',
+        'location': 'Frankfurt, Germany'
+    },
+    'XASX': {
+        'full_name': 'Australian Securities Exchange',
+        'abbreviation': 'ASX',
+        'location': 'Sydney, Australia'
+    },
+    'XMIL': {
+        'full_name': 'Borsa Italiana',
+        'abbreviation': 'Milan',
+        'location': 'Milan, Italy'
+    },
+    'XNSE': {
+        'full_name': 'National Stock Exchange of India',
+        'abbreviation': 'NSE',
+        'location': 'Mumbai, India'
+    },
+    'XBOM': {
+        'full_name': 'Bombay Stock Exchange',
+        'abbreviation': 'BSE',
+        'location': 'Mumbai, India'
+    },
+    'XSWX': {
+        'full_name': 'SIX Swiss Exchange',
+        'abbreviation': 'SIX',
+        'location': 'Zurich, Switzerland'
+    },
+    'XJSE': {
+        'full_name': 'Johannesburg Stock Exchange',
+        'abbreviation': 'JSE',
+        'location': 'Johannesburg, South Africa'
+    },
+    'XMEX': {
+        'full_name': 'Mexican Stock Exchange',
+        'abbreviation': 'BMV',
+        'location': 'Mexico City, Mexico'
+    },
+    'XMOS': {
+        'full_name': 'Moscow Exchange',
+        'abbreviation': 'MOEX',
+        'location': 'Moscow, Russia'
+    },
+    'XKRX': {
+        'full_name': 'Korea Exchange',
+        'abbreviation': 'KRX',
+        'location': 'Seoul, South Korea'
+    },
+    'BVMF': {
+        'full_name': 'B3 - Brasil Bolsa Balcão',
+        'abbreviation': 'B3',
+        'location': 'Sao Paulo, Brazil'
+    },
+    'XPAR': {
+        'full_name': 'Euronext Paris',
+        'abbreviation': 'Paris',
+        'location': 'Paris, France'
+    },
+    'XAMS': {
+        'full_name': 'Euronext Amsterdam',
+        'abbreviation': 'Amsterdam',
+        'location': 'Amsterdam, Netherlands'
+    },
+    'XNYS': {
+        'full_name': 'New York Stock Exchange',
+        'abbreviation': 'NYSE',
+        'location': 'New York, USA'
+    },
+    'XNYS': {
+        'full_name': 'New York Stock Exchange',
+        'abbreviation': 'NYSE',
+        'location': 'New York, USA'
+    },
+    'XSGO': {
+        'full_name': 'Santiago Stock Exchange',
+        'abbreviation': 'BCS',
+        'location': 'Santiago, Chile'
+    },
+    'XOSL': {
+        'full_name': 'Oslo Stock Exchange',
+        'abbreviation': 'OSE',
+        'location': 'Oslo, Norway'
+    },
+    'XBRU': {
+        'full_name': 'Euronext Brussels',
+        'abbreviation': 'Brussels',
+        'location': 'Brussels, Belgium'
+    },
+    'XBUD': {
+        'full_name': 'Budapest Stock Exchange',
+        'abbreviation': 'BSE',
+        'location': 'Budapest, Hungary'
+    },
+    'XICE': {
+        'full_name': 'Nasdaq Iceland',
+        'abbreviation': 'ICE',
+        'location': 'Reykjavik, Iceland'
+    },
+    'XCSE': {
+        'full_name': 'Nasdaq Copenhagen',
+        'abbreviation': 'CPH',
+        'location': 'Copenhagen, Denmark'
+    },
+    'XHEL': {
+        'full_name': 'Nasdaq Helsinki',
+        'abbreviation': 'HEL',
+        'location': 'Helsinki, Finland'
+    },
+    'XSTO': {
+        'full_name': 'Nasdaq Stockholm',
+        'abbreviation': 'STO',
+        'location': 'Stockholm, Sweden'
+    }
+}
+
 # Comprehensive mapping of suffixes and prefixes to their standard exchange names
 suffix_to_exchange = {
     '.AX': 'ASX',  # Australian Securities Exchange
@@ -128,6 +291,7 @@ def extract_exchange_ticker_from_url(url):
     # If no pattern matches, return None
     return None, None
 
+
 def get_exchange_verbose(exchange_name):
     verbose_map = {
         'AX': 'Australian Securities Exchange',  # ASX
@@ -201,13 +365,36 @@ def get_exchange_verbose(exchange_name):
     return exchange_name
 
 
+def split_full_symbol(full_symbol: str) -> str:
+    exchange, stock = full_symbol.split(':')
+    return exchange, stock
+
+
+def standardize_exchange_format(exchange: str) -> str:
+    if not exchange:
+        return ""
+
+    if exchange not in mic_to_exchange:
+        return exchange
+
+    ex = mic_to_exchange[exchange]
+    new_exchange = ex['abbreviation']
+    print_b(ex['full_name'] + " MIC " + exchange + " => " + new_exchange)
+    return new_exchange
+
+
 def standardize_ticker_format(ticker: str) -> str:
 
     # Case 1: Handle "EXCHANGE:TICKER" format
     if ':' in ticker:
         exchange, stock = ticker.split(':')
-        # Standardize the exchange name using the prefix mapping
-        exchange = prefix_to_exchange.get(exchange, exchange)  # Default to exchange itself if not found
+
+        if exchange in mic_to_exchange:
+            exchange = standardize_exchange_format(exchange)
+        else:
+            # Standardize the exchange name using the prefix mapping
+            exchange = prefix_to_exchange.get(exchange, exchange)  # Default to exchange itself if not found
+
         return f"{exchange}:{stock}"
 
     # Case 2: Handle "TICKER.SUFFIX" format
