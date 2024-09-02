@@ -118,18 +118,23 @@ def getRatios(ticker):
 def getYahooNews(ticker):
     
     "Takes a ticker as argument, gets the article from Yahoo News"
-    
-    ticker = yf.Ticker(f"{ticker}")
     toLlama = []
-    links = []
-    publishers = []
+    df = {}
+    ticker = yf.Ticker(f"{ticker}")
     for item in ticker.news:
-        #work in progress
-        if item["publisher"] not in ["Barrons", "MT Newswires", "Investor Business Daily"]:
+        if item["publisher"] not in ["Barrons", "MT Newswires", "Investor's Business Daily", "Yahoo Finance Video"]:
             driver = webdriver.Firefox()
             driver.get(item["link"])
-            article = driver.find_element(By.CLASS_NAME, "caas-body")
-            toLlama.append(article.text)
+            try:
+                article = driver.find_element(By.CLASS_NAME, "caas-body")
+                print("success")
+                toLlama.append(article.text)
+            except:
+                print("error", item["publisher"])
+                pass
+        else:
+            if item["publisher"] in ["Barrons", "MT Newswires"]:
+                toLlama.append(item["title"])
     return toLlama
 
 def extractVideo(url):
@@ -154,7 +159,7 @@ def extractVideo(url):
         audio_file = download(url)
         model = whisper.load_model('base.en')
         result = model.transcribe(audio_file)
-        return result["text"]
+        return result["t1ext"]
 
 
 def getGoogleNews(ticker):
