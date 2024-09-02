@@ -70,10 +70,10 @@ def get_all_tickers_and_symbols():
     return list(merged_set)
 
 
-def getPrices(ticker):
+def get_prices(ticker):
         
-    '''searches for stock in database.
-    if stock is not present, adds stock to database'''
+    """searches for stock in database.
+    if stock is not present, adds stock to database"""
     
     ticker = yf.Ticker(f"{ticker}")
     prices = ticker.history()
@@ -85,10 +85,10 @@ def getPrices(ticker):
 
 
 
-def getRatios(ticker):
+def get_ratios(ticker):
         
-    '''given a stock ticker, grab its balance sheet, 
-    income statement & cash flow statement and saves it into an excel file'''
+    """Given a stock ticker, grab its balance sheet, 
+    income statement & cash flow statement and saves it into an excel file"""
     
     headers= {
         'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:87.0) Gecko/20100101 Firefox/87.0',
@@ -115,31 +115,101 @@ def getRatios(ticker):
     xlwriter.save()
 
 
-def getYahooNews(ticker):
+def get_IBD_articles(url):
+    """Function for scraping news from investors.com. 
+    Takes Yahoo Finance URL as input.
+    Returns article text in string format to be passed to Large Language Models."""
+
+    article = ""
+    driver = webdriver.Firefox()
+    driver.get(url)
+
+    link = driver.find_element(By.LINK_TEXT, "Continue Reading")
+    link.click()
+    paragraphs = driver.find_elements(By.TAG_NAME, "p")
+    for paragraph in paragraphs:
+        if paragraph.text != "":
+            article += paragraph.text
+        if "YOU MIGHT ALSO LIKE" in paragraph.text:
+            break
+    article.replace("YOU MIGHT ALSO LIKE", "")
+    driver.quit()
+    return article
+
+
+def get_yf_video(url):
+    driver = webdriver.Firefox()
+    driver.get(item["link"])
     
-    "Takes a ticker as argument, gets the article from Yahoo News"
-    toLlama = []
-    df = {}
-    ticker = yf.Ticker(f"{ticker}")
+    #logic for getting transcript from videos
+    transcript = ""
+    return transcript
+
+
+def get_yahoo_news(ticker):
+    
+    """Function takes a stock ticker as input. Gets financial news from Yahoo Finance.
+    Financial news is stored in an array format to be fed into a Large Language Model."""
+
+    to_Llama = []
+    ticker = yf.Ticker("MSFT")
     for item in ticker.news:
         if item["publisher"] not in ["Barrons", "MT Newswires", "Investor's Business Daily", "Yahoo Finance Video"]:
             driver = webdriver.Firefox()
             driver.get(item["link"])
             try:
-                article = driver.find_element(By.CLASS_NAME, "caas-body")
-                print("success")
-                toLlama.append(article.text)
+                link = driver.find_element(By.CLASS_NAME, "readmoreButtonText")
+                link.click()
             except:
-                print("error", item["publisher"])
                 pass
+            article = driver.find_element(By.CLASS_NAME, "caas-body")
+            driver.quit()
+            to_Llama.append(article.text)
+        else:
+
+            #These publishers require a paid subscription for full access. The best I could do is to extract the title.
+            if item["publisher"] in ["Barrons", "MT Newswires"]:
+                to_Llama.append(item["title"])
+            
+            #The Yahoo Finance website is rendered differently for articles associated with IBD.
+            elif item["publisher"] == "Investor's Business Daily":
+                article = get_IBD_articles(item["link"])
+                to_Llama.append(article)
+    return to_Llama
+
+
+def get_yahoo_news2(ticker):
+    
+    "Takes a ticker as argument, gets the article from Yahoo News"
+    to_Llama = []
+    ticker = yf.Ticker("MSFT")
+    for item in ticker.news:
+        if item["publisher"] not in ["Barrons", "MT Newswires", "Investor's Business Daily", "Yahoo Finance Video"]:
+            driver = webdriver.Firefox()
+            driver.get(item["link"])
+            try:
+                link = driver.find_element(By.CLASS_NAME, "readmoreButtonText")
+                link.click()
+            except:
+                pass
+            paragraphs = driver.find_elements(By.TAG_NAME, "p")
+            article = ""
+            for paragraph in paragraphs:
+                if paragraph != "":
+                    article += paragraph.text
         else:
             if item["publisher"] in ["Barrons", "MT Newswires"]:
-                toLlama.append(item["title"])
-    return toLlama
+                to_Llama.append(item["title"])
+            elif item["publisher"] == "Investor's Business Daily":
+                article = get_IBD_articles(item["link"])
+                to_Llama.append(article)
+        driver.quit()
+    return to_Llama
 
-def extractVideo(url):
 
-    '''takes a url as input, extracts video from YouTube. Still under construction'''
+def extract_video(url):
+
+    """Function is under construction. Takes a URL as input and gets the video transcript as output"""
     
     url_data = urllib.parse.urlparse(url)
     vid_id = url_data.query
@@ -162,11 +232,11 @@ def extractVideo(url):
         return result["t1ext"]
 
 
-def getGoogleNews(ticker):
+def get_google_news(ticker):
 
-'''get google news'''
+"""Function takes a stock ticker as input, and returns Google News articles as output to be 
+fed into a Large Language Model."""
 
-    def getGoogleNews(ticker):
     gn = GoogleNews()
     search = gn.search(f"{ticker}")
     news = []
