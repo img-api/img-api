@@ -137,14 +137,6 @@ def get_IBD_articles(url):
     return article
 
 
-def get_yf_video(url):
-    driver = webdriver.Firefox()
-    driver.get(item["link"])
-    
-    #logic for getting transcript from videos
-    transcript = ""
-    return transcript
-
 
 def get_yahoo_news(ticker):
     
@@ -152,7 +144,7 @@ def get_yahoo_news(ticker):
     Financial news is stored in an array format to be fed into a Large Language Model."""
 
     to_Llama = []
-    ticker = yf.Ticker("MSFT")
+    ticker = yf.Ticker(f"{ticker}")
     for item in ticker.news:
         if item["publisher"] not in ["Barrons", "MT Newswires", "Investor's Business Daily", "Yahoo Finance Video"]:
             driver = webdriver.Firefox()
@@ -182,7 +174,7 @@ def get_yahoo_news2(ticker):
     
     "Takes a ticker as argument, gets the article from Yahoo News"
     to_Llama = []
-    ticker = yf.Ticker("MSFT")
+    ticker = yf.Ticker(f"{ticker}")
     for item in ticker.news:
         if item["publisher"] not in ["Barrons", "MT Newswires", "Investor's Business Daily", "Yahoo Finance Video"]:
             driver = webdriver.Firefox()
@@ -206,6 +198,17 @@ def get_yahoo_news2(ticker):
         driver.quit()
     return to_Llama
 
+
+def get_yf_video(url):
+
+    """This function is still under construction."""
+
+    driver = webdriver.Firefox()
+    driver.get(item["link"])
+    
+    #logic for getting transcript from videos
+    transcript = ""
+    return transcript
 
 def extract_video(url):
 
@@ -231,7 +234,7 @@ def extract_video(url):
         result = model.transcribe(audio_file)
         return result["t1ext"]
 
-
+#under construction
 def get_google_news(ticker):
 
 """Function takes a stock ticker as input, and returns Google News articles as output to be 
@@ -239,17 +242,36 @@ fed into a Large Language Model."""
 
     gn = GoogleNews()
     search = gn.search(f"{ticker}")
-    news = []
+    articles = []
     for i, item in enumerate(search["entries"]):
         if "yahoo" in item["source"]["href"]:
             continue
-        title = item["title"]
-        link = item["link"]
-        #text = extractText(link)
-        timestamp = item["published"]
-        news.append([timestamp, title, link])
-    return {f{"ticker"}: news}
+        if "Forbes" in result["source"]["title"]:
+            article = get_forbes(result["link"])
 
+
+        #title = item["title"]
+        #link = item["link"]
+        #text = extractText(link)
+        #timestamp = item["published"]
+        #news.append([timestamp, title, link])
+    #return {f{"ticker"}: news}
+
+#under construction
+#Timeout Exception
+def get_forbes(url):
+    driver = webdriver.Firefox()
+    driver.get(url)
+    paragraphs = driver.find_elements(By.TAG_NAME, "p")
+    article = ""
+    for paragraph in paragraphs:
+        if paragraph != "":
+            article += paragraph.text
+        if "Read More" in paragraph:
+            break
+    driver.quit()
+    article.replace("Read More", "")
+    return article
 
 
 def getData(tickers = "default"):
