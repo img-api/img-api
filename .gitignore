@@ -148,3 +148,6 @@ NEWS_FILES
 
 # Dictionary to create names
 services/dictionary_alpha_arrays.json
+
+chrome/chrome*
+chrome/*.zip

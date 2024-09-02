@@ -28,6 +28,7 @@ from api.ticker.batch.yfinance.ytickers_pipeline import ticker_update_financials
 from api.ticker.batch.workflow import ticker_process_batch, ticker_process_invalidate, ticker_process_news_sites
 from api.ticker.tickers_helpers import standardize_ticker_format
 
+
 @blueprint.route('/index/discovery', methods=['POST', 'GET'])
 #@api_key_or_login_required
 def api_index_fetch_and_process_tickers_list():
@@ -85,7 +86,6 @@ def api_batch_process():
 
     processed = ticker_process_batch(dry_run=False)
     return get_response_formatted({'processed': processed})
-
 
 
 @blueprint.route('/index/batch/process_news', methods=['GET', 'POST'])
@@ -272,6 +272,17 @@ def api_create_ticker():
 def api_index_unit_test_tickers():
     from .tickers_helpers import tickers_unit_test
     return get_response_formatted(tickers_unit_test())
+
+
+@blueprint.route('/index/unit_test/selenium', methods=['GET', 'POST'])
+#@api_key_or_login_required
+def api_test_if_selenium_and_chrome_works():
+    """
+    """
+    from api.ticker.batch.html.selenium_test import test_selenium_integration
+
+    test_result = test_selenium_integration()
+    return get_response_formatted({'test_is_successful': test_result})
 
 
 @blueprint.route('/exchange/get_long/<string:name>', methods=['POST', 'GET'])
