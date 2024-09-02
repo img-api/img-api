@@ -6,15 +6,14 @@ import requests_cache
 
 from datetime import timedelta
 
+from api.print_helper import *
+from api.query_helper import *
 
 from urllib.request import urlopen, Request
 from bs4 import BeautifulSoup
 
-def test_selenium_integration():
 
-    from api.print_helper import *
-    from api.query_helper import *
-
+def get_webdriver():
     from selenium import webdriver
     from selenium.webdriver.chrome.service import Service as ChromeService
     from selenium.webdriver.chrome.options import Options
@@ -33,8 +32,14 @@ def test_selenium_integration():
     # Step 2: Initialize the Chrome WebDriver
 
     # We have the driver in our system
-    driver = webdriver.Chrome(service=ChromeService(chromedriver_path),
-                              options=chrome_options)
+    driver = webdriver.Chrome(service=ChromeService(chromedriver_path), options=chrome_options)
+
+    return driver
+
+
+def selenium_integration_test():
+
+    driver = get_webdriver()
 
     # Step 3: Load a blank page
     driver.get("data:text/html,<html><head></head><body></body></html>")

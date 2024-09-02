@@ -20,10 +20,11 @@ from mongoengine.queryset.visitor import Q
 from api.ticker.batch.html.html_helper import get_html, save_html_to_file
 
 
-def yfetch_process_news(item):
+def yfetch_process_news(item, web_driver = None):
     """
     Downloads the news into disk
     """
+    from api.ticker.batch.html.selenium_integration import get_webdriver
 
     print_b("NEWS -> " + item.link)
 
@@ -34,6 +35,17 @@ def yfetch_process_news(item):
 
     filename = str(item.id) + ".html"
     save_html_to_file(raw_html, filename, data_folder)
+
+    if web_driver:
+        print_b(" REUSING WEBDRIVER ")
+        driver = web_driver
+    else:
+        driver = get_webdriver()
+
+    driver.get(raw_html)
+
+    if not web_driver:
+        driver.quit()
 
     # Reindex because we haven't finish this code
     item.set_state("WAITING_INDEX")

@@ -281,7 +281,7 @@ def api_test_if_selenium_and_chrome_works():
     """
     from api.ticker.batch.html.selenium_integration import selenium_integration_test
 
-    test_result = selenium_integration()
+    test_result = selenium_integration_test()
     return get_response_formatted({'test_is_successful': test_result})
 
 
