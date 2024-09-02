@@ -4,23 +4,20 @@ import re
 import requests
 import requests_cache
 
-import pandas as pd
-import yfinance as yf
-
 from datetime import timedelta
 
-from api.print_helper import *
-from api.query_helper import *
 
 from urllib.request import urlopen, Request
 from bs4 import BeautifulSoup
 
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service as ChromeService
-from selenium.webdriver.chrome.options import Options
-
-
 def test_selenium_integration():
+
+    from api.print_helper import *
+    from api.query_helper import *
+
+    from selenium import webdriver
+    from selenium.webdriver.chrome.service import Service as ChromeService
+    from selenium.webdriver.chrome.options import Options
 
     chrome_executable_path = "./chrome/chrome/linux-128.0.6613.86/chrome-linux64/chrome"
     chromedriver_path = "./chrome/chromedriver-linux64/chromedriver"
