@@ -162,19 +162,15 @@ def get_yahoo_publishers():
 
 
 def get_yahoo_news(ticker):
-
-    # Set the user agent in the Firefox options
-    options = Options()
-    
-
     "Takes a ticker as argument, gets the article from Yahoo News"
-    articles = []
+    #articles = []
     ticker = yf.Ticker(f"{ticker}")
     
     for item in ticker.news:
         
         if item["publisher"] not in ["Barrons", "MT Newswires", "Investor's Business Daily", "Yahoo Finance Video"]:
             user_agent = random.choice(firefox_user_agents)
+            options = Options()
             options.set_preference("general.useragent.override", user_agent)
             driver = webdriver.Firefox(options=options)
             driver.get(item["link"])
@@ -185,25 +181,31 @@ def get_yahoo_news(ticker):
                 pass
             try:
                 article = driver.find_element(By.CLASS_NAME, "caas-body")
-                articles.append([item["link"], article.text])
+                article = clean_article(article.text)
             except:
                 print(item["publisher"])
                 article = ""
                 paragraphs = driver.find_elements(By.TAG_NAME, "p")
                 for paragraph in paragraphs:
                     article += paragraph.text
-                articles.append([item["link"], article])
+                article = clean_article(article)
             finally:
+                articles.append(article)
                 driver.quit()
             
         else:
             if item["publisher"] in ["Barrons", "MT Newswires"]:
                 articles.append(item["title"])
             elif item["publisher"] == "Investor's Business Daily":
-                article = get_IBD_articles(item["link"])
+                try:
+                    article = get_IBD_articles(item["link"])
+                except:
+                    time.sleep(random.randint(5,20))
+                article = clean_article(article)
                 articles.append(article)
         time.sleep(random.randint(1, 7))
     return articles
+
 
 
 
