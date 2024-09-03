@@ -35,6 +35,18 @@ from mongoengine.queryset.visitor import Q
 from .tickers_helpers import extract_exchange_ticker_from_url
 
 
+firefox_user_agents = [
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:103.0) Gecko/20100101 Firefox/103.0",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:102.0) Gecko/20100101 Firefox/102.0",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:101.0) Gecko/20100101 Firefox/101.0",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:100.0) Gecko/20100101 Firefox/100.0",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:103.0) Gecko/20100101 Firefox/103.0",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:102.0) Gecko/20100101 Firefox/102.0",
+        "Mozilla/5.0 (Linux x86_64; rv:103.0) Gecko/20100101 Firefox/103.0",
+        "Mozilla/5.0 (Linux x86_64; rv:102.0) Gecko/20100101 Firefox/102.0"
+    ]
+
+
 def get_data(url, cache_file, index):
     if os.path.exists(cache_file):
         return pd.read_pickle(cache_file)
@@ -123,16 +135,7 @@ def get_ratios(ticker):
     xlwriter.save()
 
 
-firefox_user_agents = [
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:103.0) Gecko/20100101 Firefox/103.0",
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:102.0) Gecko/20100101 Firefox/102.0",
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:101.0) Gecko/20100101 Firefox/101.0",
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:100.0) Gecko/20100101 Firefox/100.0",
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:103.0) Gecko/20100101 Firefox/103.0",
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:102.0) Gecko/20100101 Firefox/102.0",
-        "Mozilla/5.0 (Linux x86_64; rv:103.0) Gecko/20100101 Firefox/103.0",
-        "Mozilla/5.0 (Linux x86_64; rv:102.0) Gecko/20100101 Firefox/102.0"
-    ]
+
 
 def get_IBD_articles(url):
     "Use this for scraping news from investors.com"
@@ -141,9 +144,10 @@ def get_IBD_articles(url):
     user_agent = random.choice(firefox_user_agents)
     options.set_preference("general.useragent.override", user_agent)
     driver = webdriver.Firefox(options=options)
-
+    time.sleep(2)
     link = driver.find_element(By.LINK_TEXT, "Continue Reading")
     link.click()
+    time.sleep(3)
     paragraphs = driver.find_elements(By.TAG_NAME, "p")
     for paragraph in paragraphs:
         if paragraph.text != "":
@@ -205,10 +209,13 @@ def get_yahoo_news(ticker):
             if item["publisher"] in ["Barrons", "MT Newswires"]:
                 articles.append(item["title"])
             elif item["publisher"] == "Investor's Business Daily":
-                try:
-                    article = get_IBD_articles(item["link"])
-                except:
-                    time.sleep(random.randint(5,20))
+                while True:
+                    try:
+                        article = get_IBD_articles(item["link"])
+                        if article != "":
+                            break
+                    except:
+                        time.sleep(random.randint(5,15))
                 article = clean_article(article)
                 articles.append(article)
         time.sleep(random.randint(1, 7))
@@ -223,6 +230,9 @@ def clean_article(article):
 
 
 def get_nasdaq(url):
+
+    """Gets news from the NASDAQ website"""
+
     user_agent = random.choice(firefox_user_agents)
     options = Options()
     options.set_preference("general.useragent.override", user_agent)
