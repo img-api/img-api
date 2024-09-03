@@ -166,6 +166,7 @@ def get_yahoo_news(ticker):
     # Set the user agent in the Firefox options
     options = Options()
     
+
     "Takes a ticker as argument, gets the article from Yahoo News"
     articles = []
     ticker = yf.Ticker(f"{ticker}")
@@ -192,6 +193,8 @@ def get_yahoo_news(ticker):
                 for paragraph in paragraphs:
                     article += paragraph.text
                 articles.append([item["link"], article])
+            finally:
+                driver.quit()
             
         else:
             if item["publisher"] in ["Barrons", "MT Newswires"]:
@@ -199,7 +202,6 @@ def get_yahoo_news(ticker):
             elif item["publisher"] == "Investor's Business Daily":
                 article = get_IBD_articles(item["link"])
                 articles.append(article)
-        driver.quit()
         time.sleep(random.randint(1, 7))
     return articles
 
