@@ -115,14 +115,24 @@ def get_ratios(ticker):
     xlwriter.save()
 
 
-def get_IBD_articles(url):
-    """Function for scraping news from investors.com. 
-    Takes Yahoo Finance URL as input.
-    Returns article text in string format to be passed to Large Language Models."""
+firefox_user_agents = [
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:103.0) Gecko/20100101 Firefox/103.0",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:102.0) Gecko/20100101 Firefox/102.0",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:101.0) Gecko/20100101 Firefox/101.0",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:100.0) Gecko/20100101 Firefox/100.0",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:103.0) Gecko/20100101 Firefox/103.0",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:102.0) Gecko/20100101 Firefox/102.0",
+        "Mozilla/5.0 (Linux x86_64; rv:103.0) Gecko/20100101 Firefox/103.0",
+        "Mozilla/5.0 (Linux x86_64; rv:102.0) Gecko/20100101 Firefox/102.0"
+    ]
 
+def get_IBD_articles(url):
+    "Use this for scraping news from investors.com"
+    
     article = ""
-    driver = webdriver.Firefox()
-    driver.get(url)
+    user_agent = random.choice(firefox_user_agents)
+    options.set_preference("general.useragent.override", user_agent)
+    driver = webdriver.Firefox(options=options)
 
     link = driver.find_element(By.LINK_TEXT, "Continue Reading")
     link.click()
@@ -138,65 +148,61 @@ def get_IBD_articles(url):
 
 
 
-def get_yahoo_news(ticker):
+def get_yahoo_publishers():
     
-    """Function takes a stock ticker as input. Gets financial news from Yahoo Finance.
-    Financial news is stored in an array format to be fed into a Large Language Model."""
-
-    to_Llama = []
-    ticker = yf.Ticker(f"{ticker}")
-    for item in ticker.news:
-        if item["publisher"] not in ["Barrons", "MT Newswires", "Investor's Business Daily", "Yahoo Finance Video"]:
-            driver = webdriver.Firefox()
-            driver.get(item["link"])
-            try:
-                link = driver.find_element(By.CLASS_NAME, "readmoreButtonText")
-                link.click()
-            except:
-                pass
-            article = driver.find_element(By.CLASS_NAME, "caas-body")
-            driver.quit()
-            to_Llama.append(article.text)
-        else:
-
-            #These publishers require a paid subscription for full access. The best I could do is to extract the title.
-            if item["publisher"] in ["Barrons", "MT Newswires"]:
-                to_Llama.append(item["title"])
-            
-            #The Yahoo Finance website is rendered differently for articles associated with IBD.
-            elif item["publisher"] == "Investor's Business Daily":
-                article = get_IBD_articles(item["link"])
-                to_Llama.append(article)
-    return to_Llama
+    yahoo_publishers = set()
+    
+    #define a list of tickers
+    tickers = ["AMGN", "AMZN", "FB", "KO", "MSFT", "NVDA", "WM"]
+    for ticker in tickers:
+        ticker = yf.Ticker(ticker)
+        for item in ticker.news:
+            yahoo_publishers.add(item["publisher"])
+    return yahoo_publishers
 
 
-def get_yahoo_news2(ticker):
+def get_yahoo_news(ticker):
+
+    # Set the user agent in the Firefox options
+    options = Options()
     
     "Takes a ticker as argument, gets the article from Yahoo News"
-    to_Llama = []
+    articles = []
     ticker = yf.Ticker(f"{ticker}")
+    
     for item in ticker.news:
+        
         if item["publisher"] not in ["Barrons", "MT Newswires", "Investor's Business Daily", "Yahoo Finance Video"]:
-            driver = webdriver.Firefox()
+            user_agent = random.choice(firefox_user_agents)
+            options.set_preference("general.useragent.override", user_agent)
+            driver = webdriver.Firefox(options=options)
             driver.get(item["link"])
             try:
                 link = driver.find_element(By.CLASS_NAME, "readmoreButtonText")
                 link.click()
             except:
                 pass
-            paragraphs = driver.find_elements(By.TAG_NAME, "p")
-            article = ""
-            for paragraph in paragraphs:
-                if paragraph != "":
+            try:
+                article = driver.find_element(By.CLASS_NAME, "caas-body")
+                articles.append([item["link"], article.text])
+            except:
+                print(item["publisher"])
+                article = ""
+                paragraphs = driver.find_elements(By.TAG_NAME, "p")
+                for paragraph in paragraphs:
                     article += paragraph.text
+                articles.append([item["link"], article])
+            
         else:
             if item["publisher"] in ["Barrons", "MT Newswires"]:
-                to_Llama.append(item["title"])
+                articles.append(item["title"])
             elif item["publisher"] == "Investor's Business Daily":
                 article = get_IBD_articles(item["link"])
-                to_Llama.append(article)
+                articles.append(article)
         driver.quit()
-    return to_Llama
+        time.sleep(random.randint(1, 7))
+    return articles
+
 
 
 def get_yf_video(url):
@@ -232,46 +238,9 @@ def extract_video(url):
         audio_file = download(url)
         model = whisper.load_model('base.en')
         result = model.transcribe(audio_file)
-        return result["t1ext"]
-
-#under construction
-def get_google_news(ticker):
-
-"""Function takes a stock ticker as input, and returns Google News articles as output to be 
-fed into a Large Language Model."""
-
-    gn = GoogleNews()
-    search = gn.search(f"{ticker}")
-    articles = []
-    for i, item in enumerate(search["entries"]):
-        if "yahoo" in item["source"]["href"]:
-            continue
-        if "Forbes" in result["source"]["title"]:
-            article = get_forbes(result["link"])
+        return result["text"]
 
 
-        #title = item["title"]
-        #link = item["link"]
-        #text = extractText(link)
-        #timestamp = item["published"]
-        #news.append([timestamp, title, link])
-    #return {f{"ticker"}: news}
-
-#under construction
-#Timeout Exception
-def get_forbes(url):
-    driver = webdriver.Firefox()
-    driver.get(url)
-    paragraphs = driver.find_elements(By.TAG_NAME, "p")
-    article = ""
-    for paragraph in paragraphs:
-        if paragraph != "":
-            article += paragraph.text
-        if "Read More" in paragraph:
-            break
-    driver.quit()
-    article.replace("Read More", "")
-    return article
 
 
 def getData(tickers = "default"):
