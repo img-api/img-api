@@ -169,7 +169,7 @@ def get_yahoo_publishers():
 
 def get_yahoo_news(ticker):
     "Takes a ticker as argument, gets the article from Yahoo News"
-    #articles = []
+    articles = []
     ticker = yf.Ticker(f"{ticker}")
     
     for item in ticker.news:
@@ -213,9 +213,66 @@ def get_yahoo_news(ticker):
     return articles
 
 def clean_article(article):
+
+    """Cleans \n character from article"""
+
     article = re.sub("\n", " ", article)
     return article
 
+
+def get_google_news(ticker):
+
+    """This function aims to extract articles from Google News.
+    Still under construction.
+    """
+
+    articles = []
+    data = []
+    gn = GoogleNews()
+    search = gn.search("nvda")
+    yahoo_publishers = get_yahoo_publishers()
+    for result in search["entries"]:
+        if result["source"]["title"] not in yahoo_publishers:
+            article = extract_news(result["link"])
+            if article != "":
+                article = clean_article(article)
+                articles.append(article)
+            else:
+                print(result["source"]["title"])
+                articles.append(result["title"])
+        
+            count += 1
+    return articles
+            
+
+def extract_news(url):
+
+    """Function uses Selenium to extract text data from financial news websites."""
+
+    google_publishers.add(result["source"]["title"])
+    user_agent = random.choice(firefox_user_agents)
+    options = Options()
+    options.set_preference("general.useragent.override", user_agent)
+    driver = webdriver.Firefox(options=options)
+    driver.get(url)
+
+    time.sleep(random.randint(1, 5))
+
+    article = ""
+    i = 0
+    while i < 3:
+        paragraphs = driver.find_elements(By.TAG_NAME, "p")
+
+        for paragraph in paragraphs:
+            article += paragraph.text
+        if article != "":
+            break
+        i += 1
+
+    driver.quit()
+    return article
+
+    
 
 def get_yf_video(url):
 
