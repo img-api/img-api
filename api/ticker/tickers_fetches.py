@@ -6,11 +6,17 @@ import requests_cache
 
 import urllib
 from urllib.request import urlopen, Request
-from bs4 import BeautifulSoup
 import pandas as pd
 import yfinance as yf
 from youtube_transcript_api import YouTubeTranscriptApi as yta
 from pygooglenews import GoogleNews
+
+import time
+import selenium
+from selenium import webdriver
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.by import By
+from selenium.webdriver.firefox.options import Options
 
 import datetime
 from datetime import timedelta
@@ -206,7 +212,9 @@ def get_yahoo_news(ticker):
         time.sleep(random.randint(1, 7))
     return articles
 
-
+def clean_article(article):
+    article = re.sub("\n", " ", article)
+    return article
 
 
 def get_yf_video(url):
