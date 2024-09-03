@@ -1,6 +1,8 @@
 import os
 import re
 
+from proxy_rotate import ProxyRotate
+
 import requests
 import requests_cache
 
@@ -220,19 +222,32 @@ def clean_article(article):
     return article
 
 
+def get_nasdaq(url):
+    user_agent = random.choice(firefox_user_agents)
+    options = Options()
+    options.set_preference("general.useragent.override", user_agent)
+    driver = webdriver.Firefox(options=options)
+    driver.get(url)
+    time.sleep(random.randint(5,10))
+    article = driver.find_element(By.CLASS_NAME, "body__content")
+    article = clean_article(article.text)
+    return article
+
+
 def get_google_news(ticker):
 
-    """This function aims to extract articles from Google News.
-    Still under construction.
-    """
+    """Function for getting financial news from Google News"""
 
     articles = []
-    data = []
     gn = GoogleNews()
-    search = gn.search("nvda")
+    search = gn.search(f"{ticker}")
     yahoo_publishers = get_yahoo_publishers()
     for result in search["entries"]:
         if result["source"]["title"] not in yahoo_publishers:
+            if result["source"]["title"] == "Nasdaq":
+                article = get_nasdaq(result["link"])
+                articles.append(article)
+            
             article = extract_news(result["link"])
             if article != "":
                 article = clean_article(article)
@@ -241,28 +256,36 @@ def get_google_news(ticker):
                 print(result["source"]["title"])
                 articles.append(result["title"])
         
-            count += 1
     return articles
             
 
+
 def extract_news(url):
 
-    """Function uses Selenium to extract text data from financial news websites."""
+    """Extract news articles from website using 'p' tag"""
 
-    google_publishers.add(result["source"]["title"])
-    user_agent = random.choice(firefox_user_agents)
+    proxy_rotate = ProxyRotate(proxies)
+    new_proxy = proxy_rotate.get_proxy()
+    
+    #set proxy
     options = Options()
+    options.set_preference("network.proxy.type", 1)
+    options.set_preference("network.proxy.http", new_proxy)
+    options.set_preference("network.proxy.http_port", int(new_proxy.split(":")[1]))
+    
+    #set firefox agent
+    user_agent = random.choice(firefox_user_agents)
     options.set_preference("general.useragent.override", user_agent)
     driver = webdriver.Firefox(options=options)
     driver.get(url)
 
-    time.sleep(random.randint(1, 5))
+    #wait for page to load
+    time.sleep(random.randint(5, 10))
 
     article = ""
     i = 0
     while i < 3:
         paragraphs = driver.find_elements(By.TAG_NAME, "p")
-
         for paragraph in paragraphs:
             article += paragraph.text
         if article != "":
@@ -272,7 +295,6 @@ def extract_news(url):
     driver.quit()
     return article
 
-    
 
 def get_yf_video(url):
 
