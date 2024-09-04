@@ -57,7 +57,11 @@ def ticker_update_financials(full_symbol, max_age_minutes=2):
         'bid_size': 'bidSize',
     }
 
-    financial_data = prepare_update_with_schema(yf_obj.info, new_schema)
+    try:
+        financial_data = prepare_update_with_schema(yf_obj.info, new_schema)
+    except Exception as e:
+        return fin
+
     financial_data['exchange_ticker'] = full_symbol
 
     if not fin:
