@@ -14,10 +14,7 @@ from api.query_helper import *
 
 from api.company.models import DB_Company
 from api.ticker.models import DB_Ticker
-<<<<<<< HEAD
 from api.news.models import DB_News
-=======
->>>>>>> 1e384fa ([BATCH] Work on batch processing)
 
 # Perform complex queries to mongo
 from mongoengine.queryset import QuerySet
