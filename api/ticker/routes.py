@@ -23,6 +23,7 @@ from .models import DB_Ticker, DB_TickerSimple, DB_TickerHighRes, DB_TickerUserW
 from mongoengine.queryset import QuerySet
 from mongoengine.queryset.visitor import Q
 from api.query_helper import mongo_to_dict_helper, build_query_from_request
+from api.ticker.batch.workflow import ticker_process_batch
 
 from api.ticker.batch.yfinance.ytickers_pipeline import ticker_update_financials
 from api.ticker.batch.workflow import ticker_process_batch, ticker_process_invalidate, ticker_process_news_sites

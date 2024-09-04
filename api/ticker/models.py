@@ -161,6 +161,11 @@ class DB_Ticker(db.DynamicDocument):
         ret = super(DB_Ticker, self).save(*args, **kwargs)
         return ret
 
+    def set_state(self, state_msg):
+        """ Update a processing state """
+        self.update(**{'status': state_msg, 'last_processed_date': datetime.now()}, validate=False)
+        return self
+
 
 class DB_TickerHighRes(db.DynamicDocument):
     """ Class to create an event
