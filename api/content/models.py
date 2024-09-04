@@ -1,10 +1,12 @@
 import os
 import time
 import shutil
+import bleach
+
 from datetime import datetime
 
 from mongoengine import *
-from api import sanitizer
+
 from api.print_helper import *
 from api.query_helper import *
 
@@ -42,7 +44,7 @@ class DB_UserContent(DB_UserCheck, db.DynamicDocument):
         if not key.startswith('my_') and key not in ["html"]:
             return False
 
-        value = sanitizer.sanitize(value)
+        value = bleach.clean(value, tags=['a', 'b', 'i', 'u', 'em', 'strong', 'p'], attributes=[])
         if key == "html":
             self.update(**{key: value}, validate=False)
             self.reload()

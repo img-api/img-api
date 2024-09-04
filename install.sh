@@ -9,6 +9,7 @@ echo "VIRTUAL ENV INSTALL"
 
 sudo apt-get install python3-pip python3-venv python3-dev python3-wheel -y   # If needed
 sudo apt-get install libxml2-dev libxslt-dev -y
+sudo apt-get install python3-tk -y
 
 python3 -m venv .venv
 source .venv/bin/activate

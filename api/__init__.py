@@ -1,5 +1,7 @@
 import os
 import time
+import werkzeug
+
 from datetime import datetime
 from functools import wraps
 from flask_caching import Cache
@@ -17,13 +19,7 @@ from api.query_helper import mongo_to_dict_helper
 API_VERSION = "0.50pa"
 
 cache = Cache(config={'CACHE_TYPE': 'SimpleCache'})
-
-from html_sanitizer import Sanitizer
-
-sanitizer = Sanitizer()
-
 api_ignore_list = ['tracking']
-
 
 def api_clean_recursive(content, output):
     """ Cleans a dictionary of keys which are private.
@@ -321,6 +317,34 @@ def configure_media_folder(app):
     ensure_dir(media_path)
 
 
+def handle_bad_request_with_html(e):
+    import traceback
+    from app.api_v1 import get_response_error_formatted
+
+    traceback.print_tb(e.__traceback__)
+    print(e.description)
+    print(request.base_url)
+    print_alert("BAD REQUEST EXCEPTION  [%s] [%d]" % (type(e), e.code))
+
+    json = False
+    try:
+        if request.args.get('format') == 'html':
+            json = False
+        elif 'Content-Type' in request.headers and request.headers['Content-Type'] == 'application/json':
+            json = True
+        elif request.path.startswith("/api_v1/"):
+            json = True
+
+        if json:
+            return get_response_error_formatted(e.code, {
+                'error_msg': e.description,
+                'no_std': True,
+            })
+    except Exception as e:
+        print_exception(e, "UNAUTHORIZED HANDLER")
+
+    return render_template('errors/page_{}.html'.format(e.code)), e.code
+
 def register_api_blueprints(app):
     """ Loads all the modules for the API """
     from importlib import import_module
@@ -333,9 +357,10 @@ def register_api_blueprints(app):
             'admin',
             'media',
             'actors',
+            'ticker',
             'events',
             'content',
-            'business',
+            'company',
             'galleries',
             'hello_world',
     ):
@@ -349,3 +374,4 @@ def register_api_blueprints(app):
 
     # Cache
     cache.init_app(app)
+

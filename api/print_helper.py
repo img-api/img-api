@@ -15,8 +15,14 @@ import time
 import logging
 import re
 
+import bleach
+
 from prompt_toolkit import print_formatted_text, ANSI
 """ Pretty colours library by Sergio """
+
+
+def clean_html(html_to_clean):
+    return bleach.clean(html_to_clean, tags=['a', 'b', 'i', 'u', 'em', 'strong', 'p'], attributes=[])
 
 
 def header_function(header_line):

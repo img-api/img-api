@@ -3,7 +3,7 @@ from api import get_response_formatted, api_key_or_login_required
 from flask import render_template
 from flask_login import current_user
 
-from api.business.models import DB_Business
+from api.company.models import DB_Company
 
 
 @blueprint.route('/create', methods=['GET', 'POST'])
@@ -15,7 +15,7 @@ def create_business():
 @blueprint.route('/', methods=['GET', 'POST'])
 def show_business_list():
     """ Displays all the business which belong to this user """
-    business = DB_Business.objects(username=current_user.username)
+    business = DB_Company.objects(username=current_user.username)
     return render_template('show_business.html', business_list=business)
 
 
@@ -26,6 +26,6 @@ def api_get_business_info(username, biz_name):
     ---
     """
 
-    business = DB_Business.objects(username=username, safe_name=biz_name).first()
+    business = DB_Company.objects(username=username, safe_name=biz_name).first()
     return render_template('display_business.html', business=business)
 

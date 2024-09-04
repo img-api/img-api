@@ -13,7 +13,7 @@ from datetime import datetime
 from flask import abort, request
 
 from flask_login import current_user
-
+from werkzeug.exceptions import BadRequest
 
 def get_adaptive_value(key, value):
     # Just check if true or false and change accordingly
@@ -164,6 +164,9 @@ def get_value_from_text(value):
 
 def get_value_type_helper(obj, key, value):
     if key not in obj:
+        if isinstance(value, bool) or isinstance(value, int) or isinstance(value, float):
+            return value
+
         return str(value)
 
     field = obj[key]
@@ -375,25 +378,28 @@ def mongo_to_dict_helper(obj, filter_out=None, add_empty_lists=True):
                 ret[k] = mongo_to_dict_helper(v)
             return ret
 
-        for key_, value in obj.__dict__.items():
-            if key_[0:1] == "_":
-                continue
+        if hasattr(obj, '__dict__'):
+            for key_, value in obj.__dict__.items():
+                if key_[0:1] == "_":
+                    continue
 
-            if filter_out and key_ in filter_out:
-                continue
+                if filter_out and key_ in filter_out:
+                    continue
 
-            if isinstance(value, dict):
-                return_data[key_] = clean_dict(key_, value)
-            else:
-                return_data[key_] = value
+                if isinstance(value, dict):
+                    return_data[key_] = clean_dict(key_, value)
+                else:
+                    return_data[key_] = value
 
-                try:
-                    if math.isnan(value):
-                        return_data[key_] = 0
-                except:
-                    pass
+                    try:
+                        if math.isnan(value):
+                            return_data[key_] = 0
+                    except:
+                        pass
 
-        if ("_fields" not in obj):
+            #return return_data
+
+        if not hasattr(obj, '_fields') or "_fields" not in obj:
             return return_data
 
         for field_name in obj._fields:
@@ -430,7 +436,8 @@ def query_clean_reserved(args):
     return args
 
 
-def build_query_from_request(MyClass, args=None, get_all=False):
+def build_query_from_request(MyClass, args=None, get_all=False, global_api=False):
+    """ Global API means that the data doesn't belong to a particular user """
 
     order_by = None
 
@@ -455,33 +462,29 @@ def build_query_from_request(MyClass, args=None, get_all=False):
         projection = {field: 1 for field in fields.split(",")}
         query_set = query_set.only(*projection)
 
-    try:
-        # Admin can do whatever here
-        if get_all and current_user.username == "admin":
-            # print_b("Query All")
-            data = query_set.all()
-        else:
-            if (len(args) > 5 or len(args) == 0):
-                return abort(404, {'error_msg': 'Range too wide or narrow'})
+    # Admin can do whatever here
+    if get_all and current_user.username == "admin":
+        # print_b("Query All")
+        data = query_set.all()
+    else:
+        if (len(args) > 5 or len(args) == 0):
+            return abort(400, 'Range too wide or narrow')
 
-            query = build_query_from_url(args)
+        query = build_query_from_url(args)
 
+        if not global_api:
             if not current_user.is_authenticated:
                 query = Q(is_public=True) & query
             else:
                 query = (Q(username=current_user.username) | Q(is_public=True)) & query
 
-            data = query_set.filter(query)
+        data = query_set.filter(query)
 
-        if data and order_by:
-            data = data.order_by(order_by)
+    if data and order_by:
+        data = data.order_by(order_by)
 
-        if not data:
-            # print_r("Data not found")
-            return abort(404, {'error_msg': 'Not found!.'}, is_warning=True)
-
-    except Exception as err:
-        return abort(500, {'error_msg': ' Failed ' + str(err)})
+    if not data:
+        print_r("Data not found")
 
     return data
 

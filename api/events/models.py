@@ -22,9 +22,11 @@ class DB_Event(DB_UserCheck, db.DynamicDocument):
         "index_background": True,
     }
 
+    name = db.StringField()
     title = db.StringField()
     etype = db.StringField()
 
+    parent_id = db.StringField()
     gallery_id = db.StringField()
 
     start_date = DB_DateTimeFieldTimestamp()

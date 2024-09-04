@@ -5,7 +5,9 @@ from datetime import datetime
 from rq import Queue
 from rq.job import Job
 
+
 class Remote_Task():
+
     def init(self, app):
         #print(" STARTING REDIS CONNECTION ")
 
@@ -24,9 +26,9 @@ class Remote_Task():
         job = Job.fetch(job_id, connection=self.conn)
         return job
 
+
 api_rq = Remote_Task()
+
 
 def init_redis(app):
     api_rq.init(app)
-
-

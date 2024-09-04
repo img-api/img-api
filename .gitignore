@@ -1,4 +1,13 @@
+yfinance.cache
+yfinance_cache.*
+
+*.pkl
+*.cache
+*.sqlite
+
 1
+
+packages.microsoft.gpg
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

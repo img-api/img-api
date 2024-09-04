@@ -9,7 +9,7 @@ import validators
 from api.media import blueprint
 from api.api_redis import api_rq
 
-from api import get_response_formatted, get_response_error_formatted, api_key_or_login_required, api_key_login_or_anonymous, cache, sanitizer
+from api import get_response_formatted, get_response_error_formatted, api_key_or_login_required, api_key_login_or_anonymous, cache
 from flask import jsonify, request, send_file, redirect
 
 from flask import current_app, url_for, abort
@@ -956,7 +956,7 @@ def api_set_media_key(media_id, my_key):
     if value == None:
         return get_response_error_formatted(400, {'error_msg': "Wrong parameters."})
 
-    value = sanitizer.sanitize(value)
+    value = clean_html(value)
     media_file.set_key_value(my_key, value)
 
     ret = {'status': 'success', 'media_id': media_id, 'media_list': [media_file.serialize()]}

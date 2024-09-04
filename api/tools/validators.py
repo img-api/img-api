@@ -2,8 +2,8 @@ import re
 import validators
 
 def is_valid_username(username):
-    """ User name cannot have double underscores, double dashes, nor double dots """
-    username_regex = re.compile(r'^(?!.*\.\..*)^(?!.*--.*)^(?!.*__.*)^[-a-zA-Z0-9_.]+$')
+    """ User name cannot have double underscores, double dashes, nor double dots.  The @ symbol is allowed. """
+    username_regex = re.compile(r'^(?!.*\.\..*)^(?!.*--.*)^(?!.*__.*)^[-a-zA-Z0-9_.@]+$')
     return username_regex.match(username)
 
 

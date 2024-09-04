@@ -106,6 +106,7 @@ def after_request(response):
 
 
 def handle_bad_request(e):
+
     from api.print_helper import print_alert
     from api import get_response_error_formatted
 
@@ -121,3 +122,6 @@ def handle_bad_request(e):
 app.register_error_handler(werkzeug.exceptions.NotFound, handle_bad_request)
 app.register_error_handler(werkzeug.exceptions.BadRequest, handle_bad_request)
 
+app.register_error_handler(400, handle_bad_request)  # Bad request
+app.register_error_handler(404, handle_bad_request)  # URL missing
+app.register_error_handler(500, handle_bad_request)  # Internal server error

@@ -23,12 +23,26 @@ from api.galleries.models import DB_UserGalleries
 from api.user.user_check import DB_UserCheck
 
 
-class DB_Business(DB_UserCheck, db.DynamicDocument):
+class DB_Company(db.DynamicDocument):
     meta = {
         'strict': False,
     }
 
     safe_name = db.StringField()
+
+    company_name = db.StringField()
+    headquarters = db.StringField()
+    country = db.StringField()
+    gics_sector = db.StringField()
+    gics_sub_industry = db.StringField()
+
+    creation_date = db.DateTimeField()
+    last_update_date = db.DateTimeField()
+
+    # Convert into date
+    founded = db.StringField()
+    wikipedia = db.StringField()
+
     name = db.StringField()
     email = db.StringField()
     main_address = db.StringField()
@@ -37,27 +51,32 @@ class DB_Business(DB_UserCheck, db.DynamicDocument):
 
     public_key = db.StringField()
     private_key = db.StringField()
+    CIK = db.IntField()
 
-    SAFE_KEYS = ["name", "email", "main_address", "main_address_1", "phone_number"]
+    # Where did we fetch the information
+    source = db.StringField()
+
+    # List of exchanges in which this company trades, nasdaq, amex, etc
+    exchanges = db.ListField(db.StringField(), default=list)
+
+    # Tickers that belong to a company and an exchange
+    exchange_tickers = db.ListField(db.StringField(), default=list)
+
+    SAFE_KEYS = [
+        "safe_name", "company_name", "country", "gics_sector", "gics_sub_industry",
+        "name", "email", "main_address", "main_address_1", "phone_number"]
 
     def __init__(self, *args, **kwargs):
-        super(DB_Business, self).__init__(*args, **kwargs)
+        super(DB_Company, self).__init__(*args, **kwargs)
 
     def save(self, *args, **kwargs):
         if not self.creation_date:
             self.creation_date = datetime.now()
 
-        if not self.username:
-            self.username = current_user.username
+        last_update_date = datetime.now()
 
-        if not self.public_key:
-            public, private = rsa.newkeys(512)
-
-            self.public_key = public.save_pkcs1().decode('utf-8')
-            self.private_key = private.save_pkcs1().decode('utf-8')
-
-        self.safe_name = self.get_safe_name(self.name)
-        ret = super(DB_Business, self).save(*args, **kwargs)
+        self.safe_name = self.get_safe_name(self.company_name)
+        ret = super(DB_Company, self).save(*args, **kwargs)
         ret.reload()
         return ret
 
@@ -66,23 +85,26 @@ class DB_Business(DB_UserCheck, db.DynamicDocument):
         #if os.path.exists(abs_path):
         #    os.remove(abs_path)
 
-        print(" DELETED Business Data ")
-        return super(DB_Business, self).delete(*args, **kwargs)
+        print(" DELETED Company Data ")
+        return super(DB_Company, self).delete(*args, **kwargs)
 
     def set_key_value(self, key, value):
         # My own fields that can be edited:
         if not key.startswith('my_') and key not in self.SAFE_KEYS:
             return False
 
-        return super(DB_Business, self).set_key_value(key, value)
+        return super(DB_Company, self).set_key_value(key, value)
 
     def serialize(self):
         """ Cleanup version of the media file so don't release confidential information """
         serialized = {}
 
         for key in self:
-            if (key.startswith('my_') and self[key]) or key in self.SAFE_KEYS:
-                serialized[key] = self[key]
+            if self[key]:
+                if key == 'id':
+                    serialized[key] = str(self[key])
+                else:
+                    serialized[key] = self[key]
 
         return serialized
 
@@ -153,3 +175,24 @@ class DB_Business(DB_UserCheck, db.DynamicDocument):
 
         diff = current_time - timestamp
         return diff
+
+    def append_exchange(self, exchange, ticker=None):
+        # We append an exchange for a company if it is not there.
+        if not exchange:
+            return
+
+        exchange=exchange.upper()
+
+        ex_update = False
+        if exchange not in self.exchanges:
+            ex_update = True
+            self.exchanges.append(exchange)
+
+        if ticker:
+            ex = exchange + ":" + ticker
+            if ex not in self.exchange_tickers:
+                ex_update = True
+                self.exchange_tickers.append(ex)
+
+        if ex_update:
+            self.save(validate=False)

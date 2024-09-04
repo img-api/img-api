@@ -6,15 +6,15 @@ if (btn_login) {
         password = document.getElementById("password").value;
 
         fetch('/api/user/login', {
-                method: 'post',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    "email": email,
-                    "password": password
-                }),
-            })
+            method: 'post',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                "email": email,
+                "password": password
+            }),
+        })
             .then(response => response.json())
             .then(data => {
                 if (data.status != "success") {
@@ -55,18 +55,18 @@ if (btn_create_account) {
         }
 
         fetch('/api/user/create', {
-                method: 'post',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    "email": email,
-                    "password": password,
-                    "username": username,
-                    "first_name": first_name,
-                    "last_name": last_name,
-                }),
-            })
+            method: 'post',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                "email": email,
+                "password": password,
+                "username": username,
+                "first_name": first_name,
+                "last_name": last_name,
+            }),
+        })
             .then(response => response.json())
             .then(data => {
                 if (data.status != "success") {

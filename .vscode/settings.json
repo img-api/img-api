@@ -22,7 +22,7 @@
     "python.pythonPath": ".venv/bin/python",
     "[python]": {
         "editor.codeActionsOnSave": {
-            "source.organizeImports": false
+            "source.organizeImports": "never"
         }
     },
 
@@ -42,7 +42,7 @@
     "editor.quickSuggestions.other": false,
     "editor.suggest.snippetsPreventQuickSuggestions": false,
     "editor.suggestOnTriggerCharacters": false,
-    "editor.wordBasedSuggestions": true,
+    "editor.wordBasedSuggestions": "matchingDocuments",
 
     "workbench.editor.enablePreview": false,
     "editor.tabSize": 4,
