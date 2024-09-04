@@ -21,6 +21,7 @@ API_VERSION = "0.50pa"
 cache = Cache(config={'CACHE_TYPE': 'SimpleCache'})
 api_ignore_list = ['tracking']
 
+
 def api_clean_recursive(content, output):
     """ Cleans a dictionary of keys which are private.
         The only private key allowed is _id """
@@ -86,6 +87,7 @@ def api_clean_recursive(content, output):
             output[key] = value
 
     return output
+
 
 def api_clean(content):
     """ Cleans a dictionary of keys which are private. Also converts MONGO objects back to a dict that can be converted into json """
@@ -170,8 +172,12 @@ def api_get_token_from_request():
                 print_r("WRONG CONTENT TYPE" + request.headers['Content-Type'])
                 return None
 
-            if hasattr(request, 'json') and request.json and 'key' in request.json:
-                return request.json["key"]
+            try:
+                if hasattr(request, 'json') and request.json and 'key' in request.json:
+                    return request.json["key"]
+            except Exception as e:
+                # The JSON parser crashes here in some calls, just ignore it.
+                pass
 
         if 'HTTP_KEY' in request.headers:
             return request.headers['HTTP_KEY']
@@ -306,7 +312,7 @@ def configure_media_folder(app):
 
     # The media folder SHOULD not be inside the application folder.
     if not media_path:
-        media_path = app.root_path + "/MEDIA_FILES/"
+        media_path = app.root_path + "/DATA/MEDIA_FILES/"
 
         print("!-------------------------------------------------------------!")
         print("  WARNING MEDIA PATH IS NOT BEING DEFINED ")
@@ -345,20 +351,25 @@ def handle_bad_request_with_html(e):
 
     return render_template('errors/page_{}.html'.format(e.code)), e.code
 
+
 def register_api_blueprints(app):
     """ Loads all the modules for the API """
+    from api.news import configure_news_media_folder
+
     from importlib import import_module
     global cache
 
     #print_b(" API BLUE PRINTS ")
     for module_name in (
             'user',
+            'news',
             'jobs',
             'admin',
             'media',
             'actors',
             'ticker',
             'events',
+            'people',
             'content',
             'company',
             'galleries',
@@ -370,8 +381,8 @@ def register_api_blueprints(app):
         #print(" Registering API " + str(module_name))
 
     configure_media_folder(app)
+    configure_news_media_folder(app)
     init_redis(app)
 
     # Cache
     cache.init_app(app)
-

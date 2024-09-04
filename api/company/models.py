@@ -44,10 +44,17 @@ class DB_Company(db.DynamicDocument):
     wikipedia = db.StringField()
 
     name = db.StringField()
+    long_name = db.StringField()
+    long_business_summary = db.StringField()
+
     email = db.StringField()
     main_address = db.StringField()
     main_address_1 = db.StringField()
+    city = db.StringField()
+    country = db.StringField()
+
     phone_number = db.StringField()
+    zip_code = db.StringField()
 
     public_key = db.StringField()
     private_key = db.StringField()
@@ -73,7 +80,7 @@ class DB_Company(db.DynamicDocument):
         if not self.creation_date:
             self.creation_date = datetime.now()
 
-        last_update_date = datetime.now()
+        self.last_update_date = datetime.now()
 
         self.safe_name = self.get_safe_name(self.company_name)
         ret = super(DB_Company, self).save(*args, **kwargs)
