@@ -45,7 +45,7 @@ def ticker_process_news_sites(BATCH_SIZE=5):
                 continue
 
         except Exception as e:
-            item.set_state("FETCH CRASHED, SEE LOGS!")
+            item.set_state("ERROR: FETCH CRASHED, SEE LOGS!")
             print_exception(e, "CRASHED FETCHING NEWS")
 
     return news
