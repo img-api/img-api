@@ -87,7 +87,7 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
     yf_obj = fetch_tickers_info(yticker, no_cache=no_cache)
 
     if not yf_obj:
-        db_ticker.set_state("FAILED YFINANCE", dry_run)
+        db_ticker.set_state("FAILED YFINANCE")
         return
 
     db_company = db_ticker.get_company()
@@ -109,12 +109,18 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
         'gics_sub_industry': 'industry',
     }
 
-    myupdate = prepare_update_with_schema(info, new_schema)
+    company_update = prepare_update_with_schema(info, new_schema)
 
     if 'companyOfficers' in info:
         company_officers = info['companyOfficers']
         for officer in company_officers:
             print_b(f"TODO: Create person {officer['name']} => {officer['title']}")
+
+    if not dry_run:
+        if not db_company:
+            print_b("NO COMPANY WTF")
+        else:
+            db_company.update(**company_update, validate=False)
 
     try:
         news = yf_obj.news
@@ -175,11 +181,9 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
 
             yfetch_process_news(db_news)
 
+            db_ticker.set_state("PROCESSED")
+
     except Exception as e:
         print_exception(e, "CRASH ON YAHOO NEWS PROCESSING")
-
-    if not dry_run:
-        db_company.update(**myupdate, validate=False)
-        db_ticker.set_state("PROCESSED")
 
     return db_ticker
