@@ -1,28 +1,24 @@
 import os
 import re
-
-import requests
-import requests_cache
-
-import pandas as pd
-import yfinance as yf
-
 from datetime import timedelta
 
+import pandas as pd
+import requests
+import requests_cache
+from api.company.models import DB_Company
+from api.news.models import DB_News
 from api.print_helper import *
 from api.query_helper import *
-
-from api.company.models import DB_Company
 from api.ticker.models import DB_Ticker
-from api.news.models import DB_News
-
 # Perform complex queries to mongo
 from mongoengine.queryset import QuerySet
 from mongoengine.queryset.visitor import Q
 
-from .yfinance.ytickers_pipeline import yticker_pipeline_process
-from .yfinance.yfinance_news import yfetch_process_news
+import yfinance as yf
+
 from .tickers_pipeline import ticker_pipeline_process
+from .yfinance.yfinance_news import yfetch_process_news
+from .yfinance.ytickers_pipeline import yticker_pipeline_process
 
 # RAW basic implementation before going for a future implmentation using
 # Something like temporal.io
@@ -49,7 +45,7 @@ def ticker_process_news_sites(BATCH_SIZE=5):
                 continue
 
         except Exception as e:
-            item.set_state("FETCH CRASHED, SEE LOGS!")
+            item.set_state("ERROR: FETCH CRASHED, SEE LOGS!")
             print_exception(e, "CRASHED FETCHING NEWS")
 
     return news
