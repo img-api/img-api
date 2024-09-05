@@ -1,6 +1,13 @@
+import datetime
 import os
+import random
 import re
+import time
+import urllib
+from datetime import timedelta
+from urllib.request import Request, urlopen
 
+<<<<<<< HEAD
 
 import requests
 import requests_cache
@@ -11,25 +18,26 @@ import pandas as pd
 import yfinance as yf
 
 import time
+=======
+import pandas as pd
+import requests
+import requests_cache
+>>>>>>> 849abcf ([Categories] Group by category)
 import selenium
-from selenium import webdriver
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.common.by import By
-from selenium.webdriver.firefox.options import Options
-
-import datetime
-from datetime import timedelta
-
-from api.print_helper import *
+import yfinance as yf
 from api.company.models import DB_Company
-
-from .models import DB_Ticker
-
+from api.print_helper import *
 # Perform complex queries to mongo
 from mongoengine.queryset import QuerySet
 from mongoengine.queryset.visitor import Q
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.firefox.options import Options
 
+from .models import DB_Ticker
 from .tickers_helpers import extract_exchange_ticker_from_url
+<<<<<<< HEAD
 from news.models import DB_news
 
 firefox_user_agents = [
@@ -42,6 +50,19 @@ firefox_user_agents = [
         "Mozilla/5.0 (Linux x86_64; rv:103.0) Gecko/20100101 Firefox/103.0",
         "Mozilla/5.0 (Linux x86_64; rv:102.0) Gecko/20100101 Firefox/102.0"
     ]
+=======
+
+firefox_user_agents = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:103.0) Gecko/20100101 Firefox/103.0",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:102.0) Gecko/20100101 Firefox/102.0",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:101.0) Gecko/20100101 Firefox/101.0",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:100.0) Gecko/20100101 Firefox/100.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:103.0) Gecko/20100101 Firefox/103.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:102.0) Gecko/20100101 Firefox/102.0",
+    "Mozilla/5.0 (Linux x86_64; rv:103.0) Gecko/20100101 Firefox/103.0",
+    "Mozilla/5.0 (Linux x86_64; rv:102.0) Gecko/20100101 Firefox/102.0"
+]
+>>>>>>> 849abcf ([Categories] Group by category)
 
 proxy_list = [
     "180.183.157.159",
@@ -284,10 +305,9 @@ def get_all_tickers_and_symbols():
 
 
 def get_prices(ticker):
-        
     """searches for stock in database.
     if stock is not present, adds stock to database"""
-    
+
     ticker = yf.Ticker(f"{ticker}")
     prices = ticker.history()
     income_statement = ticker.income_stmt
@@ -297,13 +317,11 @@ def get_prices(ticker):
     return prices, income_statement, balance_sheet, cash_flow
 
 
-
 def get_ratios(ticker):
-        
-    """Given a stock ticker, grab its balance sheet, 
+    """Given a stock ticker, grab its balance sheet,
     income statement & cash flow statement and saves it into an excel file"""
-    
-    headers= {
+
+    headers = {
         'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:87.0) Gecko/20100101 Firefox/87.0',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.5',
@@ -312,23 +330,242 @@ def get_ratios(ticker):
         'Cache-Control': 'max-age=0'
     }
     urls = {}
-    
-    
+
     urls['ratio annually'] = f"https://stockanalysis.com/stocks/{ticker}/financials/ratios/"
     urls['ratio quarterly'] = f"https://stockanalysis.com/stocks/{ticker}/financials/ratios/?period=quarterly"
-    
+
     xlwriter = pd.ExcelWriter(f'financial_statements_{ticker}.xlsx', engine='xlsxwriter')
-    
+
     for key in urls.keys():
         response = requests.get(urls[key], headers=headers)
         soup = BeautifulSoup(response.content, 'html.parser')
         df = pd.read_html(str(soup), attrs={'data-test': 'fintable'})[0]
         df.to_excel(xlwriter, sheet_name=key, index=False)
-    
+
     xlwriter.save()
 
 
+<<<<<<< HEAD
     
+=======
+def get_IBD_articles(url):
+    "Use this for scraping news from investors.com"
+
+    article = ""
+    user_agent = random.choice(firefox_user_agents)
+    options.set_preference("general.useragent.override", user_agent)
+    driver = webdriver.Firefox(options=options)
+    time.sleep(2)
+    link = driver.find_element(By.LINK_TEXT, "Continue Reading")
+    link.click()
+    time.sleep(3)
+    paragraphs = driver.find_elements(By.TAG_NAME, "p")
+    for paragraph in paragraphs:
+        if paragraph.text != "":
+            article += paragraph.text
+        if "YOU MIGHT ALSO LIKE" in paragraph.text:
+            break
+    article.replace("YOU MIGHT ALSO LIKE", "")
+    driver.quit()
+    return article
+
+
+def get_yahoo_publishers():
+
+    yahoo_publishers = set()
+
+    #define a list of tickers
+    tickers = ["AMGN", "AMZN", "FB", "KO", "MSFT", "NVDA", "WM"]
+    for ticker in tickers:
+        ticker = yf.Ticker(ticker)
+        for item in ticker.news:
+            yahoo_publishers.add(item["publisher"])
+    return yahoo_publishers
+
+
+def get_yahoo_news(ticker):
+    "Takes a ticker as argument, gets the article from Yahoo News"
+    articles = []
+    ticker = yf.Ticker(f"{ticker}")
+
+    for item in ticker.news:
+
+        if item["publisher"] not in ["Barrons", "MT Newswires", "Investor's Business Daily", "Yahoo Finance Video"]:
+            user_agent = random.choice(firefox_user_agents)
+            options = Options()
+            options.set_preference("general.useragent.override", user_agent)
+            driver = webdriver.Firefox(options=options)
+            driver.get(item["link"])
+            try:
+                link = driver.find_element(By.CLASS_NAME, "readmoreButtonText")
+                link.click()
+            except:
+                pass
+            try:
+                article = driver.find_element(By.CLASS_NAME, "caas-body")
+                article = clean_article(article.text)
+            except:
+                print(item["publisher"])
+                article = ""
+                paragraphs = driver.find_elements(By.TAG_NAME, "p")
+                for paragraph in paragraphs:
+                    article += paragraph.text
+                article = clean_article(article)
+            finally:
+                articles.append(article)
+                driver.quit()
+
+        else:
+            if item["publisher"] in ["Barrons", "MT Newswires"]:
+                articles.append(item["title"])
+            elif item["publisher"] == "Investor's Business Daily":
+                while True:
+                    try:
+                        article = get_IBD_articles(item["link"])
+                        if article != "":
+                            break
+                    except:
+                        time.sleep(random.randint(5, 15))
+                article = clean_article(article)
+                articles.append(article)
+        time.sleep(random.randint(1, 7))
+    return articles
+
+
+def clean_article(article):
+    """Cleans \n character from article"""
+
+    article = re.sub("\n", " ", article)
+    return article
+
+
+def get_nasdaq(url):
+    """Gets news from the NASDAQ website"""
+
+    user_agent = random.choice(firefox_user_agents)
+    options = Options()
+    options.set_preference("general.useragent.override", user_agent)
+    driver = webdriver.Firefox(options=options)
+    driver.get(url)
+    time.sleep(random.randint(5, 10))
+    article = driver.find_element(By.CLASS_NAME, "body__content")
+    article = clean_article(article.text)
+    return article
+
+
+def get_google_news(ticker):
+    """Function for getting financial news from Google News"""
+
+    from pygooglenews import GoogleNews
+
+    articles = []
+    gn = GoogleNews()
+    search = gn.search(f"{ticker}")
+    yahoo_publishers = get_yahoo_publishers()
+    for result in search["entries"]:
+        if result["source"]["title"] not in yahoo_publishers:
+            if result["source"]["title"] == "Nasdaq":
+                article = get_nasdaq(result["link"])
+                articles.append(article)
+
+            article = extract_news(result["link"])
+            if article != "":
+                article = clean_article(article)
+                articles.append(article)
+            else:
+                print(result["source"]["title"])
+                articles.append(result["title"])
+
+    return articles
+
+
+def extract_news(url):
+    """Extract news articles from website using 'p' tag"""
+
+    from proxy_rotate import ProxyRotate
+
+    proxy_rotate = ProxyRotate(proxies)
+    new_proxy = proxy_rotate.get_proxy()
+
+    #set proxy
+    options = Options()
+    options.set_preference("network.proxy.type", 1)
+    options.set_preference("network.proxy.http", new_proxy)
+    options.set_preference("network.proxy.http_port", int(new_proxy.split(":")[1]))
+
+    #set firefox agent
+    user_agent = random.choice(firefox_user_agents)
+    options.set_preference("general.useragent.override", user_agent)
+    driver = webdriver.Firefox(options=options)
+    driver.get(url)
+
+    #wait for page to load
+    time.sleep(random.randint(5, 10))
+
+    article = ""
+    i = 0
+    while i < 3:
+        paragraphs = driver.find_elements(By.TAG_NAME, "p")
+        for paragraph in paragraphs:
+            article += paragraph.text
+        if article != "":
+            break
+        i += 1
+
+    driver.quit()
+    return article
+
+
+def get_yf_video(url):
+    """This function is still under construction."""
+
+    driver = webdriver.Firefox()
+    driver.get(item["link"])
+
+    #logic for getting transcript from videos
+    transcript = ""
+    return transcript
+
+
+def extract_video(url):
+    """Function is under construction. Takes a URL as input and gets the video transcript as output"""
+
+    url_data = urllib.parse.urlparse(url)
+    vid_id = url_data.query
+    transcript = ""
+    try:
+        data = yta.get_transcript(vid_id)
+
+        for value in data:
+            for key, val in value.items():
+                if key == "text":
+                    transcript += val
+        l = transcript.splitlines()
+        text = " ".join(l)
+        return text
+    except TranscriptsDisabled:
+        #what to do about the download?
+        audio_file = download(url)
+        model = whisper.load_model('base.en')
+        result = model.transcribe(audio_file)
+        return result["text"]
+
+
+def getData(tickers="default"):
+
+    #work in progress
+    '''given a list of tickers, get data from the internet'''
+    if tickers == "default":
+        tickers = self.get_all_tickers_and_symbols()
+        self.tickers = tickers
+    data = {}
+    for ticker in tickers:
+        price, is_, bs, cf = self.getPrices(ticker)
+        ratios = self.getRatios(ticker)
+        news = self.getNews(ticker)
+        data[f"{ticker}"] = [price, is_, bs, cf, ratios, news]
+    return data
+>>>>>>> 849abcf ([Categories] Group by category)
 
 
 def clean_company_name(name):
@@ -358,9 +595,14 @@ def update_needed(my_company, db_company):
 
 
 def create_or_update_company(my_company, exchange=None, ticker=None):
+    from .tickers_helpers import standardize_exchange_format
+
     db_company = None
 
     # We search first for the combination of ticker exchange in the format EXCHANGE:TICKER
+    if exchange:
+        exchange = standardize_exchange_format(exchange)
+
     if exchange and ticker:
         if ticker == "INTC":
             print(" TEST ")
@@ -393,6 +635,9 @@ def create_or_update_company(my_company, exchange=None, ticker=None):
 
     # We append an exchange for a company if it is not there.
     db_company.append_exchange(exchange, ticker)
+
+    if ticker == "INTC":
+        print_b(" BREAK ME ")
 
     if update_needed(my_company, db_company):
         print_b("Updated: " + my_company['company_name'])
@@ -519,6 +764,7 @@ def process_all_amex():
     except Exception as e:
         print(e)
 
+
 def process_all_frankfurt_stock_exchange():
     print(" FRANKFURT STOCK DE ")
     # ticker_symbol = 'BMW.DE'  # Example: 'BMW.DE' for BMW on the Frankfurt Stock Exchange
@@ -532,6 +778,7 @@ def process_all_tickers_and_symbols():
         Brute force finding of different Companies and tickers looking at different Sources
         This will be splitted later into a process to run in a schedule.
     """
+    from .tickers_helpers import standardize_exchange_format
 
     print_h1(" DISCOVERY START ")
 
@@ -551,6 +798,7 @@ def process_all_tickers_and_symbols():
         exchange_url = row['Symbol'][1]
 
         exchange, ticker = extract_exchange_ticker_from_url(exchange_url)
+        exchange = standardize_exchange_format(exchange)
 
         my_company = {
             "company_name": clean_company_name(row['Security'][0]),
@@ -602,4 +850,3 @@ def process_all_tickers_and_symbols():
 
     print_h1(" DISCOVERY FINISHED ")
     return sp500_tickers
-
