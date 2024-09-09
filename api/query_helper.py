@@ -1,19 +1,17 @@
-import re
 import math
+import re
 import time
+from datetime import datetime
+
 import dateutil
-
-from api.print_helper import *
+from flask import abort, request
+from flask_login import current_user
 from imgapi_launcher import db
-
 from mongoengine.queryset import QuerySet
 from mongoengine.queryset.visitor import Q
-
-from datetime import datetime
-from flask import abort, request
-
-from flask_login import current_user
 from werkzeug.exceptions import BadRequest
+
+from api.print_helper import *
 
 
 def get_adaptive_value(key, value):
@@ -575,6 +573,7 @@ def build_query_from_request(MyClass, args=None, get_all=False, global_api=False
 
         data = query_set.filter(query)
 
+    # Add - or + in front of the field to order. Example "&order_by=-creation_date"
     if data and order_by:
         data = data.order_by(order_by)
 
