@@ -499,6 +499,10 @@ def create_or_update_company(my_company, exchange=None, ticker=None):
 
         db_company = DB_Company(**my_company)
         db_company.save(validate=False)
+
+        # We create tickers, consult yahoo for the ticker and process everything.
+        db_ticker = create_or_update_ticker(db_company, exchange, ticker)
+
         return db_company
 
     # Update with the extra info if there is any
@@ -510,7 +514,39 @@ def create_or_update_company(my_company, exchange=None, ticker=None):
         print_b("Updated: " + my_company['company_name'])
         db_company.update(**my_company, validate=False)
 
+    # We create tickers, consult yahoo for the ticker and process everything.
+    db_ticker = create_or_update_ticker(db_company, exchange, ticker)
+
     return db_company
+
+
+def create_or_update_ticker(db_company, exchange=None, ticker=None):
+    """ A company can have multiple tickers in different exchanges
+
+        A ticker has stock prices and multiple information related to the exchange
+
+    """
+    db_ticker = None
+
+    # We search first for the combination of ticker exchange in the format EXCHANGE:TICKER
+    if exchange and ticker:
+        query = Q(exchange=exchange) & Q(ticker=ticker)
+        db_ticker = DB_Ticker.objects(query).first()
+
+    if db_ticker:
+        return db_ticker
+
+    print_b(" CREATE NEW TICKER " + exchange + ":" + ticker)
+
+    my_ticker = {
+        "company_id": str(db_company.id),
+        "exchange": exchange,
+        "ticker": ticker,
+    }
+
+    db_ticker = DB_Ticker(**my_ticker)
+    db_ticker.save(validate=False)
+    return db_ticker
 
 
 # NASDAQ API helpers
@@ -521,7 +557,11 @@ def nasdaq_api_get_exchange(exchange):
         https://github.com/shilewenuw/get_all_tickers/blob/master/get_all_tickers/get_tickers.py
     """
 
+    print_h1(" FREE API NASDAQ " + exchange)
+
     api_call = "https://api.nasdaq.com/api/screener/stocks?tableonly=true&limit=10000&exchange=" + exchange
+
+    exchange = exchange.upper()
 
     print("#################################")
     print(" LOADING: " + api_call)
@@ -561,7 +601,10 @@ def nasdaq_api_get_exchange(exchange):
             "source": "NASDAQ API",
             # "market_cap": row["marketCap"], Market cap should go to the ticker
         }
-        db_company = create_or_update_company(my_company, exchange.upper(), row['symbol'])
+
+        ticker = row['symbol']
+
+        db_company = create_or_update_company(my_company, exchange, ticker)
 
 
 def process_all_nasdaq():
@@ -592,8 +635,21 @@ def process_all_amex():
     except Exception as e:
         print(e)
 
+def process_all_frankfurt_stock_exchange():
+    print(" FRANKFURT STOCK DE ")
+    # ticker_symbol = 'BMW.DE'  # Example: 'BMW.DE' for BMW on the Frankfurt Stock Exchange
+
+    # Download from here?
+    # https://www.deutsche-boerse-cash-market.com/dbcm-en/instruments-statistics/statistics/listes-companies
+
 
 def process_all_tickers_and_symbols():
+    """
+        Brute force finding of different Companies and tickers looking at different Sources
+        This will be splitted later into a process to run in a schedule.
+    """
+
+    print_h1(" DISCOVERY START ")
 
     # Read and print the stock tickers that make up S&P500
     sp500 = get_data_with_links('https://en.wikipedia.org/wiki/List_of_S%26P_500_companies',
@@ -656,9 +712,10 @@ def process_all_tickers_and_symbols():
 
         print(f"Row {index}: Company = {db_company.company_name}, Ticker = {ticker}")
 
-
     process_all_nasdaq()
     process_all_nyse()
     process_all_amex()
 
+    print_h1(" DISCOVERY FINISHED ")
     return sp500_tickers
+

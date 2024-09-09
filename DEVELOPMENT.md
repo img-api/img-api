@@ -40,6 +40,9 @@ https://dev.gputop.com/api/company/query?founded=1994
 ## Find company by name
 https://gputop.com/api/company/query?company_name__icontains=nordisk
 
+
+https://gputop.com/api/company/query?exchange_tickers=XNYS:ALB
+
 ## Get all companies
 https://dev.gputop.com/api/company/get/ALL
 
@@ -48,5 +51,5 @@ https://dev.gputop.com/api/company/rm/ALL
 
 # FETCHES
 
-This slow query will fetch everything.
-https://dev.gputop.com/api/index/process
+This slow query will find all the companies it can and index everything.
+https://dev.gputop.com/api/index/discovery

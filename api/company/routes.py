@@ -45,7 +45,14 @@ def company_get_suggestions(text, only_tickers=False):
     if only_tickers and len(text) < 3:
         return []
 
-    query = Q(company_name__istartswith=text)
+    if len(text) > 3:
+        query = Q(company_name__icontains=text)
+    else:
+        query = Q(company_name__istartswith=text)
+
+    if len(text) <= 4:
+        query = query | Q(exchange_tickers__icontains=text)
+
     companies = DB_Company.objects(query)
 
     if only_tickers:
@@ -53,7 +60,7 @@ def company_get_suggestions(text, only_tickers=False):
         for rec in companies:
             print(" Rec " + rec.company_name)
             for i in rec.exchange_tickers:
-                tickers.append(i.split(":")[1])
+                tickers.append(i)
 
         return tickers
 
@@ -196,5 +203,31 @@ def api_apply_stamp(biz_name, encrypted_date):
     # Increment the stamps amount
 
     #
+
+    return get_response_formatted(ret)
+
+
+@blueprint.route('/categories', methods=['GET', 'POST'])
+def company_explorer_categories():
+    exchange = request.args.get("exchange", "").upper()
+    group = request.args.get("group", "gics_sector")
+
+    pipeline = []
+    if exchange:
+        match_exchange = {
+            "$match": {
+                "exchanges": exchange,
+            }
+        }
+
+        pipeline.append(match_exchange)
+
+    pipeline.append({"$group": {"_id": "$" + group, "count": {"$sum": 1}}})
+    pipeline.append({"$sort": {"_id": 1}})
+
+    ret = {}
+
+    ret['result'] = list(DB_Company.objects.aggregate(*pipeline))
+    ret['pipeline'] = [pipeline]
 
     return get_response_formatted(ret)

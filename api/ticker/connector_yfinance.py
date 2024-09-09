@@ -23,9 +23,14 @@ request_session = CachedLimiterSession(
     backend=SQLiteCache("yfinance.cache"),
 )
 
-def fetch_tickers_info(ticker):
+def fetch_tickers_info(ticker, no_cache=False):
     global request_session
-    ticker_info = yf.Ticker(ticker, session=request_session)
+
+    if no_cache:
+        ticker_info = yf.Ticker(ticker)
+    else:
+        ticker_info = yf.Ticker(ticker, session=request_session)
+
     return ticker_info
 
 
