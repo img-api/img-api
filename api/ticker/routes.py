@@ -99,11 +99,14 @@ def api_batch_news_process():
     return get_response_formatted({'processed': processed})
 
 
-@blueprint.route('/invalidate/<string:ticker>', methods=['GET', 'POST'])
+@blueprint.route('/invalidate/<string:full_symbol>', methods=['GET', 'POST'])
 #@api_key_or_login_required
-def api_update_ticker(ticker):
+def api_update_ticker(full_symbol):
     """ We invalidate a ticker so we load everything.
     """
+    from .tickers_helpers import extract_ticker_from_symbol
+
+    ticker = extract_ticker_from_symbol(full_symbol)
 
     processed = ticker_process_invalidate(ticker)
     return get_response_formatted({'processed': processed})

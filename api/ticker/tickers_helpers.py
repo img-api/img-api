@@ -3,6 +3,7 @@ import re
 from urllib.parse import urlparse
 
 from api.print_helper import *
+
 """ CHATGPT
 Common Exchanges and URL Patterns
 NYSE (New York Stock Exchange)
@@ -244,6 +245,16 @@ prefix_to_exchange = {
     'OTCMKTS': 'OTC',  # OTC Markets
 }
 
+def extract_ticker_from_symbol(full_symbol):
+    if ":" in full_symbol:
+        exchange, stock = full_symbol.split(':')
+        return stock
+
+    if "." in full_symbol:
+        stock, exchange = full_symbol.split('.')
+        return stock
+
+    return full_symbol
 
 def extract_exchange_ticker_from_url(url):
     """

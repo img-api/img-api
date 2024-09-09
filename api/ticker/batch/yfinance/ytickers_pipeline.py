@@ -1,31 +1,26 @@
+import json
 import os
 import re
-import json
-
-import requests
-import requests_cache
-
-import pandas as pd
-import yfinance as yf
-
 from datetime import timedelta
 
+import pandas as pd
+import requests
+import requests_cache
+from api.company.models import DB_Company
+from api.news.models import DB_DynamicNewsRawData, DB_News
 from api.print_helper import *
 from api.query_helper import *
-
-from api.company.models import DB_Company
-
+from api.query_helper import copy_replace_schema
+from api.ticker.batch.yfinance.yfinance_news import yfetch_process_news
+from api.ticker.connector_yfinance import fetch_tickers_info
 from api.ticker.models import DB_Ticker, DB_TickerSimple
-from api.news.models import DB_News, DB_DynamicNewsRawData
-
+from api.ticker.tickers_helpers import (standardize_ticker_format,
+                                        standardize_ticker_format_to_yfinance)
 # Perform complex queries to mongo
 from mongoengine.queryset import QuerySet
 from mongoengine.queryset.visitor import Q
 
-from api.query_helper import copy_replace_schema
-from api.ticker.connector_yfinance import fetch_tickers_info
-from api.ticker.tickers_helpers import standardize_ticker_format_to_yfinance, standardize_ticker_format
-from api.ticker.batch.yfinance.yfinance_news import yfetch_process_news
+import yfinance as yf
 
 
 def ticker_update_financials(full_symbol, max_age_minutes=2):
@@ -83,7 +78,7 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
 
     yticker = standardize_ticker_format_to_yfinance(db_ticker.full_symbol())
 
-    db_ticker.set_state("YFINANCE", dry_run)
+    db_ticker.set_state("YFINANCE")
 
     no_cache = request.args.get("no_cache", True)
     if no_cache == "0":
@@ -92,7 +87,7 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
     yf_obj = fetch_tickers_info(yticker, no_cache=no_cache)
 
     if not yf_obj:
-        db_ticker.set_state("FAILED YFINANCE", dry_run)
+        db_ticker.set_state("FAILED YFINANCE")
         return
 
     db_company = db_ticker.get_company()
@@ -114,23 +109,31 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
         'gics_sub_industry': 'industry',
     }
 
-    myupdate = prepare_update_with_schema(info, new_schema)
+    company_update = prepare_update_with_schema(info, new_schema)
 
     if 'companyOfficers' in info:
         company_officers = info['companyOfficers']
         for officer in company_officers:
             print_b(f"TODO: Create person {officer['name']} => {officer['title']}")
 
+    if not dry_run:
+        if not db_company:
+            print_b("NO COMPANY WTF")
+        else:
+            db_company.update(**company_update, validate=False)
+
     try:
         news = yf_obj.news
         for item in news:
             print_b(" PROCESS " + item['link'])
 
+            update = False
             db_news = DB_News.objects(external_uuid=item['uuid']).first()
             if db_news:
                 # We don't update news that we already have in the system
                 print_b(" ALREADY INDEXED " + item['link'])
-                continue
+                update = True
+                #continue
 
             raw_data_id = 0
             try:
@@ -143,6 +146,7 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
                 print_exception(e, "SAVE RAW DATA")
 
             new_schema = {
+                'title': 'title',
                 'link': 'link',
                 'external_uuid': 'uuid',
                 'publisher': 'publisher',
@@ -172,14 +176,14 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
 
             myupdate = {**myupdate, **extra}
 
-            db_news = DB_News(**myupdate).save(validate=False)
+            if not update:
+                db_news = DB_News(**myupdate).save(validate=False)
+
             yfetch_process_news(db_news)
+
+            db_ticker.set_state("PROCESSED")
 
     except Exception as e:
         print_exception(e, "CRASH ON YAHOO NEWS PROCESSING")
-
-    if not dry_run:
-        db_company.update(**myupdate, validate=False)
-        db_ticker.set_state("PROCESSED", dry_run)
 
     return db_ticker

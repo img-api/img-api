@@ -1,28 +1,23 @@
+import binascii
 import io
+import random
 import re
 import time
-import random
+
 import bcrypt
-import binascii
-
-import validators
-
 import qrcode
+import validators
+from api import (api_key_login_or_anonymous, api_key_or_login_required, cache,
+                 get_response_error_formatted, get_response_formatted)
 from api.company import blueprint
-from api.print_helper import *
-
-from api import get_response_formatted, get_response_error_formatted, api_key_or_login_required, api_key_login_or_anonymous, cache
-from flask import jsonify, request, Response, redirect, abort, send_file
-from flask_login import current_user
-
 from api.company.models import DB_Company
-
+from api.print_helper import *
+from api.query_helper import build_query_from_request, mongo_to_dict_helper
+from api.tools.validators import get_validated_email
+from flask import Response, abort, jsonify, redirect, request, send_file
+from flask_login import current_user
 from mongoengine.queryset import QuerySet
 from mongoengine.queryset.visitor import Q
-
-from api.query_helper import mongo_to_dict_helper, build_query_from_request
-
-from api.tools.validators import get_validated_email
 
 
 @blueprint.route('/query', methods=['GET', 'POST'])
@@ -212,8 +207,19 @@ def company_explorer_categories():
     exchange = request.args.get("exchange", "").upper()
     group = request.args.get("group", "gics_sector")
 
+    gics_sector = request.args.get("gics_sector", None)
+
     pipeline = []
-    if exchange:
+    if gics_sector:
+        match_exchange = {
+            "$match": {
+                "gics_sector": gics_sector,
+            }
+        }
+
+        pipeline.append(match_exchange)
+
+    elif exchange:
         match_exchange = {
             "$match": {
                 "exchanges": exchange,
