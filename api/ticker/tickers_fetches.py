@@ -73,33 +73,29 @@ def get_google_publishers():
             google_publishers.add(result["source"]["title"])
     return google_publishers
 
-    #completed
-def save_denied(uuid, link):
-    
-    """If the link is inaccessible for whatever reason, save the link"""
-    
-    article_link = Denied(
-        uuid = uuid,
-        link = link
-    )
-
-    article.switch_db("denied")
-    article_link.save()
             
 #completed
-def save_article(self, id_, title, article, db_name):
+def save_article(self, date, link, title, news_type, publisher, article, uuid, related_tickers = None):
     
     """Creates a MongoDB article object. 
     Saves article into the relevant database"""
     
-    article = Article(
-        id_ = id_,
+    news = DB_News(
+        creation_date = date,
+        last_visited_date = datetime.datetime.now(),
+        link = link,
         title = title,
-        text = article
-    
+        news_type = news_type,
+        publisher = publisher,
+        news_article = article,
+        external_uuid = uuid,
+        related_exchange_tickers = related_tickers
     )
-    article.switch_db(f"{db_name}")
-    article.save()
+    news.save()
+    
+    
+    
+
 
 
 #completed
@@ -124,11 +120,10 @@ def extract_domain_name(url):
     
     
 def download_yahoo_news(self, ticker):
-    
+
     ticker = yf.Ticker(f"{ticker}")
-    articles = []
-    links = []
-    
+    links = set()
+
     for item in ticker.news:
         if item["publisher"] not in ["Barrons", "MT Newswires", "Investor's Business Daily", "Yahoo Finance Video"]:
             user_agent = random.choice(firefox_user_agents)
@@ -138,20 +133,19 @@ def download_yahoo_news(self, ticker):
             try:
                 driver.get(item["link"])
             except:
-                #save_denied("Y_" + item["uuid"], item["link"])
-                links.append(item["link"])
+                links.add(item)
             time.sleep(random.randint(1, 5))
-    
+
             try:
                 link = driver.find_element(By.CLASS_NAME, "readmoreButtonText")
                 link.click()
             except:
                 pass
-                            
+
             try:
                 article = driver.find_element(By.CLASS_NAME, "caas-body")
                 article = clean_article(article.text)
-                                    
+
             except:
                 print(item["publisher"])
                 article = ""
@@ -160,45 +154,61 @@ def download_yahoo_news(self, ticker):
                     article += paragraph.text
                 article = clean_article(article)
             finally:
-
+                #if success
                 if article != "":
                     print("Success!")
                     print(item["title"])
                     print(article)
-                    save_article("Y_" + item["uuid"], item["title"], article, "success")
+                    save_article(
+                        date = date_from_unix(item["providerPublishTime"]),
+                        link = item["link"],
+                        title = item["title"],
+                        news_type = "text",
+                        publisher = item["publisher"],
+                        uuid = "Y_" + item["uuid"],
+                        article = article,
+                    related_tickers = item["relatedTickers"])
                     articles.append(article)
-                
+
+                #if failure
                 else:
                     print("Failed!")
                     print(item["title"], item["publisher"])
                     html = driver.page_source
-                    save_article("Y_" + item["uuid"], item["title"], html, "unprocessed")
-                
+                    links.add(item)
+                    
                 driver.quit()
-            
-            
+
+
         else:
-            
+
             if item["publisher"] == "Investor's Business Daily":
-                success, article = download_ibd(item["link"])
+                success, article = self.download_ibd(item["link"])
                 if success == 0:
-                    #save_denied("Y_" +item["uuid"], item["link"])
-                    links.append(item["link"])
-                
+                    print("Link can't be opened", item["link"])
+                    links.add(item)
+
                 elif success == 1:                      
                     print("Failed!")
                     print(item["title"], item["publisher"])
-                    #save_article("Y_" + item["uuid"], item["title"], article, "unprocessed")
-            
+                    links.add(item)
+
                 else:
                     print("Success!")
                     print(item["title"], item["publisher"])
                     print(article)
-                    #save_article("Y_" + 
-                    #                    item["uuid"], item["title"], article, "success")
+                    save_article(
+                        date = date_from_unix(item["providerPublishTime"]),
+                        link = item["link"],
+                        title = item["title"],
+                        news_type = "text",
+                        publisher = item["publisher"],
+                        article = article,
+                        uuid = "Y_" + item["uuid"],
+                    related_tickers = item["relatedTickers"])
                     articles.append(article)
 
-    return articles
+    return articles, links
     
     
 #completed
