@@ -33,7 +33,7 @@ from mongoengine.queryset import QuerySet
 from mongoengine.queryset.visitor import Q
 
 from .tickers_helpers import extract_exchange_ticker_from_url
-
+from news.models import DB_news
 
 firefox_user_agents = [
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:103.0) Gecko/20100101 Firefox/103.0",
@@ -47,313 +47,195 @@ firefox_user_agents = [
     ]
 
 #News article pipeline
-class NewsScraper:
-    #under construction
-    def boot(self, first = True):
-        self.yahoo_publishers = self.get_yahoo_publishers()
-        self.google_publishers = self.get_google_publishers()
-        self.publishers_list = self.yahoo_publishers.union(self.google_publishers)
-        #under construction
-        self.unprocessed = self.download_news()
+def get_yahoo_publishers():
 
-    #completed
-    def get_yahoo_publishers(self):
+    """Gets list of publishers connected to Yahoo Finance. Returns as a set object."""
 
-        """Gets list of publishers connected to Yahoo Finance. Returns as a set object."""
-
-        yahoo_publishers = set()
-        tickers = ["AMGN", "KO", "MSFT", "NVDA", "WM"]
-        for ticker in tickers:
-            ticker = yf.Ticker(ticker)
-            for item in ticker.news:
-                yahoo_publishers.add(item["publisher"])
-        return yahoo_publishers
-    
-    #completed
-    def get_google_publishers(self):
-        
-        """Gets list of publishers connected to Google News. Returns as a set object."""
-        
-        google_publishers = set()
-        gn = GoogleNews()
-        tickers = ["AMGN", "KO", "MSFT", "NVDA", "WM"]
-        for ticker in tickers:
-            search = gn.search(f"{ticker}")
-            for result in search["entries"]:
-                google_publishers.add(result["source"]["title"])
-        return google_publishers
-
-    #completed
-    def clean_article(self, article):
-    
-    """Takes in article string as input, removes all instances of \n from it."""
-    
-        article = re.sub("\n", " ", article)
-        return article
-
-    #completed
-    def extract_domain_name(self, url):
-        
-        """Extracts domain name from a URL. Returns a string."""        
-        
-        parsed_url = urlparse(url)
-        base_url = parsed_url.netloc
-        base_url = re.sub("www.", "", base_url)
-        base_url = re.sub(".com", "", base_url)
-        return base_url
-
-    #under construction
-    def download_news(self, tickers):
-        self.unprocessed = {}
-        for ticker in tickers:
-            yahoo = self.download_yahoo_news(ticker)
-            google = self.download_google_news(ticker)
-            finviz = self.download_finviz_news(ticker)
-            for item in [yahoo, google, finviz]:
-                self.unprocessed[f"{ticker}"].union(item)
-        return self.unprocessed
-    
-    
-    #under construction
-    def save_html(self, html, folder, filename):
-        
-        "Saves HTML to file"
-        
-        with open(filename) as file:
-            file.write(html, )
-    
-    #under construction
-    def save_to_mongo(self, article):
-        return
-    
-    #under construction
-    def download_yahoo_news(self, ticker):
-        
-        #todo: data structure to store yahoo_files & yahoo_dict
-        
-        yahoo_files = set()
-        yahoo_dict = set()
-        ticker = yf.Ticker(f"{ticker}")
-        
+    yahoo_publishers = set()
+    tickers = ["AMGN", "KO", "MSFT", "NVDA", "WM"]
+    for ticker in tickers:
+        ticker = yf.Ticker(ticker)
         for item in ticker.news:
-            if item["publisher"] not in ["Barrons", "MT Newswires", "Investor's Business Daily", "Yahoo Finance Video"]:
-                user_agent = random.choice(firefox_user_agents)
-                options = Options()
-                options.set_preference("general.useragent.override", user_agent)
-                driver = webdriver.Firefox(options=options)
-                driver.get(item["link"])
-                time.sleep(random.randint(1, 5))
-        
-                try:
-                    link = driver.find_element(By.CLASS_NAME, "readmoreButtonText")
-                    link.click()
-                except:
-                    pass
-                        
-                html = driver.page_source
-                
-                #debug
-                filepath = self.save_html(html, "unprocessed", )
-                yahoo_dict[f{item["uuid"]}] = {"title": item["title"], "publisher": item["publisher"], "link": item["link"]}
-                yahoo_files.add(filepath)
-                
-            else:
-                
-                if item["publisher"] == "Investor's Business Daily":
-                    success, article = self.process_ibd(item["link"])
-                    if success == True:
-                        self.save_to_mongo(article)
-                    else:
-                        filepath = self.save_html_to_file(html)
-                        yahoo_dict[f{item["uuid"]}] = {"title": item["title"], "publisher": item["publisher"], "link": item["link"],
-                                                      "html": article}
-                        yahoo_files.add(filepath)
-                
+            yahoo_publishers.add(item["publisher"])
+    return yahoo_publishers
 
-        return yahoo_files, yahoo_dict
+#completed
+def get_google_publishers():
     
-    #completed
-    def process_ibd(self, url):
+    """Gets list of publishers connected to Google News. Returns as a set object."""
     
-        "Scrapes news from Investors.com"
-
-        article = ""
-        user_agent = random.choice(firefox_user_agents)
-        options = Options()
-        options.set_preference("general.useragent.override", user_agent)
-        driver = webdriver.Firefox(options=options)
-        time.sleep(random.randint(4,7))
-        link = driver.find_element(By.LINK_TEXT, "Continue Reading")
-        link.click()
-        paragraphs = driver.find_elements(By.TAG_NAME, "p")
-        for paragraph in paragraphs:
-            if paragraph.text != "":
-                article += paragraph.text
-            if "YOU MIGHT ALSO LIKE" in paragraph.text:
-                break
-        article.replace("YOU MIGHT ALSO LIKE", "")
-        if article == "":
-            html = driver.page_source
-            driver.quit()
-            return [False, html]
-        else:            
-            article = self.clean_article(article)
-            driver.quit()
-            return [True, article]
-        
-    #completed
-    def download_nasdaq(self, url):
-    
-    """Takes in url as input, retrieves news articles from Nasdaq and returns string"""
-    
-        user_agent = random.choice(firefox_user_agents)
-        options = Options()
-        options.set_preference("general.useragent.override", user_agent)
-        driver = webdriver.Firefox(options=options)
-        driver.get(url)
-        time.sleep(random.randint(1,5))
-        article = driver.find_element(By.CLASS_NAME, "body__content")
-        article = self.clean_article(article.text)
-        return article
-
-
-    #under construction
-    def download_google_news(self, ticker):
-
-        """Takes in stock ticker as input, retrieves news articles from Google News and returns
-        list of articles"""    
-
-        articles = []
-        data = []
-        gn = GoogleNews()
+    google_publishers = set()
+    gn = GoogleNews()
+    tickers = ["AMGN", "KO", "MSFT", "NVDA", "WM"]
+    for ticker in tickers:
         search = gn.search(f"{ticker}")
-
-        #loop through search results
         for result in search["entries"]:
-            if result["source"]["title"] not in self.yahoo_publishers:
+            google_publishers.add(result["source"]["title"])
+    return google_publishers
 
-                #extract nasdaq
-                if result["source"]["title"] == "Nasdaq":
-                    article = self.download_nasdaq(result["link"])
+    #completed
+def save_denied(uuid, link):
+    
+    """If the link is inaccessible for whatever reason, save the link"""
+    
+    article_link = Denied(
+        uuid = uuid,
+        link = link
+    )
+
+    article.switch_db("denied")
+    article_link.save()
+            
+#completed
+def save_article(self, id_, title, article, db_name):
+    
+    """Creates a MongoDB article object. 
+    Saves article into the relevant database"""
+    
+    article = Article(
+        id_ = id_,
+        title = title,
+        text = article
+    
+    )
+    article.switch_db(f"{db_name}")
+    article.save()
+
+
+#completed
+def clean_article(article):
+
+"""Takes in article string as input, removes all instances of \n from it."""
+
+    article = re.sub("\n", " ", article)
+    return article
+
+#completed
+def extract_domain_name(url):
+    
+    """Extracts domain name from a URL. Returns a string."""        
+    
+    parsed_url = urlparse(url)
+    base_url = parsed_url.netloc
+    base_url = re.sub("www.", "", base_url)
+    base_url = re.sub(".com", "", base_url)
+    return base_url
+
+    
+    
+def download_yahoo_news(self, ticker):
+    
+    ticker = yf.Ticker(f"{ticker}")
+    articles = []
+    links = []
+    
+    for item in ticker.news:
+        if item["publisher"] not in ["Barrons", "MT Newswires", "Investor's Business Daily", "Yahoo Finance Video"]:
+            user_agent = random.choice(firefox_user_agents)
+            options = Options()
+            options.set_preference("general.useragent.override", user_agent)
+            driver = webdriver.Firefox(options=options)
+            try:
+                driver.get(item["link"])
+            except:
+                #save_denied("Y_" + item["uuid"], item["link"])
+                links.append(item["link"])
+            time.sleep(random.randint(1, 5))
+    
+            try:
+                link = driver.find_element(By.CLASS_NAME, "readmoreButtonText")
+                link.click()
+            except:
+                pass
+                            
+            try:
+                article = driver.find_element(By.CLASS_NAME, "caas-body")
+                article = clean_article(article.text)
+                                    
+            except:
+                print(item["publisher"])
+                article = ""
+                paragraphs = driver.find_elements(By.TAG_NAME, "p")
+                for paragraph in paragraphs:
+                    article += paragraph.text
+                article = clean_article(article)
+            finally:
+
+                if article != "":
+                    print("Success!")
+                    print(item["title"])
+                    print(article)
+                    save_article("Y_" + item["uuid"], item["title"], article, "success")
                     articles.append(article)
+                
                 else:
-                    article = self.extract_news(result["link"])
-                    if article != "":
-                        articles.append(article)
-                    else:
+                    print("Failed!")
+                    print(item["title"], item["publisher"])
+                    html = driver.page_source
+                    save_article("Y_" + item["uuid"], item["title"], html, "unprocessed")
+                
+                driver.quit()
+            
+            
+        else:
+            
+            if item["publisher"] == "Investor's Business Daily":
+                success, article = download_ibd(item["link"])
+                if success == 0:
+                    #save_denied("Y_" +item["uuid"], item["link"])
+                    links.append(item["link"])
+                
+                elif success == 1:                      
+                    print("Failed!")
+                    print(item["title"], item["publisher"])
+                    #save_article("Y_" + item["uuid"], item["title"], article, "unprocessed")
+            
+                else:
+                    print("Success!")
+                    print(item["title"], item["publisher"])
+                    print(article)
+                    #save_article("Y_" + 
+                    #                    item["uuid"], item["title"], article, "success")
+                    articles.append(article)
 
-                        #print website name of news article that cannot be extracted and append title
-                        print(result["source"]["title"])
-                        articles.append(result["title"])
+    return articles
+    
+    
+#completed
+def download_ibd(self, url):
 
-        return articles
-
-
-
-    def extract_news(self, url):
-
-        """Takes in url as input, retrieves article via p tag and returns article as string-"""
-
-        #proxy_rotate = ProxyRotate(proxies)
-        #new_proxy = proxy_rotate.get_proxy()
-
-        #set proxy
-        #options = Options()
-        #9options.set_preference("network.proxy.type", 1)
-        #options.set_preference("network.proxy.http", new_proxy)
-        #options.set_preference("network.proxy.http_port", int(new_proxy.split(":")[1]))
-
-        #set firefox agent
-        user_agent = random.choice(firefox_user_agents)
-        options.set_preference("general.useragent.override", user_agent)
-        driver = webdriver.Firefox(options=options)
+    """Takes in URL from Investors.com as input, returns article as string"""
+    
+    
+    article = ""
+    user_agent = random.choice(firefox_user_agents)
+    options = Options()
+    options.set_preference("general.useragent.override", user_agent)
+    driver = webdriver.Firefox(options=options)
+    try:
         driver.get(url)
-
-        #rate limiting
-        time.sleep(random.randint(4, 10))
-
-        article = ""
-        i = 0
-        while i < 3:
-            paragraphs = driver.find_elements(By.TAG_NAME, "p")
-            for paragraph in paragraphs:
-                article += paragraph.text
-            if article != "":
-                break
-            i += 1
-
+    except:
+        return [0, url]
+    time.sleep(random.randint(4,7))
+    link = driver.find_element(By.LINK_TEXT, "Continue Reading")
+    link.click()
+    paragraphs = driver.find_elements(By.TAG_NAME, "p")
+    for paragraph in paragraphs:
+        if paragraph.text != "":
+            article += paragraph.text
+        if "YOU MIGHT ALSO LIKE" in paragraph.text:
+            break
+    article.replace("YOU MIGHT ALSO LIKE", "")
+    if article == "":
+        html = driver.page_source
         driver.quit()
-        return article
-
+        return [1, html]
+    else:            
+        article = clean_article(article)
+        driver.quit()
+        return [2, article]
 
         
-    #under construction
-    def download_finviz_news(ticker, first = True):
-
-    
-        url = f"https://finviz.com/quote.ashx?t={ticker}&p=d"
-        articles = []
-
-        req = Request(url=url, headers={"user-agent": "my-app"})
-        response = urlopen(req)
-
-        html = BeautifulSoup(response, "html.parser")
-        
-        #this function is under construction
-        self.save_html(html)
-        
-        #continue scraping
-        news = html.find_all("tr", class_ = "cursor-pointer has-label")
-        date = datetime.datetime.today()
-
-        newsLinks = {date: []}
-
-        for n in news:
-
-            date_data = n.td.text.strip().split(" ")
-
-            if len(date_data) == 1:
-                time = date_data[0]
-            else:
-                date = date_data[0]
-                time = date_data[1]
-                newsLinks[date] = []
-
-            link = n.div.div.a["href"]
-            base_url = self.extract_domain_name(link)
-
-            if base_url in skip_list:
-                continue
-
-            if "yahoo" in base_url:
-                continue
-
-            if "insidermonkey" in base_url:
-                continue
-
-
-            print("Currently scraping", base_url)
-            title = n.div.div.a.text
-
-            if "youtube" in base_url:
-                #still under construction
-                article = self.extract_video(link)
-            else:
-                article = self.extract_news(link)
-
-            if article != "":
-                article = self.clean_article(article)
-                articles.append(article)
-                print("Success!", base_url)
-            else:
-                print("Failed", base_url)
-                articles.append(title)        
-
-            #store
-            newsLinks[date].append([time, title, link, article])
-
-        return {f"{ticker}": newsLinks}
-    
 
 
 def get_data(url, cache_file, index):
