@@ -65,12 +65,12 @@ def ticker_process_batch(end=None, dry_run=False, BATCH_SIZE=5):
     # Less than or Equal to Last processed
 
     if not end:
-        end = get_timestamp_verbose("10 days")
+        end = datetime.fromtimestamp(get_timestamp_verbose("1 days"))
 
     query = Q(force_reindex=True)
     tickers = DB_Ticker.objects(query)[:BATCH_SIZE]
     if tickers.count() == 0:
-        query = Q(last_processed_date__lte=end) | Q(last_processed_date__lte=None)
+        query = Q(last_processed_date__lte=end) | Q(last_processed_date=None)
         tickers = DB_Ticker.objects(query)[:BATCH_SIZE]
 
     for db_ticker in tickers:
