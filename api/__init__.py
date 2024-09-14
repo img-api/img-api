@@ -1,20 +1,19 @@
 import os
 import time
-import werkzeug
-
 from datetime import datetime
 from functools import wraps
-from flask_caching import Cache
 
-from flask import json, jsonify, redirect, request, Response
+import werkzeug
+from flask import Response, json, jsonify, redirect, request
+from flask_caching import Cache
 from flask_login import current_user, login_required, login_user, logout_user
 from werkzeug.exceptions import HTTPException
+
+from api.query_helper import mongo_to_dict_helper
 from api.user.models import User, user_loader
 
 from .api_redis import init_redis
 from .print_helper import *
-
-from api.query_helper import mongo_to_dict_helper
 
 API_VERSION = "0.50pa"
 
@@ -99,6 +98,9 @@ def api_clean(content):
         input = json.loads(json.dumps(content, default=lambda o: mongo_to_dict_helper(o)))
 
     output = api_clean_recursive(input, {})
+    if not output:
+        output = {'api': ""}
+
     return output
 
 
@@ -325,6 +327,7 @@ def configure_media_folder(app):
 
 def handle_bad_request_with_html(e):
     import traceback
+
     from app.api_v1 import get_response_error_formatted
 
     traceback.print_tb(e.__traceback__)
@@ -354,9 +357,9 @@ def handle_bad_request_with_html(e):
 
 def register_api_blueprints(app):
     """ Loads all the modules for the API """
-    from api.news import configure_news_media_folder
-
     from importlib import import_module
+
+    from api.news import configure_news_media_folder
     global cache
 
     #print_b(" API BLUE PRINTS ")

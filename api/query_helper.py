@@ -654,7 +654,11 @@ def build_query_from_url(args=None):
 
                 parms = key.split("__")
                 if len(parms) > 1:
-                    if parms[1] in ['in', 'nin', 'all']:
+                    # We don't support equal number... :(
+                    if parms[-1] in ['gte', 'lte', 'lt', 'gt', 'ne']:
+                        value = float(value)
+
+                    elif parms[1] in ['in', 'nin', 'all']:
                         value = value.split(",")
 
                 newkey = {key: get_adaptive_value(key, value)}

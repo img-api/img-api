@@ -55,6 +55,7 @@ def yfetch_process_news(item, web_driver=None):
         driver.get(item["link"])
 
         try:
+            time.sleep(random.randint(2, 5))
             # We get the consent
             link = driver.find_element(By.CLASS_NAME, "accept-all")
             link.click()

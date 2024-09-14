@@ -33,11 +33,14 @@ def ticker_process_news_sites(BATCH_SIZE=5):
     query = Q(force_reindex=True)
     news = DB_News.objects(query)[:BATCH_SIZE]
     if news.count() == 0:
-        query = Q(status='WAITING_INDEX') | Q(status='INDEX_START')
+        query = Q(status='WAITING_INDEX')
         news = DB_News.objects(query)[:BATCH_SIZE]
 
     for item in news:
         try:
+            if item.force_reindex:
+                item.update(**{ 'force_reindex': False })
+
             item.set_state("INDEX_START")
 
             if item.source == "YFINANCE":
@@ -71,6 +74,9 @@ def ticker_process_batch(end=None, dry_run=False, BATCH_SIZE=5):
         tickers = DB_Ticker.objects(query)[:BATCH_SIZE]
 
     for db_ticker in tickers:
+        if db_ticker.force_reindex:
+            db_ticker.update(**{ 'force_reindex': False })
+
         db_ticker.set_state("PIPELINE_START")
 
         # We process every ticker with a different pipeline.

@@ -72,6 +72,8 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
     """
         Our fetching pipeline will call different status
     """
+    from api.company.routes import api_create_ai_summary
+    from api.news.routes import api_create_news_ai_summary
     from api.ticker.routes import get_full_symbol
 
     print_b("PROCESSING: " + db_ticker.full_symbol())
@@ -91,6 +93,10 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
         return
 
     db_company = db_ticker.get_company()
+    try:
+        api_create_ai_summary(db_company)
+    except Exception as e:
+        pass
 
     info = yf_obj.info
 
@@ -133,7 +139,13 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
                 # We don't update news that we already have in the system
                 print_b(" ALREADY INDEXED " + item['link'])
                 update = True
-                #continue
+
+                try:
+                    api_create_news_ai_summary(db_news)
+                except Exception as e:
+                    pass
+
+                continue
 
             raw_data_id = 0
             try:
