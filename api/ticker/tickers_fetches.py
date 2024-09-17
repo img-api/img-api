@@ -1,7 +1,6 @@
 import os
 import re
 
-from proxy_rotate import ProxyRotate
 
 import requests
 import requests_cache
@@ -10,8 +9,6 @@ import urllib
 from urllib.request import urlopen, Request
 import pandas as pd
 import yfinance as yf
-from youtube_transcript_api import YouTubeTranscriptApi as yta
-from pygooglenews import GoogleNews
 
 import time
 import selenium
@@ -39,7 +36,7 @@ firefox_user_agents = [
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:103.0) Gecko/20100101 Firefox/103.0",
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:102.0) Gecko/20100101 Firefox/102.0",
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:101.0) Gecko/20100101 Firefox/101.0",
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:100.0) Gecko/20100101 Firefox/100.0",
+        "Mozilla/5/.0 (Windows NT 10.0; Win64; x64; rv:100.0) Gecko/20100101 Firefox/100.0",
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:103.0) Gecko/20100101 Firefox/103.0",
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:102.0) Gecko/20100101 Firefox/102.0",
         "Mozilla/5.0 (Linux x86_64; rv:103.0) Gecko/20100101 Firefox/103.0",
@@ -47,11 +44,11 @@ firefox_user_agents = [
     ]
 
 proxy_list = [
-    180.183.157.159,
-    46.4.96.137,
-    47.91.88.100,
-    45.77.56.114,
-    82.196.11.105
+    "180.183.157.159",
+    "46.4.96.137",
+    "47.91.88.100",
+    "45.77.56.114",
+    "82.196.11.105"
 ]
 
 #News article pipeline
@@ -67,19 +64,6 @@ def get_yahoo_publishers():
             yahoo_publishers.add(item["publisher"])
     return yahoo_publishers
 
-#completed
-def get_google_publishers():
-    
-    """Gets list of publishers connected to Google News. Returns as a set object."""
-    
-    google_publishers = set()
-    gn = GoogleNews()
-    tickers = ["AMGN", "KO", "MSFT", "NVDA", "WM"]
-    for ticker in tickers:
-        search = gn.search(f"{ticker}")
-        for result in search["entries"]:
-            google_publishers.add(result["source"]["title"])
-    return google_publishers
 
             
 #completed
@@ -102,14 +86,18 @@ def save_article(self, date, link, title, news_type, publisher, article, uuid, r
     news.save()
     
     
-    
+def date_from_unix(string):
+
+    """Takes unix format and converts it into datetime object"""
+
+    return datetime.datetime.fromtimestamp(float(string))
 
 
 
 #completed
 def clean_article(article):
 
-"""Takes in article string as input, removes all instances of \n from it."""
+    """Takes in article string as input, removes all instances of \n from it."""
 
     article = re.sub("\n", " ", article)
     return article
@@ -126,8 +114,130 @@ def extract_domain_name(url):
     return base_url
 
     
-    
+def download_yahoo_news(ticker):
+    ticker = yf.Ticker(f"{ticker}")
+    for item in ticker.news:
+        if item["publisher"] not in ["Barrons", "MT Newswires", "Investor's Business Daily", "Yahoo Finance Video"]:
+            success, article = download_article(item["link"])
+            
+            print(item["publisher"], article)
+            if success == 0:
+                news_type = "denied"
+            elif success == 1:
+                news_type = "html"
+            else:
+                news_type = "text"
+            save_article(
+                        date = date_from_unix(item["providerPublishTime"]),
+                        link = item["link"],
+                        title = item["title"],
+                        news_type = news_type,
+                        publisher = item["publisher"],
+                        article = article,
+                        uuid = "Y_" + item["uuid"],
+                    related_tickers = item["relatedTickers"])
+        else:
+            if item["publisher"] == "Investor's Business Daily":
+                success, html = download_ibd(item["link"])
+                print("Investor's Business Daily", html)
+                if success == 1:
+                    news_type = "html"
+                else:
+                    news_type = "denied"
+                save_article(
+                        date = date_from_unix(item["providerPublishTime"]),
+                        link = item["link"],
+                        title = item["title"],
+                        news_type = news_type,
+                        publisher = item["publisher"],
+                        article = article,
+                        uuid = "Y_" + item["uuid"],
+                    related_tickers = item["relatedTickers"])
         
+
+def download_article(url):
+    user_agent = random.choice(firefox_user_agents)
+    options = Options()
+    options.set_preference("general.useragent.override", user_agent)
+    driver = webdriver.Firefox(options=options)
+    try:
+        driver.get(url)
+    
+    except:
+        #save into denied
+        return [0, ""]
+    
+    try:
+        # Wait until the button is visible
+        readmore_button = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.CLASS_NAME, "readmore-button"))
+        )
+
+        # Optionally, scroll to the button if necessary
+        actions = ActionChains(driver)
+        actions.move_to_element(readmore_button).perform()
+
+        # Click the button
+        readmore_button.click()
+    
+        print("Clicked on the 'Read More' button successfully.")
+
+    except Exception as e:
+        print(f"Error: {e}")
+    
+    time.sleep(random.randint(2,10)) 
+    
+    try:
+        html = driver.page_source
+    except Exception as e:
+        print(f"Error: {e}")
+        driver.quit()
+        return [0, ""]
+    try:
+        article = driver.find_element(By.TAG_NAME, "article")
+        article = clean_article(article.text)
+        driver.quit()
+        return [2, article]
+    except Exception as e:
+        print(f"Error: {e}, {url}")
+        driver.quit()
+        return [1, html]
+
+
+
+                
+def download_ibd(url):
+    user_agent = random.choice(firefox_user_agents)
+    options = Options()
+    options.set_preference("general.useragent.override", user_agent)
+    driver = webdriver.Firefox(options=options)
+
+    driver.get(url)
+    time.sleep(random.randint(4,7))
+    try:
+        link = driver.find_element(By.LINK_TEXT, "Continue Reading")
+        link.click()
+    except:
+        pass
+    
+    time.sleep(5)
+    try:
+        html = driver.page_source
+    except:
+        return [0, ""]
+
+    try:
+        article = driver.find_element(By.TAG_NAME, "article")
+    except:
+        return [1, html]
+    article = clean_article(article.text)
+    driver.quit()
+    return [2, article]
+        
+def reprocess():
+    
+    return
+
 
 
 def get_data(url, cache_file, index):

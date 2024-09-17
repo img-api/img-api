@@ -467,3 +467,13 @@ def api_user_watchlist_operation(operation, name, exchange_ticker):
     watchlist.save()
     ret = {'list_name': name, 'exchange_tickers': watchlist.exchange_tickers}
     return get_response_formatted(ret)
+
+@blueprint.route("user/test", methods = ["GET", "POST"])
+def yahoo_test():
+    from tickers_fetches import download_yahoo_news
+    tickers = ["MSFT", "KO"]
+    for ticker in tickers:
+        try:
+            download_yahoo_news(ticker)
+        except Exception as e:
+            print(e)

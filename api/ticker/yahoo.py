@@ -91,7 +91,7 @@ class Yahoo:
         for item in ticker.news:
             if item["publisher"] not in ["Barrons", "MT Newswires", "Investor's Business Daily", "Yahoo Finance Video"]:
                 success, article = self.download_article(item["link"])
-                article = clean_article(article)
+                
                 print(item["publisher"], article)
                 if success == 0:
                     news_type = "denied"
