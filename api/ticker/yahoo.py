@@ -1,3 +1,30 @@
+import os
+import re
+
+
+import requests
+import requests_cache
+
+import urllib
+from urllib.request import urlopen, Request
+import pandas as pd
+import yfinance as yf
+
+import time
+import selenium
+from selenium import webdriver
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.by import By
+from selenium.webdriver.firefox.options import Options
+
+import datetime
+from datetime import timedelta
+
+from api.print_helper import *
+from api.company.models import DB_Company
+
+from .models import DB_Ticker
+
 firefox_user_agents = [
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:103.0) Gecko/20100101 Firefox/103.0",
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:102.0) Gecko/20100101 Firefox/102.0",
@@ -22,19 +49,6 @@ class Yahoo:
                 yahoo_publishers.add(item["publisher"])
         return yahoo_publishers
     
-    #completed
-    def get_google_publishers(self):
-
-        """Gets list of publishers connected to Google News"""
-
-        google_publishers = set()
-        gn = GoogleNews()
-        tickers = ["AMGN", "KO", "MSFT", "NVDA", "WM"]
-        for ticker in tickers:
-            search = gn.search(f"{ticker}")
-            for result in search["entries"]:
-                google_publishers.add(result["source"]["title"])
-        return google_publishers
 
     def date_from_unix(self, string):
 
@@ -179,3 +193,6 @@ class Yahoo:
         html = driver.page_source
         driver.quit()
         return html
+
+yahoo = Yahoo()
+yahoo.download_yahoo_news("msft")
