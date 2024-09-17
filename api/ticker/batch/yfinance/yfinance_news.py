@@ -115,3 +115,6 @@ def yfetch_process_news(item, web_driver=None):
         item.set_state("INDEXED")
     else:
         item.set_state("ERROR: ARTICLES NOT FOUND")
+
+def news_fetcher():
+    return

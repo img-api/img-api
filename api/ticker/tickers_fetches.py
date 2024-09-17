@@ -7,8 +7,6 @@ import urllib
 from datetime import timedelta
 from urllib.request import Request, urlopen
 
-<<<<<<< HEAD
-
 import requests
 import requests_cache
 
@@ -18,11 +16,10 @@ import pandas as pd
 import yfinance as yf
 
 import time
-=======
+
 import pandas as pd
 import requests
 import requests_cache
->>>>>>> 849abcf ([Categories] Group by category)
 import selenium
 import yfinance as yf
 from api.company.models import DB_Company
@@ -37,8 +34,8 @@ from selenium.webdriver.firefox.options import Options
 
 from .models import DB_Ticker
 from .tickers_helpers import extract_exchange_ticker_from_url
-<<<<<<< HEAD
-from news.models import DB_news
+
+from api.news.models import DB_News
 
 firefox_user_agents = [
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:103.0) Gecko/20100101 Firefox/103.0",
@@ -50,19 +47,6 @@ firefox_user_agents = [
         "Mozilla/5.0 (Linux x86_64; rv:103.0) Gecko/20100101 Firefox/103.0",
         "Mozilla/5.0 (Linux x86_64; rv:102.0) Gecko/20100101 Firefox/102.0"
     ]
-=======
-
-firefox_user_agents = [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:103.0) Gecko/20100101 Firefox/103.0",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:102.0) Gecko/20100101 Firefox/102.0",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:101.0) Gecko/20100101 Firefox/101.0",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:100.0) Gecko/20100101 Firefox/100.0",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:103.0) Gecko/20100101 Firefox/103.0",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:102.0) Gecko/20100101 Firefox/102.0",
-    "Mozilla/5.0 (Linux x86_64; rv:103.0) Gecko/20100101 Firefox/103.0",
-    "Mozilla/5.0 (Linux x86_64; rv:102.0) Gecko/20100101 Firefox/102.0"
-]
->>>>>>> 849abcf ([Categories] Group by category)
 
 proxy_list = [
     "180.183.157.159",
@@ -352,10 +336,6 @@ def get_ratios(ticker):
 
     xlwriter.save()
 
-
-<<<<<<< HEAD
-    
-=======
 def get_IBD_articles(url):
     "Use this for scraping news from investors.com"
 
@@ -573,8 +553,6 @@ def getData(tickers="default"):
         news = self.getNews(ticker)
         data[f"{ticker}"] = [price, is_, bs, cf, ratios, news]
     return data
->>>>>>> 849abcf ([Categories] Group by category)
-
 
 def clean_company_name(name):
     # Remove any text in parentheses and everything that follows
