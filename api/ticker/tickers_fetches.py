@@ -156,6 +156,10 @@ def download_yahoo_news(ticker):
         
 
 def download_article(url):
+
+    """Takes URL of article as input and downloads article using Selenium.
+    Utilizes the 0, 1, 2 system."""
+
     user_agent = random.choice(firefox_user_agents)
     options = Options()
     options.set_preference("general.useragent.override", user_agent)
@@ -207,6 +211,9 @@ def download_article(url):
 
                 
 def download_ibd(url):
+
+    """Downloads article from investors.com"""
+
     user_agent = random.choice(firefox_user_agents)
     options = Options()
     options.set_preference("general.useragent.override", user_agent)
@@ -235,7 +242,8 @@ def download_ibd(url):
     return [2, article]
         
 def reprocess():
-    
+    """reprocesses articles"""
+
     return
 
 
