@@ -46,6 +46,14 @@ firefox_user_agents = [
         "Mozilla/5.0 (Linux x86_64; rv:102.0) Gecko/20100101 Firefox/102.0"
     ]
 
+proxy_list = [
+    180.183.157.159,
+    46.4.96.137,
+    47.91.88.100,
+    45.77.56.114,
+    82.196.11.105
+]
+
 #News article pipeline
 def get_yahoo_publishers():
 
@@ -119,132 +127,6 @@ def extract_domain_name(url):
 
     
     
-def download_yahoo_news(self, ticker):
-
-    ticker = yf.Ticker(f"{ticker}")
-    links = set()
-
-    for item in ticker.news:
-        if item["publisher"] not in ["Barrons", "MT Newswires", "Investor's Business Daily", "Yahoo Finance Video"]:
-            user_agent = random.choice(firefox_user_agents)
-            options = Options()
-            options.set_preference("general.useragent.override", user_agent)
-            driver = webdriver.Firefox(options=options)
-            try:
-                driver.get(item["link"])
-            except:
-                links.add(item)
-            time.sleep(random.randint(1, 5))
-
-            try:
-                link = driver.find_element(By.CLASS_NAME, "readmoreButtonText")
-                link.click()
-            except:
-                pass
-
-            try:
-                article = driver.find_element(By.CLASS_NAME, "caas-body")
-                article = clean_article(article.text)
-
-            except:
-                print(item["publisher"])
-                article = ""
-                paragraphs = driver.find_elements(By.TAG_NAME, "p")
-                for paragraph in paragraphs:
-                    article += paragraph.text
-                article = clean_article(article)
-            finally:
-                #if success
-                if article != "":
-                    print("Success!")
-                    print(item["title"])
-                    print(article)
-                    save_article(
-                        date = date_from_unix(item["providerPublishTime"]),
-                        link = item["link"],
-                        title = item["title"],
-                        news_type = "text",
-                        publisher = item["publisher"],
-                        uuid = "Y_" + item["uuid"],
-                        article = article,
-                    related_tickers = item["relatedTickers"])
-                    articles.append(article)
-
-                #if failure
-                else:
-                    print("Failed!")
-                    print(item["title"], item["publisher"])
-                    html = driver.page_source
-                    links.add(item)
-                    
-                driver.quit()
-
-
-        else:
-
-            if item["publisher"] == "Investor's Business Daily":
-                success, article = self.download_ibd(item["link"])
-                if success == 0:
-                    print("Link can't be opened", item["link"])
-                    links.add(item)
-
-                elif success == 1:                      
-                    print("Failed!")
-                    print(item["title"], item["publisher"])
-                    links.add(item)
-
-                else:
-                    print("Success!")
-                    print(item["title"], item["publisher"])
-                    print(article)
-                    save_article(
-                        date = date_from_unix(item["providerPublishTime"]),
-                        link = item["link"],
-                        title = item["title"],
-                        news_type = "text",
-                        publisher = item["publisher"],
-                        article = article,
-                        uuid = "Y_" + item["uuid"],
-                    related_tickers = item["relatedTickers"])
-                    articles.append(article)
-
-    return articles, links
-    
-    
-#completed
-def download_ibd(self, url):
-
-    """Takes in URL from Investors.com as input, returns article as string"""
-    
-    
-    article = ""
-    user_agent = random.choice(firefox_user_agents)
-    options = Options()
-    options.set_preference("general.useragent.override", user_agent)
-    driver = webdriver.Firefox(options=options)
-    try:
-        driver.get(url)
-    except:
-        return [0, url]
-    time.sleep(random.randint(4,7))
-    link = driver.find_element(By.LINK_TEXT, "Continue Reading")
-    link.click()
-    paragraphs = driver.find_elements(By.TAG_NAME, "p")
-    for paragraph in paragraphs:
-        if paragraph.text != "":
-            article += paragraph.text
-        if "YOU MIGHT ALSO LIKE" in paragraph.text:
-            break
-    article.replace("YOU MIGHT ALSO LIKE", "")
-    if article == "":
-        html = driver.page_source
-        driver.quit()
-        return [1, html]
-    else:            
-        article = clean_article(article)
-        driver.quit()
-        return [2, article]
-
         
 
 
