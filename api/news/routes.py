@@ -3,6 +3,7 @@ import io
 import random
 import re
 import time
+from datetime import datetime
 
 import bcrypt
 import qrcode
@@ -136,6 +137,33 @@ def api_news_get_news_ai_summary():
     return get_response_formatted(ret)
 
 
+@blueprint.route('/gif', methods=['GET', 'POST'])
+#@api_key_or_login_required
+def api_get_gif():
+    """ """
+    from io import BytesIO
+
+    from .sentiment import get_gif_for_sentiment
+
+    keywords = request.args.get("keywords", "SAD")
+
+    raw, gif = get_gif_for_sentiment(keywords)
+
+    raw = request.args.get("raw", None)
+
+    if raw:
+        ret = {"keywords": keywords, 'url': gif, 'raw': raw}
+        return get_response_formatted(ret)
+
+    response = requests.get(gif)
+    if response.status_code != 200:
+        return {"error": "Failed to download the gif"}, 500
+
+    # Create a temporary file to store the gif data
+    gif_data = BytesIO(response.content)
+    return send_file(gif_data, mimetype='image/gif', as_attachment=False, download_name='sentiment.gif')
+
+
 @blueprint.route('/ai_callback', methods=['GET', 'POST'])
 #@api_key_or_login_required
 def api_news_callback_ai_summary():
@@ -149,20 +177,38 @@ def api_news_callback_ai_summary():
     if 'type' in json:
         print_b(" NEWS AI_CALLBACK " + json['id'] + " " + str(news.title))
 
+        sentiment = None
+        classification = 0
+
         t = json['type']
+        if t == 'dict':
+            tools = json['dict']
+            ai_summary = json['ai_summary']
+            update = {'ai_summary': ai_summary, 'tools': tools}
+
+            try:
+                sentiment = tools[0]['function']['arguments']['sentiment']
+            except Exception as e:
+                print_exception(e, "CRASHED READING SENTIMENT")
+
+            try:
+                classification = int(tools[0]['function']['arguments']['sentiment_score'])
+            except Exception as e:
+                pass
+
         if t == 'summary':
-            ia_summary = json['result']
-            update = {'ia_summary': ia_summary }
+            ai_summary = json['result']
+            update = {'ai_summary': ai_summary}
 
-            sentiment, classification = parse_sentiment(ia_summary)
-            if sentiment:
-                update['sentiment'] = sentiment
-                update['sentiment_score'] = classification
+        if ai_summary and not sentiment:
+            sentiment, classification = parse_sentiment(ai_summary)
 
-            news.update(**update)
+        if sentiment:
+            update['sentiment'] = sentiment
+            update['sentiment_score'] = classification
+
+        update['last_visited_date'] = datetime.now()
+        news.update(**update)
 
     ret = {}
     return get_response_formatted(ret)
-
-
-

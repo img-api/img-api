@@ -170,20 +170,25 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
             # We need to convert between both systems
             related_tickers = []
 
-            for ticker in item['relatedTickers']:
+            if 'relatedTickers' in item:
+                for ticker in item['relatedTickers']:
 
-                if ticker == db_ticker.ticker:
-                    related_tickers.append(db_ticker.full_symbol())
-                else:
-                    full_symbol = get_full_symbol(ticker)
-                    related_tickers.append(full_symbol)
+                    if ticker == db_ticker.ticker:
+                        related_tickers.append(db_ticker.full_symbol())
+                    else:
+                        full_symbol = get_full_symbol(ticker)
+                        related_tickers.append(full_symbol)
 
-            myupdate['related_exchange_tickers'] = related_tickers
+                myupdate['related_exchange_tickers'] = related_tickers
+            else:
+                print_r(" NO RELATED TICKERS ")
 
             try:
-                myupdate['stock_price'] = info['currentPrice']
+                if 'currentPrice' in info:
+                    myupdate['stock_price'] = info['currentPrice']
+
             except Exception as e:
-                print_exception(" PRICE DURING NEWS ")
+                print_exception(e, " PRICE DURING NEWS ")
 
             extra = {
                 'source': 'YFINANCE',

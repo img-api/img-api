@@ -83,16 +83,18 @@ def classify_sentiment(sentiment_text):
 
 # Function to fetch GIF from Giphy based on sentiment
 def get_gif_for_sentiment(sentiment):
-    GIPHY_API_KEY = currentapp.config.get("GIPHY_API_KEY", None)
+    from flask import current_app
+
+    GIPHY_API_KEY = current_app.config.get("GIPHY_API_KEY", None)
     if not GIPHY_API_KEY:
-        return None
+        return None, None
 
     if sentiment == "good":
         query = "happy"
     elif sentiment == "bad":
         query = "sad"
     else:
-        query = "neutral"
+        query = sentiment
 
     url = f"https://api.giphy.com/v1/gifs/search?api_key={GIPHY_API_KEY}&q={query}&limit=1"
     response = requests.get(url)
@@ -100,9 +102,9 @@ def get_gif_for_sentiment(sentiment):
 
     if data['data']:
         gif_url = data['data'][0]['images']['original']['url']
-        return gif_url
+        return data, gif_url
     else:
-        return "No GIF found."
+        return None, "No GIF found."
 
 
 # Function to parse the sentiment from text
