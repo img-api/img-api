@@ -161,7 +161,7 @@ def api_get_suggestions():
         for rec in db_tickers:
             rec.reindex()
 
-    ret = {'status': 'success', 'suggestions': unique_list}
+    ret = {'status': 'success', 'suggestions': unique_list, "query": query}
     return get_response_formatted(ret)
 
 

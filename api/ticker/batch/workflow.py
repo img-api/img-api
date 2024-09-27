@@ -53,8 +53,20 @@ def ticker_process_news_sites(BATCH_SIZE=5):
 
     return news
 
+def kill_chrome():
+    import os
+    import signal
 
-def ticker_process_batch(end=None, dry_run=False, BATCH_SIZE=5):
+    import psutil
+
+    cmdline_pattern = ['/home/dev/chrome/linux-116.0.5793.0/chrome-linux64/chrome']
+    for process in psutil.process_iter(['pid', 'cmdline']):
+        cmdline = process.info['cmdline']
+        if cmdline == cmdline_pattern:
+            print(f"Found process: PID = {process.info['pid']}, Command Line: {' '.join(cmdline)}")
+            os.kill(process.info['pid'], signal.SIGKILL)
+
+def ticker_process_batch(end=None, dry_run=False, BATCH_SIZE=10):
     """
     Gets a list of tickers and calls the different APIs to capture and process the data.
 
@@ -86,6 +98,7 @@ def ticker_process_batch(end=None, dry_run=False, BATCH_SIZE=5):
         except Exception as e:
             print_exception(e, "CRASHED PROCESSING BATCH")
 
+    kill_chrome()
     return tickers
 
 

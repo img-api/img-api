@@ -180,6 +180,11 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
 
             myupdate['related_exchange_tickers'] = related_tickers
 
+            try:
+                myupdate['stock_price'] = info['currentPrice']
+            except Exception as e:
+                print_exception(" PRICE DURING NEWS ")
+
             extra = {
                 'source': 'YFINANCE',
                 'status': 'WAITING_INDEX',

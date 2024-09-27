@@ -27,11 +27,14 @@ def clean_article(article):
     article = re.sub("\n", " ", article)
     return article
 
-def yfetch_process_news(item, web_driver=None):
+from api.ticker.batch.html.selenium_integration import get_webdriver
+
+
+def yfetch_process_news(item, web_driver= get_webdriver()):
     """
     Downloads the news into disk
     """
-    from api.ticker.batch.html.selenium_integration import get_webdriver
+
 
     print_b("NEWS -> " + item.link)
 

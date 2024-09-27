@@ -599,6 +599,10 @@ def build_query_from_url(args=None):
         example:
             /api_v1/events/get?creation_date=30 days
 
+        Field not empty | null
+        example:
+            /api/news/query?ia_summary__ne=NULL&order_by=-creation_date&creation_date__gte=1+day
+
     """
     if not args:
         args = request.args.to_dict()
@@ -655,7 +659,10 @@ def build_query_from_url(args=None):
                 parms = key.split("__")
                 if len(parms) > 1:
                     # We don't support equal number... :(
-                    if parms[-1] in ['gte', 'lte', 'lt', 'gt', 'ne']:
+                    if parms[-1] == "ne" and value == None:
+                        pass
+
+                    elif parms[-1] in ['gte', 'lte', 'lt', 'gt', 'ne']:
                         value = float(value)
 
                     elif parms[1] in ['in', 'nin', 'all']:

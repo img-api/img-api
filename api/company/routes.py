@@ -81,7 +81,7 @@ def api_company_get_suggestions():
     extra = [rec.exchange_tickers for rec in suggs]
 
     suggestions = [rec.company_name for rec in suggs]
-    ret = {'suggestions': suggestions, 'extra': extra}
+    ret = {'suggestions': suggestions, 'extra': extra, "query": query}
     return get_response_formatted(ret)
 
 
@@ -298,7 +298,10 @@ def api_company_callback_ai_summary():
         print_b(" AI_CALLBACK " + json['id'])
 
         t = json['type']
-        if t == 'summary':
+        if t == 'dict':
+            functions = {'tools': json['dict']}
+            business.update(**functions)
+        elif t == 'summary':
             business.set_key_value('ia_summary', json['result'])
 
     ret = {}
