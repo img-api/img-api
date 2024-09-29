@@ -526,7 +526,7 @@ def query_clean_reserved(args):
     args.pop('populate', None)
     args.pop('username', None)
     args.pop('order_by', None)
-    args.pop('offset', None)
+    args.pop('skip', None)
     args.pop('limit', None)
     return args
 
