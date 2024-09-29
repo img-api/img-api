@@ -526,6 +526,8 @@ def query_clean_reserved(args):
     args.pop('populate', None)
     args.pop('username', None)
     args.pop('order_by', None)
+    args.pop('offset', None)
+    args.pop('limit', None)
     return args
 
 
@@ -538,11 +540,19 @@ def build_query_from_request(MyClass, args=None, get_all=False, global_api=False
         fields = request.args.get("fields", None)
         get_all = request.args.get("get_all")
         order_by = request.args.get("order_by")
+
+        limit = request.args.get("limit")
+        skip = request.args.get("skip")
+
         args = query_clean_reserved(request.args.to_dict())
     else:
         fields = args.get("fields", None)
         get_all = args.get("get_all")
         order_by = args.get("order_by")
+
+        limit = args.get("limit")
+        skip = args.get("skip")
+
         args = query_clean_reserved(args)
 
     query_set = QuerySet(MyClass, MyClass()._get_collection())
@@ -574,8 +584,15 @@ def build_query_from_request(MyClass, args=None, get_all=False, global_api=False
         data = query_set.filter(query)
 
     # Add - or + in front of the field to order. Example "&order_by=-creation_date"
-    if data and order_by:
-        data = data.order_by(order_by)
+    if data:
+        if order_by:
+            data = data.order_by(order_by)
+
+        if skip:
+            data = data.skip(int(skip))
+
+        if limit:
+            data = data.limit(int(limit))
 
     if not data:
         print_r("Data not found")
