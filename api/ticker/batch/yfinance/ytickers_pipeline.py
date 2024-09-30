@@ -1,7 +1,7 @@
 import json
 import os
 import re
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 import pandas as pd
 import requests
@@ -166,6 +166,15 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
             }
 
             myupdate = prepare_update_with_schema(item, new_schema)
+
+            # Overwrite our creation time with the publisher time
+            try:
+                if 'providerPublishTime' in item:
+                    value = datetime.fromtimestamp(int(item['providerPublishTime']))
+                    print_b(" DATE " + str(value))
+                    myupdate['creation_date'] = value
+            except Exception as e:
+                print_e(e, "CRASHED LOADING DATE")
 
             # We need to convert between both systems
             related_tickers = []

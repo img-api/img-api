@@ -27,14 +27,14 @@ def clean_article(article):
     article = re.sub("\n", " ", article)
     return article
 
+
 from api.ticker.batch.html.selenium_integration import get_webdriver
 
 
-def yfetch_process_news(item, web_driver= get_webdriver()):
+def yfetch_process_news(item, web_driver=None):
     """
     Downloads the news into disk
     """
-
 
     print_b("NEWS -> " + item.link)
 
@@ -55,6 +55,10 @@ def yfetch_process_news(item, web_driver= get_webdriver()):
         #options = Options()
         #options.set_preference("general.useragent.override", user_agent)
 
+        if not item['link'] or 'localhost' in item['link']:
+            return
+
+        print_b(" LOADING " + item['link'])
         driver.get(item["link"])
 
         try:
@@ -85,6 +89,7 @@ def yfetch_process_news(item, web_driver= get_webdriver()):
         finally:
             articles.append(article)
 
+        driver.close()
     else:
         if item["publisher"] in ["Barrons", "MT Newswires"]:
             if "title" in item:
@@ -106,7 +111,6 @@ def yfetch_process_news(item, web_driver= get_webdriver()):
 
     #filename = str(item.id) + ".html"
     #save_html_to_file(raw_html, filename, data_folder)
-
 
     if not web_driver:
         driver.quit()

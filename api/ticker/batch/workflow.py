@@ -98,7 +98,7 @@ def ticker_process_batch(end=None, dry_run=False, BATCH_SIZE=10):
         except Exception as e:
             print_exception(e, "CRASHED PROCESSING BATCH")
 
-    kill_chrome()
+    #kill_chrome()
     return tickers
 
 

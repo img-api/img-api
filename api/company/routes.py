@@ -256,7 +256,7 @@ def api_create_ai_summary(company, force_summary=False):
         'type': 'summary',
         'id': company['safe_name'],
         'message': prompt + company['long_business_summary'],
-        'callback_url': "https://gputop.com/api/company/ai_callback"
+        'callback_url': "https://tothemoon.life/api/company/ai_callback"
     }
 
     print_b(" INDEX " + company['safe_name'])

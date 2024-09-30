@@ -109,7 +109,7 @@ def api_create_news_ai_summary(news, force_summary=False):
         'type': 'summary',
         'id': str(news['id']),
         'message': prompt + articles,
-        'callback_url': "https://gputop.com/api/news/ai_callback"
+        'callback_url': "https://tothemoon.life/api/news/ai_callback"
     }
 
     response = requests.post("http://lachati.com:5111/upload-json", json=data)
