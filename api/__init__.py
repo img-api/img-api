@@ -193,6 +193,33 @@ def api_get_token_from_request():
     return token
 
 
+def admin_login_required(func):
+    """
+    Decorator for views that checks that the api call is in there, redirecting
+    to the log-in page if necessary.
+
+    The user might be logged in
+    """
+
+    @wraps(func)
+    def decorated_view(*args, **kwargs):
+        print_y(" [%s] " % request.path)
+        print("------------ Admin REQUIRED --------------")
+        print(request)
+
+        if not hasattr(current_user, "username"):
+            print_alert(" Unauthorized ")
+            return current_app.login_manager.unauthorized()
+
+        if (current_user.is_authenticated and current_user.is_admin) or current_user.username == "admin":
+            #print_y(" User Authenticated")
+            return func(*args, **kwargs)
+
+        return current_app.login_manager.unauthorized()
+
+    return decorated_view
+
+
 def api_key_or_login_required(func):
     """
     Decorator for views that checks that the api call is in there, redirecting
