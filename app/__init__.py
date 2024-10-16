@@ -1,5 +1,6 @@
-from api.print_helper import *
 from importlib import import_module
+
+from api.print_helper import *
 
 
 def register_app_blueprints(app):
@@ -11,6 +12,7 @@ def register_app_blueprints(app):
             'user',
             'media',
             'setup',
+            'admin',
             'landing',
             'business',
     ):

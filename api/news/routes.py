@@ -9,7 +9,8 @@ import bcrypt
 import qrcode
 import requests
 import validators
-from api import (api_key_login_or_anonymous, api_key_or_login_required, cache,
+from api import (admin_login_required, api_key_login_or_anonymous,
+                 api_key_or_login_required, cache,
                  get_response_error_formatted, get_response_formatted)
 from api.news import blueprint
 from api.news.models import DB_News
@@ -23,7 +24,6 @@ from mongoengine.queryset.visitor import Q
 
 
 @blueprint.route('/query', methods=['GET', 'POST'])
-#@api_key_or_login_required
 def api_news_get_query():
     """
     Example of queries: https://dev.gputop.com/api/news/query?related_exchange_tickers=NASDAQ:NVO
@@ -47,6 +47,35 @@ def api_news_get_query():
     ret = {'status': 'success', 'news': news}
     return get_response_formatted(ret)
 
+@blueprint.route('/update', methods=['GET', 'POST'])
+@api_key_or_login_required
+@admin_login_required
+def api_create_news_update_query():
+    """
+    Create an article or update entry
+    """
+
+    json = request.json
+
+    ret = []
+    if 'news' in json:
+        for article in json['news']:
+            db_article = None
+
+            if 'id' in article:
+                db_article = DB_News.objects(id=article['id']).first()
+
+            if db_article:
+                db_article.update(**article)
+            else:
+                db_article = DB_News(**article)
+                db_article.save(validate=False)
+
+            ret.append(db_article)
+
+    ret = {'status': 'success', 'news': ret}
+    return get_response_formatted(ret.serialize())
+
 
 @blueprint.route('/get/<string:news_id>', methods=['GET', 'POST'])
 @blueprint.route('/get/<string:news_id>', methods=['GET', 'POST'])
@@ -59,7 +88,7 @@ def api_get_news_helper(news_id):
         ret = {'news': news}
         return get_response_formatted(ret)
 
-    news = DB_News.objects(safe_name=biz_name).first()
+    news = DB_News.objects(safe_name=news_id).first()
 
     if not news:
         return get_response_error_formatted(404, {'error_msg': "News not found"})
@@ -70,6 +99,8 @@ def api_get_news_helper(news_id):
 
 @blueprint.route('/rm/<string:biz_id>', methods=['GET', 'POST'])
 @blueprint.route('/remove/<string:biz_id>', methods=['GET', 'POST'])
+@api_key_or_login_required
+@admin_login_required
 def api_remove_a_news_by_id(biz_id):
     """ Business deletion
     ---
@@ -108,16 +139,25 @@ def api_create_news_ai_summary(news, force_summary=False):
     data = {
         'type': 'summary',
         'id': str(news['id']),
+        'prompt': prompt,
+        'article': articles,
         'message': prompt + articles,
         'callback_url': "https://tothemoon.life/api/news/ai_callback"
     }
+
+    if 'link' in news:
+        data['link'] = news['link']
+
+    if 'source' in news:
+        data['source'] = news['source']
 
     response = requests.post("http://lachati.com:5111/upload-json", json=data)
     response.raise_for_status()
 
 
 @blueprint.route('/ai_summary', methods=['GET', 'POST'])
-#@api_key_or_login_required
+@api_key_or_login_required
+@admin_login_required
 def api_news_get_news_ai_summary():
     """
         https://gputop.com/api/news/ai_summary?id=<<UIID>
@@ -166,6 +206,7 @@ def api_get_gif():
 
 @blueprint.route('/ai_callback', methods=['GET', 'POST'])
 #@api_key_or_login_required
+#@admin_login_required
 def api_news_callback_ai_summary():
     """ """
     from .sentiment import parse_sentiment
