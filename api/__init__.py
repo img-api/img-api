@@ -7,6 +7,7 @@ import werkzeug
 from flask import Response, json, jsonify, redirect, request
 from flask_caching import Cache
 from flask_login import current_user, login_required, login_user, logout_user
+from flask_mail import Mail, Message
 from werkzeug.exceptions import HTTPException
 
 from api.query_helper import mongo_to_dict_helper
@@ -20,6 +21,7 @@ API_VERSION = "0.50pa"
 cache = Cache(config={'CACHE_TYPE': 'SimpleCache'})
 api_ignore_list = ['tracking']
 
+mail = Mail()
 
 def api_clean_recursive(content, output):
     """ Cleans a dictionary of keys which are private.
@@ -416,3 +418,6 @@ def register_api_blueprints(app):
 
     # Cache
     cache.init_app(app)
+
+    mail.init_app(app)
+

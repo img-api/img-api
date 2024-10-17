@@ -1,22 +1,20 @@
 import os
-import time
 import shutil
+import time
 from datetime import datetime
-
-from mongoengine import *
-from api.print_helper import *
-from api.query_helper import *
-
-from flask import current_app
-from flask_login import UserMixin, current_user
-
-from imgapi_launcher import db, login_manager
-from api.query_helper import mongo_to_dict_helper
-
-from api.tools.signature_serializer import TimedJSONWebSignatureSerializer as Serializer, BadSignature, SignatureExpired
 
 from api.galleries.models import DB_UserGalleries
 from api.media.models import File_Tracking
+from api.print_helper import *
+from api.query_helper import *
+from api.query_helper import mongo_to_dict_helper
+from api.tools.signature_serializer import BadSignature, SignatureExpired
+from api.tools.signature_serializer import \
+    TimedJSONWebSignatureSerializer as Serializer
+from flask import current_app
+from flask_login import UserMixin, current_user
+from imgapi_launcher import db, login_manager
+from mongoengine import *
 
 
 class DB_UserSubscription(db.DynamicEmbeddedDocument):
@@ -186,7 +184,7 @@ class User(UserMixin, db.DynamicDocument):
 
     @staticmethod
     def verify_auth_token(token, check_active=True):
-        from api import get_response_formatted, get_response_error_formatted
+        from api import get_response_error_formatted, get_response_formatted
 
         s = Serializer(current_app.config['SECRET_KEY'])
         try:

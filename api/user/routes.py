@@ -7,7 +7,7 @@ from datetime import datetime
 import bcrypt
 import validators
 from api import (api_key_login_or_anonymous, api_key_or_login_required, cache,
-                 get_response_error_formatted, get_response_formatted)
+                 get_response_error_formatted, get_response_formatted, mail)
 from api.galleries.models import DB_MediaList
 from api.print_helper import *
 from api.query_helper import mongo_to_dict_helper
@@ -293,6 +293,9 @@ def api_user_recovery():
             possible_email = str(request.json['email'])
             user = User.objects(email=possible_email).first()
 
+            if not user:
+                user = User.objects(username=possible_email).first()
+
         if user:
             email = str(user.email)
             username = str(user.username)
@@ -352,7 +355,7 @@ def api_user_recovery():
 def password_recovery_user_email(username, email, token):
     import socket
 
-    from api.config import get_config_value
+    from api.config import get_config_value, get_host_name, get_port
 
     ####################### Report ADMIN ############################
     try:
@@ -360,12 +363,11 @@ def password_recovery_user_email(username, email, token):
 
         print_y(" PASSWORD LOST REPORT " + email)
 
-        msg = Message(' User [%s] lost the password at %s ' %
-                      (username, socket.gethostname()),
+        msg = Message(' User [%s] lost the password at %s ' % (username, socket.gethostname()),
                       sender=get_config_value("MAIL_DEFAULT_SENDER"),
                       recipients=['contact@engineer.blue'])
 
-        msg.body = "User {email} lost the password {date} \n ".format(email=email, date=datetime.datetime.now())
+        msg.body = "User {email} lost the password {date} \n ".format(email=email, date=datetime.now())
 
         if not do_not_send:
             mail.send(msg)
@@ -377,13 +379,12 @@ def password_recovery_user_email(username, email, token):
 
         host = get_host_name()
         protocol = request.scheme
-
-        recovery_link = "{protocol}://{host}/password_change?key={token}".format(host=host, token=token)
+        recovery_link = f"{protocol}://{host}/#/password_recovery?key={token}"
 
         msg.body = "Hi %s,\n" % username + \
             "Someone requested to reset your password, please follow the link below:.\n\n" + \
             " %s \n\n Bad boy! \n Please, don't do it again...\n Date: %s :( " % (
-                recovery_link, str(datetime.datetime.now()))
+                recovery_link, str(datetime.now()))
 
         #msg.html = render_template('email/recovery.html', btn_link=recovery_link, small_header=True, username=username)
 
@@ -401,6 +402,7 @@ def password_recovery_user_email(username, email, token):
 
 
 @blueprint.route('/remove', methods=['GET', 'POST', 'DELETE'])
+@api_key_or_login_required
 def api_remove_user_local():
     """ An user can delete its account
     ---
@@ -485,7 +487,13 @@ def get_auth_token():
         return user
 
     login_user(user, remember=True)
-    return get_response_formatted({'token': token, 'username': user.username, 'status': 'success'})
+    return get_response_formatted({
+        'token': token,
+        'username': user.username,
+        'status': 'success',
+        'first_name': user.first_name,
+        'last_name': user.last_name
+    })
 
 
 @blueprint.route('/get/<string:user_id>', methods=['GET'])
@@ -1028,6 +1036,7 @@ def set_user_info(my_key):
             token:
                 type: string
     """
+    from api.tools.validators import is_password_valid
 
     value = request.args.get("value", None)
     if not value and 'value' in request.json:
@@ -1035,6 +1044,16 @@ def set_user_info(my_key):
 
     if value == None:
         return get_response_error_formatted(400, {'error_msg': "Wrong parameters."})
+
+    if my_key == "password":
+        if not is_password_valid(value):
+            return get_response_error_formatted(401, {'error_msg': "Password has to be at least 8 characters long"})
+
+        value = bcrypt.hashpw(value.encode('utf-8'), bcrypt.gensalt()).hex()
+        current_user.update(**{"password": value})
+
+        ret = {"user": current_user.serialize()}
+        return get_response_formatted(ret)
 
     if isinstance(value, str):
         value = clean_html(value)

@@ -62,28 +62,6 @@ def get_webdriver():
 
     return driver
 
-def get_IBD_articles(url):
-    "Use this for scraping news from investors.com"
-
-    article = ""
-    user_agent = random.choice(firefox_user_agents)
-    options.set_preference("general.useragent.override", user_agent)
-    driver = webdriver.Firefox(options=options)
-    time.sleep(2)
-    link = driver.find_element(By.LINK_TEXT, "Continue Reading")
-    link.click()
-    time.sleep(3)
-    paragraphs = driver.find_elements(By.TAG_NAME, "p")
-    for paragraph in paragraphs:
-        if paragraph.text != "":
-            article += paragraph.text
-        if "YOU MIGHT ALSO LIKE" in paragraph.text:
-            break
-    article.replace("YOU MIGHT ALSO LIKE", "")
-    driver.quit()
-    return article
-
-
 def yfetch_process_news(item, web_driver=None):
     """
     Downloads the news into disk
@@ -147,23 +125,6 @@ def yfetch_process_news(item, web_driver=None):
         if item["publisher"] in ["Barrons", "MT Newswires"]:
             if "title" in item:
                 articles.append(item["title"])
-
-        elif item["publisher"] == "Investor's Business Daily":
-            while True:
-                try:
-                    article = get_IBD_articles(item["link"])
-                    if article != "":
-                        break
-                except:
-                    time.sleep(random.randint(5, 15))
-
-            article = clean_article(article)
-            articles.append(article)
-
-    #soup, raw_html = get_html(item.link)
-
-    #filename = str(item.id) + ".html"
-    #save_html_to_file(raw_html, filename, data_folder)
 
     if not web_driver:
         driver.quit()
