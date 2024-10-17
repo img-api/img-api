@@ -1,30 +1,27 @@
+import binascii
+import random
 import re
 import time
-import random
-import bcrypt
-import binascii
 from datetime import datetime
+
+import bcrypt
 import validators
-
-from api.user import blueprint
-from api.print_helper import *
-
-from api import get_response_formatted, get_response_error_formatted, api_key_or_login_required, api_key_login_or_anonymous, cache
-
-from flask import jsonify, request, Response, redirect, abort
-from api.tools import generate_file_md5, ensure_dir, is_api_call
-
-from api.query_helper import mongo_to_dict_helper
-
-from api.user.models import User
+from api import (api_key_login_or_anonymous, api_key_or_login_required, cache,
+                 get_response_error_formatted, get_response_formatted)
 from api.galleries.models import DB_MediaList
-
+from api.print_helper import *
+from api.query_helper import mongo_to_dict_helper
+from api.tools import ensure_dir, generate_file_md5, is_api_call
+from api.tools.validators import is_valid_username
+from api.user import blueprint
+from api.user.models import User
+from flask import Response, abort, jsonify, redirect, request
+from flask_login import current_user, login_user, logout_user
+from flask_mail import Mail, Message
 from mongoengine.queryset import QuerySet
 from mongoengine.queryset.visitor import Q
-
-from flask_login import current_user, login_user, logout_user
 from services.dictionary.my_dictionary import words
-from api.tools.validators import is_valid_username
+
 
 def get_user_from_request():
 
@@ -178,7 +175,8 @@ def api_create_user_local():
                 type: integer
 
     """
-    from api.tools.validators import is_valid_username, get_validated_email, is_password_valid
+    from api.tools.validators import (get_validated_email, is_password_valid,
+                                      is_valid_username)
 
     print("======= CREATE USER LOCAL =============")
 
@@ -274,6 +272,132 @@ def api_create_user_local():
         'user': user.serialize()
     }
     return get_response_formatted(ret)
+
+
+@blueprint.route('/mail/password_recovery', methods=['OPTIONS', 'GET', 'POST'])
+@blueprint.route('/password_recovery', methods=['OPTIONS', 'GET', 'POST'])
+def api_user_recovery():
+    if request.method == "OPTIONS":
+        # Handle preflight here, or just let Flask-CORS handle it automatically
+        return '', 200
+
+    existing_user = None
+    email = None
+    user = None
+
+    if request.json:
+        if ('username' in request.json):
+            username = str(request.json['username'])
+            user = User.objects(username=username).first()
+        elif ('email' in request.json):
+            possible_email = str(request.json['email'])
+            user = User.objects(email=possible_email).first()
+
+        if user:
+            email = str(user.email)
+            username = str(user.username)
+        else:
+            return get_response_error_formatted(401, {'error_msg': "Sorry, we could not find your account."})
+
+    else:
+        user_id = request.args.get("user_id")
+        if user_id:
+            user = User.objects(id=user_id).first()
+            username = user.username
+            email = user.email
+        else:
+            username = request.args.get("username")
+
+        if not username and hasattr(current_user, "username"):
+            user = current_user
+            username = current_user.username
+            email = current_user.email
+        else:
+            if not username:
+                if ('username' in request.form):
+                    username = str(request.form['username'])
+
+                if ('email' in request.form):
+                    possible_email = str(request.form['email'])
+                    user = User.objects(email=possible_email).first()
+
+                    # https://insights.securecodewarrior.com/introducing-missions-the-next-phase-of-developer-centric-security-training/
+                    # Unicode vulnerability if trusting the email from the form.
+                    email = str(user.email)
+
+                print("Find user [%s][%s]" % (username, email))
+
+            if not user and username:
+                user = User.objects(username=username).first()
+                if not user:
+                    return get_response_error_formatted(401, {'error_msg': "Sorry, we could not find your account."})
+
+                username = user.username
+                email = str(user.email)
+
+    if not user:
+        print("User not found [%s]" % username)
+        return get_response_error_formatted(401, {'error_msg': "Sorry, we could not find your account."})
+
+    if not user.active:
+        return get_response_error_formatted(
+            401, {'error_msg': "Sorry, your account has not been validated yet! Please contact an admin!"})
+
+    print("Find user [%s][%s]" % (user.username, user.email))
+    token = user.generate_auth_token()
+
+    return password_recovery_user_email(username, email, token)
+
+
+def password_recovery_user_email(username, email, token):
+    import socket
+
+    from api.config import get_config_value
+
+    ####################### Report ADMIN ############################
+    try:
+        do_not_send = request.args.get("do_not_send")
+
+        print_y(" PASSWORD LOST REPORT " + email)
+
+        msg = Message(' User [%s] lost the password at %s ' %
+                      (username, socket.gethostname()),
+                      sender=get_config_value("MAIL_DEFAULT_SENDER"),
+                      recipients=['contact@engineer.blue'])
+
+        msg.body = "User {email} lost the password {date} \n ".format(email=email, date=datetime.datetime.now())
+
+        if not do_not_send:
+            mail.send(msg)
+
+        ####################### SEND RECOVERY INSTRUCTIONS ############################
+
+        print_big(" RECOVERY LINK " + email)
+        msg = Message('Reset password instructions', sender=get_config_value("MAIL_DEFAULT_SENDER"), recipients=[email])
+
+        host = get_host_name()
+        protocol = request.scheme
+
+        recovery_link = "{protocol}://{host}/password_change?key={token}".format(host=host, token=token)
+
+        msg.body = "Hi %s,\n" % username + \
+            "Someone requested to reset your password, please follow the link below:.\n\n" + \
+            " %s \n\n Bad boy! \n Please, don't do it again...\n Date: %s :( " % (
+                recovery_link, str(datetime.datetime.now()))
+
+        #msg.html = render_template('email/recovery.html', btn_link=recovery_link, small_header=True, username=username)
+
+        if do_not_send:
+            print_error(" DO NOT SEND MAIL ")
+            return msg.html
+        else:
+            mail.send(msg)
+
+    except Exception as er:
+        print_exception(er, "CRASHED")
+        return get_response_error_formatted(401, {'error_msg': "Failed sending email."})
+
+    return get_response_formatted({'email': email, 'username': username})
 
 
 @blueprint.route('/remove', methods=['GET', 'POST', 'DELETE'])
@@ -635,7 +759,8 @@ def api_actions_on_list(username, list_id, action, my_param=None, my_value=None)
         description: The list is private to that particular user
     """
 
-    from api.media.routes import api_populate_media_list, api_get_user_photostream
+    from api.media.routes import (api_get_user_photostream,
+                                  api_populate_media_list)
 
     if list_id == "undefined":
         return get_response_error_formatted(400, {'error_msg': "Wrong frontend."})
@@ -917,5 +1042,5 @@ def set_user_info(my_key):
     if not current_user.set_key_value(my_key, value):
         return get_response_error_formatted(400, {'error_msg': "Something went wrong saving this key."})
 
-    ret = { "user": current_user.serialize() }
+    ret = {"user": current_user.serialize()}
     return get_response_formatted(ret)
