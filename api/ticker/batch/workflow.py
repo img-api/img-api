@@ -44,6 +44,12 @@ def ticker_process_news_sites(BATCH_SIZE=5):
                 yfetch_process_news(item)
                 continue
 
+            elif item.source == "AlphaVantage":
+                alpha_vantage_332process_news(item)
+
+            elif item.source == "Google":
+                google_process_news(item)
+
         except Exception as e:
             item.set_state("ERROR: FETCH CRASHED, SEE LOGS!")
             print_exception(e, "CRASHED FETCHING NEWS")
@@ -79,6 +85,17 @@ def ticker_process_batch(end=None, dry_run=False, BATCH_SIZE=5):
             yticker_pipeline_process(db_ticker, dry_run=dry_run)
         except Exception as e:
             print_exception(e, "CRASHED PROCESSING BATCH")
+
+        try:
+            av_pipeline_process(db_ticker)
+        except:
+            print_exception(e, "CRASHED PROCESSING ALPHA VANTAGE")
+
+        #try:
+        #    google_pipeline_process(db_ticker, dry_run = dry_run)
+        #except:
+         #   print_exception(e, "CRASHED PROCESSING GOOGLE")
+
 
     return tickers
 

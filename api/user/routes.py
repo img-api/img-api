@@ -1,30 +1,26 @@
+import binascii
+import random
 import re
 import time
-import random
-import bcrypt
-import binascii
 from datetime import datetime
+
+import bcrypt
 import validators
-
-from api.user import blueprint
-from api.print_helper import *
-
-from api import get_response_formatted, get_response_error_formatted, api_key_or_login_required, api_key_login_or_anonymous, cache
-
-from flask import jsonify, request, Response, redirect, abort
-from api.tools import generate_file_md5, ensure_dir, is_api_call
-
-from api.query_helper import mongo_to_dict_helper
-
-from api.user.models import User
+from api import (api_key_login_or_anonymous, api_key_or_login_required, cache,
+                 get_response_error_formatted, get_response_formatted)
 from api.galleries.models import DB_MediaList
-
+from api.print_helper import *
+from api.query_helper import mongo_to_dict_helper
+from api.tools import ensure_dir, generate_file_md5, is_api_call
+from api.tools.validators import is_valid_username
+from api.user import blueprint
+from api.user.models import User
+from flask import Response, abort, jsonify, redirect, request
+from flask_login import current_user, login_user, logout_user
 from mongoengine.queryset import QuerySet
 from mongoengine.queryset.visitor import Q
-
-from flask_login import current_user, login_user, logout_user
 from services.dictionary.my_dictionary import words
-from api.tools.validators import is_valid_username
+
 
 def get_user_from_request():
 
@@ -178,7 +174,8 @@ def api_create_user_local():
                 type: integer
 
     """
-    from api.tools.validators import is_valid_username, get_validated_email, is_password_valid
+    from api.tools.validators import (get_validated_email, is_password_valid,
+                                      is_valid_username)
 
     print("======= CREATE USER LOCAL =============")
 
@@ -635,7 +632,8 @@ def api_actions_on_list(username, list_id, action, my_param=None, my_value=None)
         description: The list is private to that particular user
     """
 
-    from api.media.routes import api_populate_media_list, api_get_user_photostream
+    from api.media.routes import (api_get_user_photostream,
+                                  api_populate_media_list)
 
     if list_id == "undefined":
         return get_response_error_formatted(400, {'error_msg': "Wrong frontend."})

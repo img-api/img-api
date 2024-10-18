@@ -1,5 +1,6 @@
-from api.print_helper import *
 from importlib import import_module
+
+from api.print_helper import *
 
 
 def register_app_blueprints(app):
@@ -10,6 +11,7 @@ def register_app_blueprints(app):
             'root',
             'user',
             'media',
+            'admin',
             'setup',
             'landing',
             'business',
@@ -17,4 +19,4 @@ def register_app_blueprints(app):
         module = import_module('app.{}.routes'.format(module_name))
         app.register_blueprint(module.blueprint)
 
-        #print(" Registering API " + str(module_name))
+        print(" Registering API " + str(module_name))

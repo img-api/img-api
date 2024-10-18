@@ -16,6 +16,8 @@ from api.ticker.connector_yfinance import fetch_tickers_info
 from api.ticker.models import DB_Ticker, DB_TickerSimple
 from api.ticker.tickers_helpers import (standardize_ticker_format,
                                         standardize_ticker_format_to_yfinance)
+#import alpha vantage & googlenews
+
 # Perform complex queries to mongo
 from mongoengine.queryset import QuerySet
 from mongoengine.queryset.visitor import Q
@@ -180,7 +182,6 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
                 db_news = DB_News(**myupdate).save(validate=False)
 
             yfetch_process_news(db_news)
-
             db_ticker.set_state("PROCESSED")
 
     except Exception as e:

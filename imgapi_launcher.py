@@ -1,19 +1,16 @@
 import os
-import werkzeug
 import traceback
-
-from flask import Flask, jsonify, request, json
-
-from flasgger import Swagger, LazyString, LazyJSONEncoder
-from flasgger import swag_from
 from importlib import import_module
 
-from flask_login import current_user, LoginManager
-from flask_mongoengine import MongoEngine, MongoEngineSessionInterface
+import werkzeug
+from flasgger import LazyJSONEncoder, LazyString, Swagger, swag_from
+from flask import Flask, json, jsonify, request
 from flask_cors import CORS
+from flask_login import LoginManager, current_user
+from flask_mongoengine import MongoEngine, MongoEngineSessionInterface
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Enable CORS on the entire application
 
@@ -84,9 +81,9 @@ template = dict(swaggerUiPrefix=LazyString(lambda: request.environ.get('HTTP_X_S
 swagger = Swagger(app, template=swagger_template, config=swagger_config)
 """
 
+from api import register_api_blueprints
 # Blue prints section
 from app import register_app_blueprints
-from api import register_api_blueprints
 
 register_api_blueprints(app)
 register_app_blueprints(app)
@@ -107,8 +104,8 @@ def after_request(response):
 
 def handle_bad_request(e):
 
-    from api.print_helper import print_alert
     from api import get_response_error_formatted
+    from api.print_helper import print_alert
 
     traceback.print_tb(e.__traceback__)
     print_alert("BAD REQUEST EXCEPTION  [%s] [%d]" % (type(e), e.code))

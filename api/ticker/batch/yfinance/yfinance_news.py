@@ -19,14 +19,6 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.firefox.options import Options
 
 import yfinance as yf
-
-
-def clean_article(article):
-    """Cleans \n character from article"""
-
-    article = re.sub("\n", " ", article)
-    return article
-
 def yfetch_process_news(item, web_driver=None):
     """
     Downloads the news into disk
@@ -44,13 +36,7 @@ def yfetch_process_news(item, web_driver=None):
         driver = get_webdriver()
 
     articles = []
-    #Investopedia
-    #The Wall Street Journal
-    #Reuters
-    #Bloomberg
-    #Motley Fool
-    #TipRanks
-    #The Information
+    
     print_b(" PUBLISHER " + item['publisher'])
     if item["publisher"] not in ["Barrons", "Financial Times", "The Information", "MT Newswires", "Investor's Business Daily", "Yahoo Finance Video"]:
         #user_agent = random.choice(firefox_user_agents)
@@ -87,19 +73,6 @@ def yfetch_process_news(item, web_driver=None):
         finally:
             articles.append(article)
 
-    else:
-        if item["publisher"] == "Investor's Business Daily":
-            
-            while True:
-                try:
-                    article = download_ibd(item["link"])
-                    if article != "":
-                        break
-                except:
-                    time.sleep(random.randint(5, 15))
-
-            article = clean_article(article)
-            articles.append(article)
 
     #soup, raw_html = get_html(item.link)
 

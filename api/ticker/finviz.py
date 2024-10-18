@@ -201,4 +201,4 @@ class FinvizNews:
                     article = article,
                     uuid = uuid,
                 related_tickers = None)
-
+0
