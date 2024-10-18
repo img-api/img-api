@@ -249,7 +249,7 @@ def api_create_ai_summary(company, force_summary=False):
     if not company['long_business_summary']:
         return
 
-    if not force_summary and 'ai_summary' in company:
+    if not force_summary and 'ai_summary' in company or 'ia_summary' in company:
         return
 
     data = {

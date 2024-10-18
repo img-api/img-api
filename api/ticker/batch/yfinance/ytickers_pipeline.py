@@ -143,6 +143,7 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
                 try:
                     api_create_news_ai_summary(db_news)
                 except Exception as e:
+                    print_exception(e, "CRASHED")
                     pass
 
                 continue
