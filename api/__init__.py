@@ -205,19 +205,21 @@ def admin_login_required(func):
 
     @wraps(func)
     def decorated_view(*args, **kwargs):
+        from imgapi_launcher import login_manager
+
         print_y(" [%s] " % request.path)
         print("------------ Admin REQUIRED --------------")
         print(request)
 
         if not hasattr(current_user, "username"):
             print_alert(" Unauthorized ")
-            return current_app.login_manager.unauthorized()
+            return login_manager.unauthorized()
 
         if (current_user.is_authenticated and current_user.is_admin) or current_user.username == "admin":
             #print_y(" User Authenticated")
             return func(*args, **kwargs)
 
-        return current_app.login_manager.unauthorized()
+        return login_manager.unauthorized()
 
     return decorated_view
 

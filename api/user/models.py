@@ -82,6 +82,8 @@ class User(UserMixin, db.DynamicDocument):
 
     # User uploads are public by default?
     is_media_public = db.BooleanField(default=False)
+    is_admin = db.BooleanField(default=False)
+    is_readonly = db.BooleanField(default=False)
 
     settings = db.EmbeddedDocumentField(DB_UserSettings, default=DB_UserSettings())
     galleries = db.EmbeddedDocumentField(DB_UserGalleries, default=DB_UserGalleries())
