@@ -32,7 +32,6 @@ def yfetch_process_news(item, web_driver=None):
     Downloads the news into disk
     """
     from api.ticker.batch.html.selenium_integration import get_webdriver
-
     print_b("NEWS -> " + item.link)
 
     data_folder = item.get_data_folder()
@@ -45,9 +44,15 @@ def yfetch_process_news(item, web_driver=None):
         driver = get_webdriver()
 
     articles = []
-
+    #Investopedia
+    #The Wall Street Journal
+    #Reuters
+    #Bloomberg
+    #Motley Fool
+    #TipRanks
+    #The Information
     print_b(" PUBLISHER " + item['publisher'])
-    if item["publisher"] not in ["Barrons", "MT Newswires", "Investor's Business Daily", "Yahoo Finance Video"]:
+    if item["publisher"] not in ["Barrons", "Financial Times", "The Information", "MT Newswires", "Investor's Business Daily", "Yahoo Finance Video"]:
         #user_agent = random.choice(firefox_user_agents)
         #options = Options()
         #options.set_preference("general.useragent.override", user_agent)
@@ -69,27 +74,25 @@ def yfetch_process_news(item, web_driver=None):
             pass
 
         try:
-            article = driver.find_element(By.CLASS_NAME, "caas-body")
-            article = clean_article(article.text)
+            article = driver.find_element(By.TAG_NAME, "article")
+            article = article.text
+            
         except:
-            print(item["publisher"])
+            print("article tag not found", item["publisher"])
             article = ""
             paragraphs = driver.find_elements(By.TAG_NAME, "p")
             for paragraph in paragraphs:
                 article += paragraph.text
-            article = clean_article(article)
+            
         finally:
             articles.append(article)
 
     else:
-        if item["publisher"] in ["Barrons", "MT Newswires"]:
-            if "title" in item:
-                articles.append(item["title"])
-
-        elif item["publisher"] == "Investor's Business Daily":
+        if item["publisher"] == "Investor's Business Daily":
+            
             while True:
                 try:
-                    article = get_IBD_articles(item["link"])
+                    article = download_ibd(item["link"])
                     if article != "":
                         break
                 except:
@@ -116,5 +119,10 @@ def yfetch_process_news(item, web_driver=None):
     else:
         item.set_state("ERROR: ARTICLES NOT FOUND")
 
-def news_fetcher():
-    return
+def date_from_unix(string):
+
+    """Takes unix format and converts it into datetime object"""
+
+    return datetime.datetime.fromtimestamp(float(string))
+
+
