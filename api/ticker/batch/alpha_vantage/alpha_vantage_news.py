@@ -81,7 +81,6 @@ class AlphaVantage:.
             zacks = Zacks()
             article = zacks.extract_article(html)
     
-
         return article
 
 

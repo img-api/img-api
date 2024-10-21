@@ -1,6 +1,5 @@
 import os
 from pygooglenews import GoogleNews
-
 import random
 
 import requests
@@ -12,24 +11,9 @@ from bs4 import BeautifulSoup
 import time
 import selenium
 from selenium import webdriver
-from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
-from selenium.webdriver.firefox.options import Options
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.action_chains import ActionChains
-
 
 import re
-import csv
-
-#from pytube import YouTube
-#import io
-#import whisper
-
-from mongoengine import connect
-from mongoengine.fields import ListField, StringField
-
 from zenrows import ZenRowsClient
 
 class Google:
@@ -39,82 +23,7 @@ class Google:
 
         article = re.sub(word, " ", article)
         return article
-    
-    def remove_paragraphs(self, paragraphs, article):
-        for paragraph in paragraphs:
-            article = re.sub(paragraph, "", article)
-        return article
-    
-    def parse_google_dates(self, date_str):
-    
-        """Parses dates from Google News"""
-
-        parsed_date = datetime.datetime.strptime(date_str, "%a, %d %b %Y %H:%M:%S %Z")
-        # Format the date into the desired format
-        formatted_date = parsed_date.strftime("%Y-%m-%d %H:%M:%S")
-        return formatted_date
-
-    def format_google_dates(self, date):
-        date = re.sub("-", "", date)
-        date = re.sub(" ", "", date)
-        date = re.sub(":", "", date)
-        return date
-    
-    #save functions
-    
-    def save_text(self, file_name, ticker, article):
-
-        if not os.path.exists(f"ticker_data\\{ticker}"):
-            # If the folder does not exist, create it
-            os.makedirs(f"ticker_data\\{ticker}")
-            print(f"Folder '{ticker}' created.")
-        else:
-            pass
         
-        # Create the full file path
-        file_path = os.path.join(f"ticker_data\\{ticker}", file_name)
-        
-        with open(file_path, "w", encoding="utf-8") as file:
-        # Write the string to the file
-            file.write(article)
-        file.close()
-    
-    def save_to_csv(self, ticker, data):
-        
-        file_path = f"ticker_data\\{ticker}\\{ticker}.csv"
-        headers = ["date", "link", "title", "news_type", "article", "publisher"]
-
-        if not os.path.isfile(file_path):
-            print(f"The file {file_path} does not exist. Creating file...")
-            with open(file_path, "w", newline = "", encoding="utf-8") as file:
-                writer = csv.DictWriter(file, fieldnames=headers)
-                writer.writeheader()
-                writer.writerow(data)
-        else:
-            with open(file_path, "a", newline = "", encoding="utf-8") as file:
-                writer = csv.DictWriter(file, fieldnames = headers)
-                writer.writerow(data)
-        file.close()
-    
-    
-    def save_to_mongo(self, date, link, title, news_type, publisher, article, uuid, related_tickers = None):
-
-        """Creates a MongoDB article object. 
-        Saves article into the relevant database"""
-
-        news = DB_News(
-            creation_date = date,
-            last_visited_date = datetime.datetime.now(),
-            link = link,
-            title = title,
-            news_type = news_type,
-            publisher = publisher,
-            news_article = article,
-            external_uuid = uuid,
-            related_exchange_tickers = related_tickers
-        )
-        news.save()
-    
     def extract_html(self, url):
     
     
@@ -139,237 +48,150 @@ class Google:
     
     
     #main
-    def main(self, ticker, offline = True):
+    def process_google_news(self, item):
 
         """Takes in stock ticker as input, retrieves news articles from Google News and returns
         list of articles"""    
         
-        gn = GoogleNews()
-        search = gn.search(f"{ticker}")
-        process = []
-        to_process = False
-        markets_found = False
+        print("Currently extracting", result["source"]["title"])
+        print(result["link"])
         
-        for idx, result in enumerate(search["entries"]):
+        if result["source"]["title"] == "24/7 Wall St.":
+            ws_247 = WS_247()
+            success, html = self.extract_html(result["link"])
+            article = ws_247.parse_article(html)
+            to_process = True
 
-            #street insider & CNBC: must pay
-            article = None
-            print("Currently extracting", result["source"]["title"])
-            print(result["link"])
-            if result["source"]["title"] == "Markets.com":
-                markets_found = True
+        elif result["source"]["title"] == "Barchart":
+            try:
+                barchart = Barchart()
+                success, html = barchart.extract_html(result["link"])
+                article = barchart.parse_article(html)
+            except Exception as e:
+                print("Failed to extract Barchart")
+                article = ""
+
+        elif result["source"]["title"] == "Benzinga":
+            benzinga = Benzinga()
+            success, html = self.extract_zenrows_html(result["link"])
+            article = benzinga.extract_article(html)
+        
+        elif result["source"]["title"] == "Fast Company":
+            fast_company = Fast_Company()
+            success, html = self.extract_html(result["link"])
+            article = fast_company.extract_article(html)
+        
+        elif result["source"]["title"] == "Forbes":
+            success, html = self.extract_html(result["link"])
+            forbes = Forbes()
+            article = forbes.extract_article(html)
+        
+        elif result["source"]["title"] == "ForexLive":
+            success, html = self.extract_html(result["link"])
+            forex_live = Forex_Live()
+            article = forex_live.extract_article(html)
+        
+        elif result["source"]["title"] == "Fortune":
+            success, html = self.extract_html(result["link"])
+            fortune = Fortune()
+            article = fortune.extract_article(html)
+        
+        elif result["source"]["title"] == "FXStreet":
+            success, html = self.extract_html(result["link"])
+            fx_street = FX_Street()
+            article = fx_street.extract_article(html)
+        
+        elif result["source"]["title"] == "Insider Monkey":
+            insider_monkey = Insider_Monkey()
+            success, html = self.extract_html(result["link"])
+            article = insider_monkey.extract_article(html)
+        
+        elif result["source"]["title"] == "Investing.com":
+            investing = Investing()
+            success, html = self.extract_zenrows_html(result["link"])
+            article = investing.extract_article(html)
+        
+        elif result["source"]["title"] == "InvestmentNews":
+            investment_news = Investment_News()
+            success, html = investment_news.extract_html(result["link"])
+            article = investment_news.extract_article(html)
             
-            if markets_found == False:
-                continue
-            
-            if result["source"]["title"] in ["CNBC", "The Motley Fool", "Yahoo Finance"]:
-                continue
-
-            elif result["source"]["title"] == "24/7 Wall St.":
-                ws_247 = WS_247()
-                success, html = self.extract_html(result["link"])
-                article = ws_247.parse_article(html)
-                to_process = True
-
-            elif result["source"]["title"] == "Barchart":
-                try:
-                    barchart = Barchart()
-                    success, html = barchart.extract_html(result["link"])
-                    article = barchart.parse_article(html)
-                    to_process = True
-                except Exception as e:
-                    print("Failed to extract Barchart")
-                    continue
-
-            elif result["source"]["title"] == "Benzinga":
-                benzinga = Benzinga()
-                success, html = self.extract_zenrows_html(result["link"])
-                article = benzinga.extract_article(html)
-                to_process = True
-            
-            elif result["source"]["title"] == "Fast Company":
-                fast_company = Fast_Company()
-                success, html = self.extract_html(result["link"])
-                article = fast_company.extract_article(html)
-                to_process = True
-
-            elif result["source"]["title"] == "Forbes":
-                success, html = self.extract_html(result["link"])
-                forbes = Forbes()
-                article = forbes.extract_article(html)
-                to_process = True
-
-            elif result["source"]["title"] == "ForexLive":
-                success, html = self.extract_html(result["link"])
-                forex_live = Forex_Live()
-                article = forex_live.extract_article(html)
-                to_process = True
-
-            elif result["source"]["title"] == "Fortune":
-                success, html = self.extract_html(result["link"])
-                fortune = Fortune()
-                article = fortune.extract_article(html)
-                to_process = True
-
-            elif result["source"]["title"] == "FXStreet":
-                success, html = self.extract_html(result["link"])
-                fx_street = FX_Street()
-                article = fx_street.extract_article(html)
-                to_process = True
-
-            elif result["source"]["title"] == "Insider Monkey":
-                insider_monkey = Insider_Monkey()
-                success, html = self.extract_html(result["link"])
-                article = insider_monkey.extract_article(html)
-                to_process = True
-
-            elif result["source"]["title"] == "Investing.com":
-                investing = Investing()
-                success, html = self.extract_zenrows_html(result["link"])
-                article = investing.extract_article(html)
-                to_process = True
-
-            elif result["source"]["title"] == "InvestmentNews":
-                investment_news = Investment_News()
-                success, html = investment_news.extract_html(result["link"])
-                article = investment_news.extract_article(html)
-                to_process = True
+        elif result["source"]["title"] == "Investopedia":
+            success, html = self.extract_html(result["link"])
+            investopedia = Investopedia()
+            article = investopedia.parse_article(html)
+        
+        elif result["source"]["title"] == "Investor's Business Daily":
+            ibd = IBD()
+            success, html = self.extract_zenrows_html(result["link"])
+            article = ibd.extract_article(html)
+        
+        elif result["source"]["title"] == "MarketBeat":
+            marketbeat = Marketbeat()
+            success, html = marketbeat.extract_html(result["link"])
+            article = marketbeat.extract_article(html)
+        
+        elif result["source"]["title"] == "Markets.com":
+            markets = Markets()
+            success, html = markets.extract_html(result["link"])
+            article = markets.extract_article(html)
+        
+        elif result["source"]["title"] == "Marketscreener.com":
+            market_screener = Market_screener()
+            success, html = self.extract_html(result["link"])
+            article = market_screener.extract_article(html)
+        
+        elif result["source"]["title"] == "MoneyCheck":
+            money_check = Money_Check()
+            success, html = self.extract_html(result["link"])
+            article = money_check.extract_article(html)
+        
+        elif result["source"]["title"] == "Nasdaq":
+            nasdaq = NASDAQ()
+            success, html = self.extract_html(result["link"])
+            article = nasdaq.extract_article(html)
+        
+        elif result["source"]["title"] == "Proactive Investors USA":
+            proactive_investors = Proactive_Investors()
+            success, html = self.extract_html(result["link"])
+            article = proactive_investors.extract_article(html)
+        
+        elif result["source"]["title"] == "Reuters":
+            reuters = Reuters()
+            success, html = self.extract_html(result["link"])
+            article = reuters.extract_article(html)
+        
+        elif result["source"]["title"] == "TheStreet":
+            the_street = The_Street()
+            success, html = self.extract_html(result["link"])
+            article = the_street.extract_article(html)
+        
+        elif result["source"]["title"] == "StockTitan":
+            stock_titan = Stock_Titan()
+            success, html = self.extract_html(result["link"])
+            article = stock_titan.extract_article(html)
                 
-            elif result["source"]["title"] == "Investopedia":
-                success, html = self.extract_html(result["link"])
-                investopedia = Investopedia()
-                article = investopedia.parse_article(html)
-                to_process = False
+        elif result["source"]["title"] == "TipRanks":
+            tipranks = TipRanks()
+            success, html = tipranks.extract_html(result["link"])
+            article = tipranks.parse_article(html, ticker)
+        
+        elif result["source"]["title"] == "TradingView":
+            tokenist = Tokenist()
+            success, html = self.extract_html(result["link"])
+            article = tokenist.extract_article(html, ticker)
+        
+        elif result["source"]["title"] == "TradingView":
+            trading_view = Trading_View()
+            success, html = self.extract_html(result["link"])
+            article = trading_view.extract_article(html, ticker)
             
-            elif result["source"]["title"] == "Investor's Business Daily":
-                ibd = IBD()
-                success, html = self.extract_zenrows_html(result["link"])
-                article = ibd.extract_article(html)
-                to_process = True
-
-            elif result["source"]["title"] == "MarketBeat":
-                marketbeat = Marketbeat()
-                success, html = marketbeat.extract_html(result["link"])
-                article = marketbeat.extract_article(html)
-                to_process = True
-            
-            elif result["source"]["title"] == "Markets.com":
-                markets = Markets()
-                success, html = markets.extract_html(result["link"])
-                article = markets.extract_article(html)
-                to_process = True
-
-            elif result["source"]["title"] == "Marketscreener.com":
-                market_screener = Market_screener()
-                success, html = self.extract_html(result["link"])
-                article = market_screener.extract_article(html)
-                to_process = True
-
-            elif result["source"]["title"] == "MoneyCheck":
-                money_check = Money_Check()
-                success, html = self.extract_html(result["link"])
-                article = money_check.extract_article(html)
-                to_process = True
-
-            elif result["source"]["title"] == "Nasdaq":
-                nasdaq = NASDAQ()
-                success, html = self.extract_html(result["link"])
-                article = nasdaq.extract_article(html)
-                to_process = False
-
-            elif result["source"]["title"] == "Proactive Investors USA":
-                proactive_investors = Proactive_Investors()
-                success, html = self.extract_html(result["link"])
-                article = proactive_investors.extract_article(html)
-                to_process = True
-
-            elif result["source"]["title"] == "Reuters":
-                reuters = Reuters()
-                success, html = self.extract_html(result["link"])
-                article = reuters.extract_article(html)
-                to_process = True
-
-            elif result["source"]["title"] == "TheStreet":
-                the_street = The_Street()
-                success, html = self.extract_html(result["link"])
-                article = the_street.extract_article(html)
-                to_process = True
-
-            elif result["source"]["title"] == "StockTitan":
-                stock_titan = Stock_Titan()
-                success, html = self.extract_html(result["link"])
-                article = stock_titan.extract_article(html)
-                to_process = True
-                    
-            elif result["source"]["title"] == "TipRanks":
-                tipranks = TipRanks()
-                success, html = tipranks.extract_html(result["link"])
-                article = tipranks.parse_article(html, ticker)
-                to_process = True
-
-            elif result["source"]["title"] == "TradingView":
-                tokenist = Tokenist()
-                success, html = self.extract_html(result["link"])
-                article = tokenist.extract_article(html, ticker)
-                to_process = True
-
-            elif result["source"]["title"] == "TradingView":
-                trading_view = Trading_View()
-                success, html = self.extract_html(result["link"])
-                article = trading_view.extract_article(html, ticker)
-                to_process = True
-                
-            elif result["source"]["title"] == "Watcher Guru":
-                wg = WatcherGuru()
-                success, html = self.extract_html(result["link"])
-                article = wg.parse_article(html)
-                to_process = False
-            
-            else:
-                continue
-
-            if to_process == True:
-                
-                #prevent extraction of duplicates
-                if article in process:
-                    continue
-                else:
-                    process += [article]
-                
-             
-            #this line is for debugging purposes
-            if article == "":
-                print("Failed to extract from", result["source"]["title"])
-            
-            else:
-                if offline == True:
-                    date = self.parse_google_dates(result["published"])
-                    formatted_date = self.format_google_dates(date)
-                    if result["source"]["title"] == "24/7 Wall St.":
-                        filename = f"{ticker}_247_Wall_st_{formatted_date}.txt"
-                    else:
-                        filename = f"{ticker}_{result['source']['title']}_{formatted_date}.txt"
-
-                    self.save_text(filename, ticker, article)
-                    data = {"date": date,
-                           "link": result["link"],
-                           "title": result["title"],
-                           "article": article,
-                           "publisher": result["source"]["title"]}
-                    self.save_to_csv(ticker, data)
-                    
-                else:
-                    self.save_to_mongo(
-                        date = date,
-                        link = result["link"],
-                        title = result["title"],
-                        news_type = "text",
-                        publisher = result["source"]["title"],
-                        article = article,
-                        uuid = "G_" + result["id"],
-                    related_tickers = None)
-
-        return process
+        elif result["source"]["title"] == "Watcher Guru":
+            wg = WatcherGuru()
+            success, html = self.extract_html(result["link"])
+            article = wg.parse_article(html)
+        
+        return article
 
 class Barchart:
     def extract_html(self, url):

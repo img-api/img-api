@@ -2,16 +2,20 @@ import datetime
 import requests
 from alpha_vantage_news import *
 
-def parse_av_dates(self, date_string):
+def parse_av_dates(date_string):
     parsed_date = datetime.datetime.strptime(date_string, '%Y%m%dT%H%M%S')
     return parsed_date
 
-def format_av_dates(self, date):
+def format_av_dates(date):
     date = re.sub("-", "", date)
     date = re.sub(" ", "", date)
     date = re.sub(":", "", date)
     return date
 
+def generate_external_uuid(item, ticker):
+    date = parse_av_date(item["time_published"])
+    date = format_av_dates(date)
+    return f"av_{ticker}_{date}"
 
 
 def get_av_news(ticker):
@@ -20,7 +24,7 @@ def get_av_news(ticker):
     r = requests.get(url)
     data = r.json()
     for news_item in data["feed"]:
-        if news_item["source"] in ["CNBC", "Money Morning", "Motley Fool", "South China Morning Post", "Zacks Commentary":
+        if news_item["source"] in ["CNBC", "Money Morning", "Motley Fool", "South China Morning Post", "Zacks Commentary"]:
             news.append(news_item)
     return news
 
@@ -33,10 +37,12 @@ def av_pipeline_process(db_ticker):
     news = get_av_news(ticker)
     for item in news:
         update = False
-        db_news = DB_News.objects(external_uuid=item['uuid']).first()
+        
+        external_uuid = generate_external_uuid(item, ticker)
+        db_news = DB_News.objects(external_uuid=external_uuid).first()
         if db_news:
             # We don't update news that we already have in the system
-            print_b(" ALREADY INDEXED " + item['link'])
+            print_b(" ALREADY INDEXED " + item[["url"]])
             update = True
             #continue
     
@@ -52,11 +58,13 @@ def av_pipeline_process(db_ticker):
     
         #standardize between the different news sources
         #alpha vantage doesn't have related tickers*
+        date = parse_av_date(item["time_published"])
         new_schema = {
-                    "title": date,
-                    "link": url,
-                    "external_uuid": f"av_{ticker}_{format_av_date(date)}",
-                    "publisher": news_item["source"]
+                    "date": date,
+                    "title": item["title"],
+                    "link": item["url"],
+                    "external_uuid": external_uuid,
+                    "publisher": item["source"]
                 }
         
     
@@ -75,4 +83,9 @@ def av_pipeline_process(db_ticker):
             db_news = DB_News(**myupdate).save(validate=False)
         
         article = process_av_news(item)
-    #where do you save article?
+        if article != "":
+            item.articles = articles
+            item.save(validate=False)
+            item.set_state("INDEXED")
+        else:
+            item.set_state("ERROR: ARTICLES NOT FOUND")
