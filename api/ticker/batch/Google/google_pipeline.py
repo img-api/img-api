@@ -1,6 +1,8 @@
 import datetime
 import requests
 from google_news import *
+from api.print_helper import *
+from api.query_helper import *
 
 def parse_google_dates(date_str):
     
@@ -82,8 +84,10 @@ def google_pipeline_process(db_ticker):
         if not update:
             db_news = DB_News(**myupdate).save(validate=False)
         
-        article = process_google_news(item)
+        google = Google()
+        article = google.process_google_news(db_news)
 
+        #this is definitely wrong
         if article != "":
             item.articles = articles
             item.save(validate=False)

@@ -1,6 +1,9 @@
 import datetime
 import requests
+import re
 from alpha_vantage_news import *
+from api.print_helper import *
+from api.query_helper import *
 
 def parse_av_dates(date_string):
     parsed_date = datetime.datetime.strptime(date_string, '%Y%m%dT%H%M%S')
@@ -82,9 +85,13 @@ def av_pipeline_process(db_ticker):
         if not update:
             db_news = DB_News(**myupdate).save(validate=False)
         
-        article = process_av_news(item)
+        av = AlphaVantage()
+        article = av.process_av_news(db_news)
+        db_ticker.set_state("PROCESSED")
+
+        #this line may be buggy
         if article != "":
-            item.articles = articles
+            db_news.articles.append(article)
             item.save(validate=False)
             item.set_state("INDEXED")
         else:
