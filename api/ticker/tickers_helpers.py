@@ -420,29 +420,7 @@ def standardize_ticker_format(ticker: str) -> str:
         return f"NASDAQ:{ticker}"
 
 
-def standardize_ticker_format_to_yfinance(ticker: str) -> str:
-
-    # Case 1: Handle "EXCHANGE:TICKER" format
-    if ':' in ticker:
-        exchange, stock = ticker.split(':')
-
-        # Standardize the exchange name using the prefix mapping
-        map_exchange = exchange_to_suffix.get(exchange, None)  # Default to exchange itself if not found
-        if map_exchange:
-            return f"{stock}{map_exchange}"
-
-        #return f"{exchange}:{stock}"
-        return f"{stock}"
-
-    # Case 2: Handle "TICKER.SUFFIX" format
-    elif '.' in ticker:
-        return ticker
-
-    # Case 3: Handle "TICKER" format with no exchange (assume NASDAQ or other default logic)
-    else:
-        # Here we assume a default exchange if none is provided, let's assume NASDAQ
-        return f"NASDAQ:{ticker}"
-
+.
 
 # Test cases
 

@@ -1,17 +1,24 @@
 import datetime
 import requests
+import re
+
+from pygooglenews import GoogleNews
 from google_news import *
 from api.print_helper import *
 from api.query_helper import *
+from api.news.models import DB_DynamicNewsRawData, DB_News
+from api.ticker.models import DB_Ticker, DB_TickerSimple
+from api.ticker.tickers_helpers import (standardize_ticker_format,
+                                        standardize_ticker_format_to_yfinance)
 
 def parse_google_dates(date_str):
     
-        """Parses dates from Google News"""
+    """Parses dates from Google News"""
 
-        parsed_date = datetime.datetime.strptime(date_str, "%a, %d %b %Y %H:%M:%S %Z")
-        # Format the date into the desired format
-        formatted_date = parsed_date.strftime("%Y-%m-%d %H:%M:%S")
-        return formatted_date
+    parsed_date = datetime.datetime.strptime(date_str, "%a, %d %b %Y %H:%M:%S %Z")
+    # Format the date into the desired format
+    formatted_date = parsed_date.strftime("%Y-%m-%d %H:%M:%S")
+    return formatted_date
 
 def format_google_dates(date):
     date = re.sub("-", "", date)
@@ -74,7 +81,7 @@ def google_pipeline_process(db_ticker):
         myupdate = prepare_update_with_schema(item, new_schema)
     
         extra = {
-            'source': 'ALPHAVANTAGE',
+            'source': 'GOOGLE',
             'status': 'WAITING_INDEX',
             'raw_data_id': raw_data_id
         }
@@ -84,14 +91,12 @@ def google_pipeline_process(db_ticker):
         if not update:
             db_news = DB_News(**myupdate).save(validate=False)
         
-        google = Google()
-        article = google.process_google_news(db_news)
-
-        #this is definitely wrong
-        if article != "":
-            item.articles = articles
-            item.save(validate=False)
-            item.set_state("INDEXED")
-        else:
-            item.set_state("ERROR: ARTICLES NOT FOUND")
+            google = Google()
+            article = google.process_google_news(db_news)
+            if article != "":
+                db_news.article = articles
+                db_news.save(validate=False)
+                db_news.set_state("INDEXED")
+            else:
+                db_news.set_state("ERROR: ARTICLES NOT FOUND")
 

@@ -4,6 +4,10 @@ import re
 from alpha_vantage_news import *
 from api.print_helper import *
 from api.query_helper import *
+from api.news.models import DB_DynamicNewsRawData, DB_News
+from api.ticker.models import DB_Ticker, DB_TickerSimple
+from api.ticker.tickers_helpers import (standardize_ticker_format,
+                                        standardize_ticker_format_to_yfinance)
 
 def parse_av_dates(date_string):
     parsed_date = datetime.datetime.strptime(date_string, '%Y%m%dT%H%M%S')
@@ -23,13 +27,17 @@ def generate_external_uuid(item, ticker):
 
 def get_av_news(ticker):
     news = []
-    url = f"https://www.alphavantage.co/query?function=NEWS_SENTIMENT&tickers=NVDA&apikey=JIHXVRY5SPIH16C9"
-    r = requests.get(url)
-    data = r.json()
-    for news_item in data["feed"]:
-        if news_item["source"] in ["CNBC", "Money Morning", "Motley Fool", "South China Morning Post", "Zacks Commentary"]:
-            news.append(news_item)
-    return news
+    exchange, ticker = ticker.split(":")
+    if exchange in ["NYSE", "NASDAQ"]:
+        url = f"https://www.alphavantage.co/query?function=NEWS_SENTIMENT&tickers={ticker}&apikey=JIHXVRY5SPIH16C9"
+        r = requests.get(url)
+        data = r.json()
+        for news_item in data["feed"]:
+            if news_item["source"] in ["CNBC", "Money Morning", "Motley Fool", "South China Morning Post", "Zacks Commentary"]:
+                news.append(news_item)
+        return news
+    else:
+        print("Functionality not available yet")
 
 
 
@@ -84,15 +92,14 @@ def av_pipeline_process(db_ticker):
     
         if not update:
             db_news = DB_News(**myupdate).save(validate=False)
-        
-        av = AlphaVantage()
-        article = av.process_av_news(db_news)
-        db_ticker.set_state("PROCESSED")
+             
+            av = AlphaVantage()
+            article = av.process_av_news(db_news)        if article != "":
+                db_news.article = article
+                db_news.save(validate=False)
+                db_news.set_state("INDEXED")
+            else:
+                db_news.set_state("ERROR: ARTICLES NOT FOUND")
 
-        #this line may be buggy
-        if article != "":
-            db_news.articles.append(article)
-            item.save(validate=False)
-            item.set_state("INDEXED")
-        else:
-            item.set_state("ERROR: ARTICLES NOT FOUND")
+        db_ticker.set_state("PROCESSED")
+        
