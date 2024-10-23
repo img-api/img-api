@@ -6,6 +6,7 @@ import time
 
 import bcrypt
 import qrcode
+import requests
 import validators
 from api import (api_key_login_or_anonymous, api_key_or_login_required, cache,
                  get_response_error_formatted, get_response_formatted)
@@ -25,11 +26,14 @@ from mongoengine.queryset.visitor import Q
 def api_company_get_query():
     """
     Example of queries: https://dev.gputop.com/api/company/query?founded=1994
+
+    https://gputop.com/api/company/query?exchange_tickers=NASDAQ:INTC
+
     """
 
     companies = build_query_from_request(DB_Company, global_api=True)
 
-    ret = {'status': 'success', 'companies': companies}
+    ret = {'companies': companies}
     return get_response_formatted(ret)
 
 
@@ -77,7 +81,7 @@ def api_company_get_suggestions():
     extra = [rec.exchange_tickers for rec in suggs]
 
     suggestions = [rec.company_name for rec in suggs]
-    ret = {'suggestions': suggestions, 'extra': extra}
+    ret = {'suggestions': suggestions, 'extra': extra, "query": query}
     return get_response_formatted(ret)
 
 
@@ -236,4 +240,69 @@ def company_explorer_categories():
     ret['result'] = list(DB_Company.objects.aggregate(*pipeline))
     ret['pipeline'] = [pipeline]
 
+    return get_response_formatted(ret)
+
+
+def api_create_ai_summary(company, force_summary=False):
+    prompt = "Summarize this, and format it max one paragraph and 5 bullet points, use markdown to highlight important facts: "
+
+    if not company['long_business_summary']:
+        return
+
+    if not force_summary and 'ai_summary' in company or 'ia_summary' in company:
+        return
+
+    data = {
+        'type': 'summary',
+        'id': company['safe_name'],
+        'message': prompt + company['long_business_summary'],
+        'callback_url': "https://tothemoon.life/api/company/ai_callback"
+    }
+
+    print_b(" INDEX " + company['safe_name'])
+    response = requests.post("http://lachati.com:5111/upload-json", json=data)
+    response.raise_for_status()
+
+
+@blueprint.route('/ai_summary', methods=['GET', 'POST'])
+#@api_key_or_login_required
+def api_company_get_ai_summary():
+    """
+        https://gputop.com/api/company/ai_summary?exchange_tickers=NASDAQ:INTC
+
+    """
+    index_all = request.args.get("index_all", None)
+
+    if index_all:
+        companies = DB_Company.objects()
+    else:
+        companies = build_query_from_request(DB_Company, global_api=True)
+
+    for company in companies:
+        api_create_ai_summary(company, True)
+
+    ret = {'companies': companies}
+    return get_response_formatted(ret)
+
+
+@blueprint.route('/ai_callback', methods=['GET', 'POST'])
+#@api_key_or_login_required
+def api_company_callback_ai_summary():
+    """ """
+    json = request.json
+
+    business = DB_Company.objects(safe_name=json['id']).first()
+
+    if 'type' in json:
+
+        print_b(" AI_CALLBACK " + json['id'])
+
+        t = json['type']
+        if t == 'dict':
+            functions = {'tools': json['dict']}
+            business.update(**functions)
+        elif t == 'summary':
+            business.set_key_value('ai_summary', json['result'])
+
+    ret = {}
     return get_response_formatted(ret)

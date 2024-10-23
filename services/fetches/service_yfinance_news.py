@@ -2,7 +2,7 @@ import os
 import random
 import re
 import time
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 import pandas as pd
 import requests
@@ -21,21 +21,51 @@ from selenium.webdriver.firefox.options import Options
 import yfinance as yf
 
 
+firefox_user_agents = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:103.0) Gecko/20100101 Firefox/103.0",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:102.0) Gecko/20100101 Firefox/102.0",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:101.0) Gecko/20100101 Firefox/101.0",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:100.0) Gecko/20100101 Firefox/100.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:103.0) Gecko/20100101 Firefox/103.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:102.0) Gecko/20100101 Firefox/102.0",
+    "Mozilla/5.0 (Linux x86_64; rv:103.0) Gecko/20100101 Firefox/103.0",
+    "Mozilla/5.0 (Linux x86_64; rv:102.0) Gecko/20100101 Firefox/102.0"
+]
+
+
 def clean_article(article):
     """Cleans \n character from article"""
 
     article = re.sub("\n", " ", article)
     return article
 
+def get_webdriver():
+    from selenium import webdriver
+    from selenium.webdriver.chrome.service import Service as ChromeService
+    from selenium.webdriver.chrome.options import Options
 
-from api.ticker.batch.html.selenium_integration import get_webdriver
+    chrome_executable_path = "./chrome/chrome/linux-128.0.6613.86/chrome-linux64/chrome"
+    chromedriver_path = "./chrome/chromedriver-linux64/chromedriver"
 
+    # Step 1: Setup Chrome options
+    chrome_options = Options()
+    chrome_options.binary_location = chrome_executable_path  # Specify the location of the Chrome binary
+
+    chrome_options.add_argument("--headless")  # Optional, run Chrome in headless mode
+    chrome_options.add_argument("--disable-gpu")  # Optional, disable GPU acceleration
+    chrome_options.add_argument("--window-size=1920,1200")  # Optional, set window size
+
+    # Step 2: Initialize the Chrome WebDriver
+
+    # We have the driver in our system
+    driver = webdriver.Chrome(service=ChromeService(chromedriver_path), options=chrome_options)
+
+    return driver
 
 def yfetch_process_news(item, web_driver=None):
     """
     Downloads the news into disk
     """
-    from api.ticker.batch.html.selenium_integration import get_webdriver
 
     print_b("NEWS -> " + item.link)
 
@@ -51,14 +81,19 @@ def yfetch_process_news(item, web_driver=None):
     articles = []
 
     print_b(" PUBLISHER " + item['publisher'])
-    if item["publisher"] not in ["Barrons", "Financial Times", "The Information", "MT Newswires", "Investor's Business Daily", "Yahoo Finance Video"]:
+    if item["publisher"] not in ["Barrons", "MT Newswires", "Investor's Business Daily", "Yahoo Finance Video"]:
         #user_agent = random.choice(firefox_user_agents)
         #options = Options()
         #options.set_preference("general.useragent.override", user_agent)
 
+        if not item['link'] or 'localhost' in item['link']:
+            return
+
+        print_b(" LOADING " + item['link'])
         driver.get(item["link"])
 
         try:
+            time.sleep(random.randint(2, 5))
             # We get the consent
             link = driver.find_element(By.CLASS_NAME, "accept-all")
             link.click()
@@ -73,11 +108,10 @@ def yfetch_process_news(item, web_driver=None):
             pass
 
         try:
-            article = driver.find_element(By.TAG_NAME, "article")
-            article = article.text
-
+            article = driver.find_element(By.CLASS_NAME, "caas-body")
+            article = clean_article(article.text)
         except:
-            print("article tag not found", item["publisher"])
+            print(item["publisher"])
             article = ""
             paragraphs = driver.find_elements(By.TAG_NAME, "p")
             for paragraph in paragraphs:
@@ -92,24 +126,6 @@ def yfetch_process_news(item, web_driver=None):
             if "title" in item:
                 articles.append(item["title"])
 
-        elif item["publisher"] == "Investor's Business Daily":
-            while True:
-                try:
-                    article = get_IBD_articles(item["link"])
-                    if article != "":
-                        break
-                except:
-                    time.sleep(random.randint(5, 15))
-
-            article = clean_article(article)
-            articles.append(article)
-
-    #soup, raw_html = get_html(item.link)
-
-    #filename = str(item.id) + ".html"
-    #save_html_to_file(raw_html, filename, data_folder)
-
-
     if not web_driver:
         driver.quit()
 
@@ -121,11 +137,3 @@ def yfetch_process_news(item, web_driver=None):
         item.set_state("INDEXED")
     else:
         item.set_state("ERROR: ARTICLES NOT FOUND")
-
-def date_from_unix(string):
-
-    """Takes unix format and converts it into datetime object"""
-
-    return datetime.fromtimestamp(float(string))
-
-

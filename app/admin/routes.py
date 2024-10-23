@@ -3,8 +3,8 @@ from app.admin import blueprint
 from flask import render_template
 
 
-@blueprint.route('/', methods=['GET'])
-def admin_interface():
-    return render_template('admin_interface.html')
-
-
+@blueprint.route('/', methods=['GET', 'POST'])
+def admin_template():
+    """ Admin interface to manage users
+    """
+    return render_template('admin_template.html')

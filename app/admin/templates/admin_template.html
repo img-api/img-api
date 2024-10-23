@@ -1,0 +1,32 @@
+{% extends "base_site.html" %}
+{% block title %} IMG - API Admin panel! {% endblock title %}
+
+{% block main_css %}
+{% endblock %}
+
+{% block body_style %}background-color: #000000; {% endblock %}
+
+{% block content %}
+<br>
+<div class='container'>
+    <center>
+    {% if current_user.is_anon %}
+        Please login to access this planel
+    {% else %}
+        {% if current_user.username %}
+            You are logged in as <b>{{ current_user.username }}</b>
+        {% else %}
+            <span>
+                Please login to access this planel
+            </span>
+        {% endif %}
+    {% endif %}
+    <hr>
+    </center>
+</div>
+{% endblock content %}
+
+
+{% block javascripts %}
+{{ super() }}
+{% endblock javascripts %}

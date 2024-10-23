@@ -33,11 +33,14 @@ def ticker_process_news_sites(BATCH_SIZE=5):
     query = Q(force_reindex=True)
     news = DB_News.objects(query)[:BATCH_SIZE]
     if news.count() == 0:
-        query = Q(status='WAITING_INDEX') | Q(status='INDEX_START')
+        query = Q(status='WAITING_INDEX')
         news = DB_News.objects(query)[:BATCH_SIZE]
 
     for item in news:
         try:
+            if item.force_reindex:
+                item.update(**{ 'force_reindex': False })
+
             item.set_state("INDEX_START")
 
             if item.source == "YFINANCE":
@@ -56,8 +59,20 @@ def ticker_process_news_sites(BATCH_SIZE=5):
 
     return news
 
+def kill_chrome():
+    import os
+    import signal
 
-def ticker_process_batch(end=None, dry_run=False, BATCH_SIZE=5):
+    import psutil
+
+    cmdline_pattern = ['/home/dev/chrome/linux-116.0.5793.0/chrome-linux64/chrome']
+    for process in psutil.process_iter(['pid', 'cmdline']):
+        cmdline = process.info['cmdline']
+        if cmdline == cmdline_pattern:
+            print(f"Found process: PID = {process.info['pid']}, Command Line: {' '.join(cmdline)}")
+            os.kill(process.info['pid'], signal.SIGKILL)
+
+def ticker_process_batch(end=None, dry_run=False, BATCH_SIZE=10):
     """
     Gets a list of tickers and calls the different APIs to capture and process the data.
 
@@ -68,15 +83,18 @@ def ticker_process_batch(end=None, dry_run=False, BATCH_SIZE=5):
     # Less than or Equal to Last processed
 
     if not end:
-        end = get_timestamp_verbose("1 days") * 1000
+        end = datetime.fromtimestamp(get_timestamp_verbose("1 days"))
 
     query = Q(force_reindex=True)
     tickers = DB_Ticker.objects(query)[:BATCH_SIZE]
     if tickers.count() == 0:
-        query = Q(last_processed_date__gte=end) | Q(last_processed_date__lte=None)
+        query = Q(last_processed_date__lte=end) | Q(last_processed_date=None)
         tickers = DB_Ticker.objects(query)[:BATCH_SIZE]
 
     for db_ticker in tickers:
+        if db_ticker.force_reindex:
+            db_ticker.update(**{ 'force_reindex': False })
+
         db_ticker.set_state("PIPELINE_START")
 
         # We process every ticker with a different pipeline.
@@ -86,17 +104,7 @@ def ticker_process_batch(end=None, dry_run=False, BATCH_SIZE=5):
         except Exception as e:
             print_exception(e, "CRASHED PROCESSING BATCH")
 
-        try:
-            av_pipeline_process(db_ticker)
-        except Exception as e:
-            print_exception(e, "CRASHED PROCESSING ALPHA VANTAGE")
-
-        #try:
-        #    google_pipeline_process(db_ticker, dry_run = dry_run)
-        #except:
-         #   print_exception(e, "CRASHED PROCESSING GOOGLE")
-
-
+    #kill_chrome()
     return tickers
 
 

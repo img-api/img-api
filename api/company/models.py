@@ -1,26 +1,23 @@
-import os
-import rsa
-import time
 import base64
+import os
 import shutil
+import time
+import urllib.parse
 from datetime import datetime
 
-import urllib.parse
-
-from mongoengine import *
+import rsa
+from api.galleries.models import DB_UserGalleries
 from api.print_helper import *
 from api.query_helper import *
-
+from api.query_helper import mongo_to_dict_helper
+from api.tools.signature_serializer import BadSignature, SignatureExpired
+from api.tools.signature_serializer import \
+    TimedJSONWebSignatureSerializer as Serializer
+from api.user.user_check import DB_UserCheck
 from flask import current_app
 from flask_login import UserMixin, current_user
-
 from imgapi_launcher import db, login_manager
-from api.query_helper import mongo_to_dict_helper
-
-from api.tools.signature_serializer import TimedJSONWebSignatureSerializer as Serializer, BadSignature, SignatureExpired
-
-from api.galleries.models import DB_UserGalleries
-from api.user.user_check import DB_UserCheck
+from mongoengine import *
 
 
 class DB_Company(db.DynamicDocument):
@@ -70,8 +67,9 @@ class DB_Company(db.DynamicDocument):
     exchange_tickers = db.ListField(db.StringField(), default=list)
 
     SAFE_KEYS = [
-        "safe_name", "company_name", "country", "gics_sector", "gics_sub_industry",
-        "name", "email", "main_address", "main_address_1", "phone_number"]
+        "safe_name", "company_name", "country", "gics_sector", "gics_sub_industry", "name", "email", "main_address",
+        "main_address_1", "phone_number"
+    ]
 
     def __init__(self, *args, **kwargs):
         super(DB_Company, self).__init__(*args, **kwargs)
@@ -97,10 +95,10 @@ class DB_Company(db.DynamicDocument):
 
     def set_key_value(self, key, value):
         # My own fields that can be edited:
-        if not key.startswith('my_') and key not in self.SAFE_KEYS:
+        if not key.startswith('ia_') and not key.startswith('my_') and key not in self.SAFE_KEYS:
             return False
 
-        return super(DB_Company, self).set_key_value(key, value)
+        return super(DB_Company, self).update(**{key: value})
 
     def serialize(self):
         """ Cleanup version of the media file so don't release confidential information """
@@ -188,7 +186,7 @@ class DB_Company(db.DynamicDocument):
         if not exchange:
             return
 
-        exchange=exchange.upper()
+        exchange = exchange.upper()
 
         ex_update = False
         if exchange not in self.exchanges:

@@ -1,30 +1,27 @@
+import csv
+import datetime
+import os
 import random
 import re
-
-import datetime
-import requests
 import time
 
-import os
-import csv
-
-from bs4 import BeautifulSoup
-
+import requests
 import selenium
+from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.options import Options
-
 from zenrows import ZenRowsClient
 
-class AlphaVantage:.
+
+class AlphaVantage:
     def remove_word(self, word, article):
 
         """Takes in article string as input, removes all instances of unwanted word from it"""
-        
+
         article = re.sub(word, " ", article)
         return article
-    
+
     def extract_html(self, url):
         driver = webdriver.Firefox()
         try:
@@ -55,7 +52,7 @@ class AlphaVantage:.
         data_folder = item.get_data_folder()
         print_b("DATA FOLDER: " + data_folder)
 
-        
+
         if item["link"] == "CNBC":
             success, html = self.extract_html(item["url"])
             cnbc = CNBC()
@@ -65,22 +62,22 @@ class AlphaVantage:.
             success, html = self.extract_html(item["url"])
             money_morning = Money_Morning()
             article = money_morning.extract_article(html)
-            
+
         elif item["link"] == "Motley Fool":
             success, article = self.extract_html(item["url"])
             motley = Motley()
             article = motley.parse_motley(article)
-            
+
         elif item["link"]  == "South China Morning Post":
             success, html = self.extract_html(news["url"])
             scmp = SCMP()
             article = scmp.extract_article(html)
-            
+
         else item["link"] == "Zacks Commentary":
             succe9ss, html = self.extract_zacks_html(news["url"])
             zacks = Zacks()
             article = zacks.extract_article(html)
-    
+
         return article
 
 
@@ -96,7 +93,7 @@ class CNBC:
         article = av.remove_word("\xa0", article)
         article = self.clean_links(html, article)
         return article
-    
+
     def clean_links(self, html, article):
         soup = BeautifulSoup(html, "html.parser")
         to_remove = []
@@ -106,7 +103,7 @@ class CNBC:
         rc = related_content.find_all("li")
         for c in rc:
             to_remove.append(c.get_text())
-        
+
         av = AlphaVantage()
         for sentence in to_remove:
             article = av.remove_word(sentence, article)
@@ -117,7 +114,7 @@ class Money_Morning:
         soup = BeautifulSoup(html, "html.parser")
         raw_article = soup.find("div", class_ = "single-content").get_text()
         return raw_article
-        
+
 class Motley:
     def get_motley_sales_pitch(self, soup):
         sales_pitch = soup.find(class_ = "article-pitch-container")
@@ -139,7 +136,7 @@ class Motley:
         for img in raw_imgs:
             imgs += img.get_text()
         return imgs.split("\n")
-        
+
 
     def parse_motley(self, html):
         soup = BeautifulSoup(html, "html.parser")
@@ -165,13 +162,13 @@ class Motley:
 
             if paragraph in imgs:
                 continue
-                
+
             if "Arrows-In" in paragraph:
                 continue
-                
+
             if "Key Data Points" in paragraph:
                 continue
-                
+
             article.append(paragraph+"\n")
 
         return "\n".join(article)
@@ -191,4 +188,3 @@ class Zacks:
             article += raw_article.get_text()
         return article
 
-    
