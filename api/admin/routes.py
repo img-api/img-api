@@ -58,6 +58,8 @@ def api_admin_get_service_token():
 
 
 @blueprint.route("/site-map")
+@api_key_or_login_required
+@admin_login_required
 def site_map():
     """Returns a view of the site map for debugging.
     ---

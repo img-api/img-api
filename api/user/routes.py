@@ -31,6 +31,9 @@ def get_user_from_request():
     if request.method == 'POST':
         form = request.json
 
+        if 'email' not in form or form['email'] == None:
+            return get_response_error_formatted(401, {'error_msg': "Please provide an email."})
+
         email = form['email'].strip()
         if 'username' in form:
             username = form['username'].strip()
