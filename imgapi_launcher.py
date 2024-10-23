@@ -14,6 +14,9 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Enable CORS on the entire application
 
+if os.environ.get('IMGAPI_SETTINGS', False):
+    app.config.from_envvar('IMGAPI_SETTINGS')
+
 MONGODB_SETTINGS = {'host': 'mongodb://localhost/demo', 'port': 27017}
 
 app.config.update(DEBUG=True, MONGODB_SETTINGS=MONGODB_SETTINGS, SECRET_KEY="mysecret_key_loaded_from_the_system")

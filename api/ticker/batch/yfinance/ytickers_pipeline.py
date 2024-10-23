@@ -1,7 +1,7 @@
 import json
 import os
 import re
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 import pandas as pd
 import requests
@@ -16,8 +16,6 @@ from api.ticker.connector_yfinance import fetch_tickers_info
 from api.ticker.models import DB_Ticker, DB_TickerSimple
 from api.ticker.tickers_helpers import (standardize_ticker_format,
                                         standardize_ticker_format_to_yfinance)
-#import alpha vantage & googlenews
-
 # Perform complex queries to mongo
 from mongoengine.queryset import QuerySet
 from mongoengine.queryset.visitor import Q
@@ -74,6 +72,8 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
     """
         Our fetching pipeline will call different status
     """
+    from api.company.routes import api_create_ai_summary
+    from api.news.routes import api_create_news_ai_summary
     from api.ticker.routes import get_full_symbol
 
     print_b("PROCESSING: " + db_ticker.full_symbol())
@@ -93,6 +93,10 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
         return
 
     db_company = db_ticker.get_company()
+    try:
+        api_create_ai_summary(db_company)
+    except Exception as e:
+        pass
 
     info = yf_obj.info
 
@@ -135,7 +139,14 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
                 # We don't update news that we already have in the system
                 print_b(" ALREADY INDEXED " + item['link'])
                 update = True
-                #continue
+
+                try:
+                    api_create_news_ai_summary(db_news)
+                except Exception as e:
+                    print_exception(e, "CRASHED")
+                    pass
+
+                continue
 
             raw_data_id = 0
             try:
@@ -157,18 +168,37 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
 
             myupdate = prepare_update_with_schema(item, new_schema)
 
+            # Overwrite our creation time with the publisher time
+            try:
+                if 'providerPublishTime' in item:
+                    value = datetime.fromtimestamp(int(item['providerPublishTime']))
+                    print_b(" DATE " + str(value))
+                    myupdate['creation_date'] = value
+            except Exception as e:
+                print_e(e, "CRASHED LOADING DATE")
+
             # We need to convert between both systems
             related_tickers = []
 
-            for ticker in item['relatedTickers']:
+            if 'relatedTickers' in item:
+                for ticker in item['relatedTickers']:
 
-                if ticker == db_ticker.ticker:
-                    related_tickers.append(db_ticker.full_symbol())
-                else:
-                    full_symbol = get_full_symbol(ticker)
-                    related_tickers.append(full_symbol)
+                    if ticker == db_ticker.ticker:
+                        related_tickers.append(db_ticker.full_symbol())
+                    else:
+                        full_symbol = get_full_symbol(ticker)
+                        related_tickers.append(full_symbol)
 
-            myupdate['related_exchange_tickers'] = related_tickers
+                myupdate['related_exchange_tickers'] = related_tickers
+            else:
+                print_r(" NO RELATED TICKERS ")
+
+            try:
+                if 'currentPrice' in info:
+                    myupdate['stock_price'] = info['currentPrice']
+
+            except Exception as e:
+                print_exception(e, " PRICE DURING NEWS ")
 
             extra = {
                 'source': 'YFINANCE',
@@ -182,6 +212,8 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
                 db_news = DB_News(**myupdate).save(validate=False)
 
             yfetch_process_news(db_news)
+            db_ticker.set_state("PROCESSED")
+
             db_ticker.set_state("PROCESSED")
 
     except Exception as e:

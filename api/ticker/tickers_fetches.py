@@ -4,18 +4,8 @@ import random
 import re
 import time
 import urllib
-from datetime import timedelta
+from datetime import datetime, timedelta
 from urllib.request import Request, urlopen
-
-import requests
-import requests_cache
-
-import urllib
-from urllib.request import urlopen, Request
-import pandas as pd
-import yfinance as yf
-
-import time
 
 import pandas as pd
 import requests
@@ -23,6 +13,7 @@ import requests_cache
 import selenium
 import yfinance as yf
 from api.company.models import DB_Company
+from api.news.models import DB_News
 from api.print_helper import *
 # Perform complex queries to mongo
 from mongoengine.queryset import QuerySet
@@ -34,8 +25,6 @@ from selenium.webdriver.firefox.options import Options
 
 from .models import DB_Ticker
 from .tickers_helpers import extract_exchange_ticker_from_url
-
-from api.news.models import DB_News
 
 firefox_user_agents = [
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:103.0) Gecko/20100101 Firefox/103.0",
@@ -70,16 +59,16 @@ def get_yahoo_publishers():
     return yahoo_publishers
 
 
-            
+
 #completed
 def save_article(self, date, link, title, news_type, publisher, article, uuid, related_tickers = None):
-    
-    """Creates a MongoDB article object. 
+
+    """Creates a MongoDB article object.
     Saves article into the relevant database"""
-    
+
     news = DB_News(
         creation_date = date,
-        last_visited_date = datetime.datetime.now(),
+        last_visited_date = datetime.now(),
         link = link,
         title = title,
         news_type = news_type,
@@ -89,13 +78,13 @@ def save_article(self, date, link, title, news_type, publisher, article, uuid, r
         related_exchange_tickers = related_tickers
     )
     news.save()
-    
-    
+
+
 def date_from_unix(string):
 
     """Takes unix format and converts it into datetime object"""
 
-    return datetime.datetime.fromtimestamp(float(string))
+    return datetime.fromtimestamp(float(string))
 
 
 
@@ -109,22 +98,22 @@ def clean_article(article):
 
 #completed
 def extract_domain_name(url):
-    
-    """Extracts domain name from a URL. Returns a string."""        
-    
+
+    """Extracts domain name from a URL. Returns a string."""
+
     parsed_url = urlparse(url)
     base_url = parsed_url.netloc
     base_url = re.sub("www.", "", base_url)
     base_url = re.sub(".com", "", base_url)
     return base_url
 
-    
+
 def download_yahoo_news(ticker):
     ticker = yf.Ticker(f"{ticker}")
     for item in ticker.news:
         if item["publisher"] not in ["Barrons", "MT Newswires", "Investor's Business Daily", "Yahoo Finance Video"]:
             success, article = download_article(item["link"])
-            
+
             print(item["publisher"], article)
             if success == 0:
                 news_type = "denied"
@@ -158,7 +147,7 @@ def download_yahoo_news(ticker):
                         article = article,
                         uuid = "Y_" + item["uuid"],
                     related_tickers = item["relatedTickers"])
-        
+
 
 def download_article(url):
 
@@ -171,11 +160,11 @@ def download_article(url):
     driver = webdriver.Firefox(options=options)
     try:
         driver.get(url)
-    
+
     except:
         #save into denied
         return [0, ""]
-    
+
     try:
         # Wait until the button is visible
         readmore_button = WebDriverWait(driver, 10).until(
@@ -188,14 +177,14 @@ def download_article(url):
 
         # Click the button
         readmore_button.click()
-    
+
         print("Clicked on the 'Read More' button successfully.")
 
     except Exception as e:
         print(f"Error: {e}")
-    
-    time.sleep(random.randint(2,10)) 
-    
+
+    time.sleep(random.randint(2,10))
+
     try:
         html = driver.page_source
     except Exception as e:
@@ -214,7 +203,7 @@ def download_article(url):
 
 
 
-                
+
 def download_ibd(url):
 
     """Downloads article from investors.com"""
@@ -231,7 +220,7 @@ def download_ibd(url):
         link.click()
     except:
         pass
-    
+
     time.sleep(5)
     try:
         html = driver.page_source
@@ -245,7 +234,7 @@ def download_ibd(url):
     article = clean_article(article.text)
     driver.quit()
     return [2, article]
-        
+
 def reprocess():
     """reprocesses articles"""
 

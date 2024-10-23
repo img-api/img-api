@@ -396,7 +396,12 @@ def standardize_exchange_format(exchange: str) -> str:
 
 def standardize_ticker_format(ticker: str) -> str:
 
+    # Remove extension to symbol like PBR-A or PBR-B
+    if "-" in ticker:
+        full_symbol, end = ticker.split('-')
+
     # Case 1: Handle "EXCHANGE:TICKER" format
+
     if ':' in ticker:
         exchange, stock = ticker.split(':')
 

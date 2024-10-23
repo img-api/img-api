@@ -1,11 +1,16 @@
 import os
+from datetime import datetime
+
+import bcrypt
 import ffmpeg
+from api import (admin_login_required, api_key_login_or_anonymous,
+                 api_key_or_login_required, cache,
+                 get_response_error_formatted, get_response_formatted)
 from api.admin import blueprint
+from api.media.models import File_Tracking
 from api.print_helper import *
-from api import get_response_formatted
 from flask import current_app, url_for
 
-from api.media.models import File_Tracking
 
 def has_no_empty_params(rule):
     defaults = rule.defaults if rule.defaults is not None else ()
@@ -22,7 +27,39 @@ def api_admin_hello_world():
     return get_response_formatted({'status': 'success', 'msg': 'Admin success'})
 
 
+@blueprint.route('/service', methods=['GET', 'POST'])
+@api_key_or_login_required
+@admin_login_required
+def api_admin_get_service_token():
+    """
+        Returns a token for a service user that has no login and it is read only
+    """
+    from api.user.models import User
+    from api.user.routes import generate_random_name
+
+    user = User.objects(username="service").first()
+
+    if not user:
+        password = generate_random_name() + str(datetime.now())
+        user_obj = {
+            'password': bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).hex(),
+            'username': "service",
+            'email': "service@img-api.com",
+            'is_anon': True,
+            'is_readonly': True,
+            'active': True,
+        }
+
+        user = User(**user_obj)
+        user.save()
+
+    token = user.generate_auth_token()
+    return get_response_formatted({'status': 'success', 'msg': 'User service', 'token': token})
+
+
 @blueprint.route("/site-map")
+@api_key_or_login_required
+@admin_login_required
 def site_map():
     """Returns a view of the site map for debugging.
     ---
@@ -98,8 +135,7 @@ def reindex_disk_file(username, checksum_md5, file_name, extension, relative_pat
 
     if key == "video":
         probe = ffmpeg.probe(absolute_path)
-        video_stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'video'),
-                            None)
+        video_stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'video'), None)
         info['width'] = int(video_stream['width'])
         info['height'] = int(video_stream['height'])
         info['duration'] = float(video_stream['duration'])
@@ -120,9 +156,11 @@ def reindex_disk_file(username, checksum_md5, file_name, extension, relative_pat
     my_file = File_Tracking(**new_file)
     my_file.save()
 
+
 @blueprint.route('/reindex', methods=['GET', 'DELETE'])
 def api_disaster_recovery():
-    from flask_login import current_user  # Required by pytest, otherwise client crashes on CI
+    from flask_login import \
+        current_user  # Required by pytest, otherwise client crashes on CI
 
     if not current_user.is_authenticated:
         return get_response_error_formatted(403, {'error_msg': "Anonymous users are not allowed."})
