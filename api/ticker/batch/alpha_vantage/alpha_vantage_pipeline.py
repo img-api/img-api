@@ -59,7 +59,6 @@ def get_relevance_score(news_item, ticker):
 
 def av_pipeline_process(db_ticker):
 
-    #get the ticker name
     ticker = db_ticker.ticker
     news = get_av_news(ticker)
     if news == []:
@@ -70,7 +69,6 @@ def av_pipeline_process(db_ticker):
     
     for item in news:
         update = False
-        
         external_uuid = generate_external_uuid(item, ticker)
         db_news = DB_News.objects(external_uuid=external_uuid).first()
         if db_news:
@@ -134,6 +132,6 @@ def av_pipeline_process(db_ticker):
         else:
             db_news.set_state("ERROR: ARTICLE NOT FOUND")
 
-    db_ticker.set_state("PROCESSED")
+    db_ticker.set_state("AV PROCESSED")
     return db_ticker
         
