@@ -26,13 +26,15 @@ def format_google_dates(date):
     date = re.sub(":", "", date)
     return date
 
-def get_google_news(ticker):
+def get_google_news(db_ticker):
     
     google_news_publishers = ["24/7 Wall St.","Barchart", "Benzinga", "Fast Company", "Forbes", "ForexLive", "Fortune", "FXStreet",
                                 "Insider Monkey", "Investing.com", "Investopedia", "Investor's Business Daily", "MarketBeat",
                                 "Markets.com", "Marketscreener.com", "MoneyCheck", "Nasdaq", "Proactive Investors USA", "Reuters",
                                 "StockTitan", "TipRanks", "TradingView", "Watcher Guru"]
-
+    if db_ticker.exchange in ["NYSE", "NASDAQ"]:
+        ticker = db_ticker.ticker
+        0
     news = []
     gn = GoogleNews()
     search = gn.search(f"{ticker}")
@@ -47,8 +49,7 @@ def get_google_news(ticker):
     return news
 
 def google_pipeline_process(db_ticker):
-    ticker = db_ticker.ticker
-    news = get_google_news(ticker)
+    news = get_google_news(db_ticker)
     for item in news:
         update = False
         db_news = DB_News.objects(external_uuid=item["id"]).first()
@@ -99,4 +100,6 @@ def google_pipeline_process(db_ticker):
                 db_news.set_state("INDEXED")
             else:
                 db_news.set_state("ERROR: ARTICLES NOT FOUND")
+
+    return db_ticker
 

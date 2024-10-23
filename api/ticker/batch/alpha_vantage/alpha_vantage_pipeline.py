@@ -25,9 +25,10 @@ def generate_external_uuid(item, ticker):
     return f"av_{ticker}_{date}"
 
 
-def get_av_news(ticker):
+def get_av_news(db_ticker):
     news = []
-    exchange, ticker = ticker.split(":")
+    exchange = db_ticker.exchange
+    ticker = db_ticker.ticker
     if exchange in ["NYSE", "NASDAQ"]:
         url = f"https://www.alphavantage.co/query?function=NEWS_SENTIMENT&tickers={ticker}&apikey=JIHXVRY5SPIH16C9"
         r = requests.get(url)
@@ -36,6 +37,11 @@ def get_av_news(ticker):
             if news_item["source"] in ["CNBC", "Money Morning", "Motley Fool", "South China Morning Post", "Zacks Commentary"]:
                 news.append(news_item)
         return news
+    elif exchange in "LSE":
+        pass
+    elif exchange in "HK":
+        pass
+    
     else:
         print("Functionality not available yet")
 
@@ -46,6 +52,7 @@ def av_pipeline_process(db_ticker):
     #get the ticker name
     ticker = db_ticker.ticker
     news = get_av_news(ticker)
+    
     for item in news:
         update = False
         
@@ -103,4 +110,5 @@ def av_pipeline_process(db_ticker):
                 db_news.set_state("ERROR: ARTICLES NOT FOUND")
 
         db_ticker.set_state("PROCESSED")
+    return db_ticker
         
