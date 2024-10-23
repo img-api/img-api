@@ -94,7 +94,8 @@ def av_pipeline_process(db_ticker):
             db_news = DB_News(**myupdate).save(validate=False)
              
             av = AlphaVantage()
-            article = av.process_av_news(db_news)        if article != "":
+            article = av.process_av_news(db_news)
+            if article != "":
                 db_news.article = article
                 db_news.save(validate=False)
                 db_news.set_state("INDEXED")

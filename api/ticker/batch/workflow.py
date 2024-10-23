@@ -88,7 +88,7 @@ def ticker_process_batch(end=None, dry_run=False, BATCH_SIZE=5):
 
         try:
             av_pipeline_process(db_ticker)
-        except:
+        except Exception as e:
             print_exception(e, "CRASHED PROCESSING ALPHA VANTAGE")
 
         #try:
