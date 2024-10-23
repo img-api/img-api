@@ -13,7 +13,6 @@ def register_app_blueprints(app):
             'media',
             'admin',
             'setup',
-            'admin',
             'landing',
             'business',
     ):
