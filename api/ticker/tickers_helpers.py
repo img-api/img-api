@@ -425,8 +425,6 @@ def standardize_ticker_format(ticker: str) -> str:
         return f"NASDAQ:{ticker}"
 
 
-.
-
 # Test cases
 
 
