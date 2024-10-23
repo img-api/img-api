@@ -1,13 +1,14 @@
 import datetime
 import requests
 import re
-from alpha_vantage_news import *
+from api.ticker.batch.alpha_vantage.alpha_vantage_news import *
 from api.print_helper import *
 from api.query_helper import *
 from api.news.models import DB_DynamicNewsRawData, DB_News
 from api.ticker.models import DB_Ticker, DB_TickerSimple
 from api.ticker.tickers_helpers import (standardize_ticker_format,
                                         standardize_ticker_format_to_yfinance)
+
 
 def parse_av_dates(date_string):
     parsed_date = datetime.datetime.strptime(date_string, '%Y%m%dT%H%M%S')
@@ -26,24 +27,33 @@ def generate_external_uuid(item, ticker):
 
 
 def get_av_news(db_ticker):
-    news = []
+    
     exchange = db_ticker.exchange
     ticker = db_ticker.ticker
-    if exchange in ["NYSE", "NASDAQ"]:
-        url = f"https://www.alphavantage.co/query?function=NEWS_SENTIMENT&tickers={ticker}&apikey=JIHXVRY5SPIH16C9"
-        r = requests.get(url)
-        data = r.json()
-        for news_item in data["feed"]:
-            if news_item["source"] in ["CNBC", "Money Morning", "Motley Fool", "South China Morning Post", "Zacks Commentary"]:
-                news.append(news_item)
+    if exchange in ["NYSE", "NASDAQ", "NYQ", "NYE"]:
+        news = get_us_news(ticker)
         return news
-    elif exchange in "LSE":
-        pass
-    elif exchange in "HK":
-        pass
-    
     else:
         print("Functionality not available yet")
+        return []
+
+def get_us_news(ticker):
+    news = []
+    url = f"https://www.alphavantage.co/query?function=NEWS_SENTIMENT&tickers={ticker}&apikey=JIHXVRY5SPIH16C9"
+    r = requests.get(url)
+    data = r.json()
+    for news_item in data["feed"]:
+        if news_item["source"] in ["CNBC", "Money Morning", "Motley Fool", "South China Morning Post", "Zacks Commentary"]:
+            relevance_score = get_relevance_score(ticker)
+            if relevance_score > 0.4:
+                news.append(news_item)
+    return news
+
+def get_relevance_score(news_item, ticker):
+    for item in news["ticker_sentiment"]:
+        if item["ticker"] == ticker:
+            return float(item["relevance_score"])
+    return 0
 
 
 
@@ -52,6 +62,11 @@ def av_pipeline_process(db_ticker):
     #get the ticker name
     ticker = db_ticker.ticker
     news = get_av_news(ticker)
+    if news == []:
+        print("No AV news found")
+        db_ticker.set_state("PROCESSED")
+        return db_ticker
+    
     
     for item in news:
         update = False
@@ -86,8 +101,18 @@ def av_pipeline_process(db_ticker):
                 }
         
     
-        #what does this line do?
         myupdate = prepare_update_with_schema(item, new_schema)
+        
+        related_tickers = []
+        for ticker_item in news["ticker_sentiment"]:
+
+            if ticker_item["ticker"] == db_ticker.ticker:
+                related_tickers.append(db_ticker.full_symbol())
+            else:
+                full_symbol = get_full_symbol(ticker)
+                related_tickers.append(full_symbol)
+
+        myupdate['related_exchange_tickers'] = related_tickers
     
         extra = {
             'source': 'ALPHAVANTAGE',
@@ -100,15 +125,15 @@ def av_pipeline_process(db_ticker):
         if not update:
             db_news = DB_News(**myupdate).save(validate=False)
              
-            av = AlphaVantage()
-            article = av.process_av_news(db_news)
-            if article != "":
-                db_news.article = article
-                db_news.save(validate=False)
-                db_news.set_state("INDEXED")
-            else:
-                db_news.set_state("ERROR: ARTICLES NOT FOUND")
+        av = AlphaVantage()
+        article = av.process_av_news(db_news)
+        if article != "":
+            db_news.article = article
+            db_news.save(validate=False)
+            db_news.set_state("INDEXED")
+        else:
+            db_news.set_state("ERROR: ARTICLE NOT FOUND")
 
-        db_ticker.set_state("PROCESSED")
+    db_ticker.set_state("PROCESSED")
     return db_ticker
         
