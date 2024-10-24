@@ -26,9 +26,7 @@ class Google:
         
     def extract_html(self, url):
     
-    
-        #gurufocus, 24 wall street, insider monkey
-        driver = webdriver.Firefox()
+        driver = webdriver.Chrome()
         try:
             driver.get(url)
         except:

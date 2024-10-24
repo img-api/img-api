@@ -23,7 +23,7 @@ class AlphaVantage:
         return article
 
     def extract_html(self, url):
-        driver = webdriver.Firefox()
+        driver = webdriver.Chrome.()
         try:
             driver.get(url)
         except:
