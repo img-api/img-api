@@ -62,6 +62,7 @@ class DB_News(db.DynamicDocument):
     ai_summary = db.StringField()
 
     external_uuid = db.StringField()
+    force_reindex = db.BooleanField(default=False)
 
     # Tickers that are
     related_exchange_tickers = db.ListField(db.StringField(), default=list)

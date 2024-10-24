@@ -30,14 +30,23 @@ def ticker_process_news_sites(BATCH_SIZE=5):
     """ Fetches all the news to be indexed and calls the API to fetch them
         We don't have yet a self-registering plugin api so we will just call manually depending on the source.
     """
+    print_big(" NEWS BATCH ")
+
     query = Q(force_reindex=True)
     news = DB_News.objects(query)[:BATCH_SIZE]
     if news.count() == 0:
         query = Q(status='WAITING_INDEX')
         news = DB_News.objects(query)[:BATCH_SIZE]
 
+    if news.count() == 0:
+        print_r(" PROCESSING INDEXED NEWS THAT FAILED FOR SOME REASON ")
+        query = Q(status='INDEXED') & Q(ai_summary=None)
+        news = DB_News.objects(query)[:BATCH_SIZE]
+
     for item in news:
         try:
+            print(" PROCESSING ITEM " + item.title)
+
             if item.force_reindex:
                 item.update(**{ 'force_reindex': False })
 

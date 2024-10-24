@@ -325,17 +325,14 @@ def get_ratios(ticker):
 
     xlwriter.save()
 
-def get_IBD_articles(url):
+def get_IBD_articles(url, driver):
     "Use this for scraping news from investors.com"
 
     article = ""
     user_agent = random.choice(firefox_user_agents)
-    options.set_preference("general.useragent.override", user_agent)
-    driver = webdriver.Firefox(options=options)
-    time.sleep(2)
+
     link = driver.find_element(By.LINK_TEXT, "Continue Reading")
     link.click()
-    time.sleep(3)
     paragraphs = driver.find_elements(By.TAG_NAME, "p")
     for paragraph in paragraphs:
         if paragraph.text != "":
