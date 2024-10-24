@@ -53,27 +53,27 @@ class AlphaVantage:
         print_b("DATA FOLDER: " + data_folder)
 
 
-        if item["link"] == "CNBC":
+        if item["publisher"] == "CNBC":
             success, html = self.extract_html(item["url"])
             cnbc = CNBC()
             article = cnb6c.extract_article(html)
 
-        elif item["link"] == "Money Morning":
+        elif item["publisher"] == "Money Morning":
             success, html = self.extract_html(item["url"])
             money_morning = Money_Morning()
             article = money_morning.extract_article(html)
 
-        elif item["link"] == "Motley Fool":
+        elif item["publisher"] == "Motley Fool":
             success, article = self.extract_html(item["url"])
             motley = Motley()
             article = motley.parse_motley(article)
 
-        elif item["link"]  == "South China Morning Post":
+        elif item["publisher"]  == "South China Morning Post":
             success, html = self.extract_html(news["url"])
             scmp = SCMP()
             article = scmp.extract_article(html)
 
-        else item["link"] == "Zacks Commentary":
+        elif item["publisher"] == "Zacks Commentary":
             succe9ss, html = self.extract_zacks_html(news["url"])
             zacks = Zacks()
             article = zacks.extract_article(html)

@@ -32,20 +32,13 @@ def get_google_news(db_ticker):
                                 "Insider Monkey", "Investing.com", "Investopedia", "Investor's Business Daily", "MarketBeat",
                                 "Markets.com", "Marketscreener.com", "MoneyCheck", "Nasdaq", "Proactive Investors USA", "Reuters",
                                 "StockTitan", "TipRanks", "TradingView", "Watcher Guru"]
-    if db_ticker.exchange in ["NYSE", "NASDAQ"]:
-        ticker = db_ticker.ticker
-        0
+    ticker = db_ticker.ticker    
     news = []
     gn = GoogleNews()
     search = gn.search(f"{ticker}")
     for item in search["entries"]:
-        if item["source"]["title"] in ["CNBC", "Motley Fool", "Yahoo Finance"]:
-            continue
-        elif item["source"]["title"] in google_news_publishers:
+        if item["source"]["title"] in google_news_publishers:
             news.append(item)
-        else:
-            continue
-            #print("Create scraper for", item["source"]["title"])
     return news
 
 def google_pipeline_process(db_ticker):
@@ -78,7 +71,7 @@ def google_pipeline_process(db_ticker):
                     "external_uuid": item["id"],
                     "publisher": item["source"]
                 }
-        6
+        .
         myupdate = prepare_update_with_schema(item, new_schema)
     
         extra = {
@@ -92,14 +85,14 @@ def google_pipeline_process(db_ticker):
         if not update:
             db_news = DB_News(**myupdate).save(validate=False)
         
-            google = Google()
-            article = google.process_google_news(db_news)
-            if article != "":
-                db_news.article = articles
-                db_news.save(validate=False)
-                db_news.set_state("INDEXED")
-            else:
-                db_news.set_state("ERROR: ARTICLES NOT FOUND")
+        google = Google()
+        article = google.process_google_news(db_news)
+        if article != "":
+            db_news.article = articles
+            db_news.save(validate=False)
+            db_news.set_state("INDEXED")
+        else:
+            db_news.set_state("ERROR: ARTICLES NOT FOUND")
 
     return db_ticker
 
