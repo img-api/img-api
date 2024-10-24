@@ -1,9 +1,8 @@
 import datetime
 import requests
 import re
-
-from pygooglenews import GoogleNews
-from google_news import *
+from api.ticker.batch.Google.process_google_news import *
+from api.ticker.batch.Google.google_news import *
 from api.print_helper import *
 from api.query_helper import *
 from api.news.models import DB_DynamicNewsRawData, DB_News
@@ -28,7 +27,7 @@ def format_google_dates(date):
 
 def get_google_news(db_ticker):
     
-    google_news_publishers = ["24/7 Wall St.","Barchart", "Benzinga", "Fast Company", "Forbes", "ForexLive", "Fortune", "FXStreet",
+    google_publishers = ["24/7 Wall St.","Barchart", "Benzinga", "Fast Company", "Forbes", "ForexLive", "Fortune", "FXStreet",
                                 "Insider Monkey", "Investing.com", "Investopedia", "Investor's Business Daily", "MarketBeat",
                                 "Markets.com", "Marketscreener.com", "MoneyCheck", "Nasdaq", "Proactive Investors USA", "Reuters",
                                 "StockTitan", "TipRanks", "TradingView", "Watcher Guru"]
@@ -37,7 +36,7 @@ def get_google_news(db_ticker):
     gn = GoogleNews()
     search = gn.search(f"{ticker}")
     for item in search["entries"]:
-        if item["source"]["title"] in google_news_publishers:
+        if item["source"]["title"] in google_publishers:
             news.append(item)
     return news
 
@@ -71,7 +70,7 @@ def google_pipeline_process(db_ticker):
                     "external_uuid": item["id"],
                     "publisher": item["source"]
                 }
-        .
+        
         myupdate = prepare_update_with_schema(item, new_schema)
     
         extra = {

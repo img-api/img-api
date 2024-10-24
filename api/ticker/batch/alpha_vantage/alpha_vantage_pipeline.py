@@ -1,7 +1,7 @@
 import datetime
 import requests
 import re
-from api.ticker.batch.alpha_vantage.alpha_vantage_news import *
+from api.ticker.batch.alpha_vantage.process_alpha_vantage import *
 from api.print_helper import *
 from api.query_helper import *
 from api.news.models import DB_DynamicNewsRawData, DB_News
