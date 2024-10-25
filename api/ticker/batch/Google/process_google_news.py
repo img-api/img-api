@@ -1,5 +1,5 @@
 import os
-from pygooglenews import GoogleNews
+from api.ticker.batch.Google.google_news import GoogleNews
 import random
 
 import requests

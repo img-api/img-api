@@ -89,7 +89,7 @@ def google_pipeline_process(db_ticker):
             
             google = Google()
             article = google.google_process_news(db_news)
-            db_ticker.set_state("PROCESSED")
+            db_ticker.set_state("GOOGLE PROCESSED")
 
     except Exception as e:
         print_exception(e, "CRASH ON GOOGLE NEWS PROCESSING")
