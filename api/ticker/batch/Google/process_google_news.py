@@ -46,7 +46,7 @@ class Google:
     
     
     #main
-    def process_google_news(self, item):
+    def google_process_news(self, item):
 
         """Takes in stock ticker as input, retrieves news articles from Google News and returns
         list of articles"""    
@@ -188,6 +188,13 @@ class Google:
             wg = WatcherGuru()
             success, html = self.extract_html(result["link"])
             article = wg.parse_article(html)
+        
+        if article != "":
+            item.articles = article
+            item.save(validate=False)
+            item.set_state("INDEXED")
+        else:
+            item.set_state("ERROR: ARTICLES NOT FOUND")
         
         return article
 

@@ -58,80 +58,75 @@ def get_relevance_score(news_item, ticker):
 
 
 def av_pipeline_process(db_ticker):
-
-    ticker = db_ticker.ticker
-    news = get_av_news(ticker)
-    if news == []:
-        print("No AV news found")
-        db_ticker.set_state("PROCESSED")
-        return db_ticker
-    
-    
-    for item in news:
-        update = False
-        external_uuid = generate_external_uuid(item, ticker)
-        db_news = DB_News.objects(external_uuid=external_uuid).first()
-        if db_news:
-            # We don't update news that we already have in the system
-            print_b(" ALREADY INDEXED " + item[["url"]])
-            update = True
-            #continue
-    
-        raw_data_id = 0
-        try:
-            # It should go to disk or something, this is madness to save it on the DB
-    
-            news_data = DB_DynamicNewsRawData(**item)
-            news_data.save()
-            raw_data_id = str(news_data['id'])
-        except Exception as e:
-            print_exception(e, "SAVE RAW DATA")
-    
-        #standardize between the different news sources
-        #alpha vantage doesn't have related tickers*
-        date = parse_av_date(item["time_published"])
-        new_schema = {
-                    "date": date,
-                    "title": item["title"],
-                    "link": item["url"],
-                    "external_uuid": external_uuid,
-                    "publisher": item["source"]
-                }
+    try:
+        news = get_av_news(db_ticker)
+        if news == []:
+            print("No AV news found")
+            db_ticker.set_state("PROCESSED")
+            return db_ticker
         
-    
-        myupdate = prepare_update_with_schema(item, new_schema)
         
-        related_tickers = []
-        for ticker_item in news["ticker_sentiment"]:
+        for item in news:
+            update = False
+            external_uuid = generate_external_uuid(item, ticker)
+            db_news = DB_News.objects(external_uuid=external_uuid).first()
+            if db_news:
+                # We don't update news that we already have in the system
+                print_b(" ALREADY INDEXED " + item[["url"]])
+                update = True
+                #continue
+        
+            raw_data_id = 0
+            try:
+                # It should go to disk or something, this is madness to save it on the DB
+        
+                news_data = DB_DynamicNewsRawData(**item)
+                news_data.save()
+                raw_data_id = str(news_data['id'])
+            except Exception as e:
+                print_exception(e, "SAVE RAW DATA")
+        
+            #standardize between the different news sources
+            #alpha vantage doesn't have related tickers*
+            date = parse_av_date(item["time_published"])
+            new_schema = {
+                        "date": date,
+                        "title": item["title"],
+                        "link": item["url"],
+                        "external_uuid": external_uuid,
+                        "publisher": item["source"]
+                    }
+            
+        
+            myupdate = prepare_update_with_schema(item, new_schema)
+            
+            related_tickers = []
+            for ticker_item in news["ticker_sentiment"]:
 
-            if ticker_item["ticker"] == db_ticker.ticker:
-                related_tickers.append(db_ticker.full_symbol())
-            else:
-                full_symbol = get_full_symbol(ticker)
-                related_tickers.append(full_symbol)
+                if ticker_item["ticker"] == db_ticker.ticker:
+                    related_tickers.append(db_ticker.full_symbol())
+                else:
+                    full_symbol = get_full_symbol(ticker)
+                    related_tickers.append(full_symbol)
 
-        myupdate['related_exchange_tickers'] = related_tickers
+            myupdate['related_exchange_tickers'] = related_tickers
+        
+            extra = {
+                'source': 'ALPHAVANTAGE',
+                'status': 'WAITING_INDEX',
+                'raw_data_id': raw_data_id
+            }
+        
+            myupdate = {**myupdate, **extra}
+        
+            if not update:
+                db_news = DB_News(**myupdate).save(validate=False)
+                
+            av = AlphaVantage()
+            article = av.av_process_news(db_news)
+            db_ticker.set_state("AV PROCESSED")
+    except Exception as e:
+        print_exception(e, "CRASH ON AV NEWS PROCESSING")
     
-        extra = {
-            'source': 'ALPHAVANTAGE',
-            'status': 'WAITING_INDEX',
-            'raw_data_id': raw_data_id
-        }
-    
-        myupdate = {**myupdate, **extra}
-    
-        if not update:
-            db_news = DB_News(**myupdate).save(validate=False)
-             
-        av = AlphaVantage()
-        article = av.process_av_news(db_news)
-        if article != "":
-            db_news.article = article
-            db_news.save(validate=False)
-            db_news.set_state("INDEXED")
-        else:
-            db_news.set_state("ERROR: ARTICLE NOT FOUND")
-
-    db_ticker.set_state("AV PROCESSED")
     return db_ticker
         

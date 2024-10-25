@@ -88,21 +88,8 @@ def yfetch_process_news(item, web_driver=None):
 
         driver.close()
     else:
-        if item["publisher"] in ["Barrons", "MT Newswires"]:
-            if "title" in item:
-                articles.append(item["title"])
-
-        elif item["publisher"] == "Investor's Business Daily":
-            while True:
-                try:
-                    article = get_IBD_articles(item["link"])
-                    if article != "":
-                        break
-                except:
-                    time.sleep(random.randint(5, 15))
-
-            article = clean_article(article)
-            articles.append(article)
+        pass
+    articles.append(article)
 
     #soup, raw_html = get_html(item.link)
 

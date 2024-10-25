@@ -15,7 +15,8 @@ from mongoengine.queryset import QuerySet
 from mongoengine.queryset.visitor import Q
 
 import yfinance as yf
-
+from .alpha_vantage.process_alpha_vantage import *
+from .Google.process_google_news import *
 from .tickers_pipeline import ticker_pipeline_process
 from .yfinance.yfinance_news import yfetch_process_news
 from .yfinance.ytickers_pipeline import yticker_pipeline_process
@@ -47,11 +48,13 @@ def ticker_process_news_sites(BATCH_SIZE=5):
                 yfetch_process_news(item)
                 continue
 
-            elif item.source == "AlphaVantage":
-                alpha_vantage_332process_news(item)
+            elif item.source == "ALPHAVANTAGE":
+                av = AlphaVantage()
+                av.av_process_news(item)
 
-            elif item.source == "Google":
-                google_process_news(item)
+            elif item.source == "GOOGLE":
+                google = Google()
+                google.google_process_news(item)
 
         except Exception as e:
             item.set_state("ERROR: FETCH CRASHED, SEE LOGS!")
@@ -103,6 +106,16 @@ def ticker_process_batch(end=None, dry_run=False, BATCH_SIZE=10):
             yticker_pipeline_process(db_ticker, dry_run=dry_run)
         except Exception as e:
             print_exception(e, "CRASHED PROCESSING BATCH")
+
+        try:
+            google_pipeline_process(db_ticker, dry_run = dry_run)
+        except Exception as e:
+            print_exception(e, "CRASHED PROCESSING GOOGLE BATCH")
+
+        try:
+            av_pipeline_process(db_ticker, dry_run = dry_run)
+        except Exception as e:
+            print_exception(e, "CRASHED PROCESSING AV BATCH")
 
     #kill_chrome()
     return tickers

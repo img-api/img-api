@@ -46,7 +46,7 @@ class AlphaVantage:
         return [1, html]
 
 
-    def process_av_news(self, item):
+    def av_process_news(self, item):
         print_b("NEWS -> " + item.link)
 
         data_folder = item.get_data_folder()
@@ -77,6 +77,13 @@ class AlphaVantage:
             succe9ss, html = self.extract_zacks_html(news["url"])
             zacks = Zacks()
             article = zacks.extract_article(html)
+
+        if article != "":
+            db_news.article = article
+            db_news.save(validate=False)
+            db_news.set_state("INDEXED")
+        else:
+            db_news.set_state("ERROR: ARTICLE NOT FOUND")
 
         return article
 
