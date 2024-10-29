@@ -56,7 +56,7 @@ class AlphaVantage:
         if item["publisher"] == "CNBC":
             success, html = self.extract_html(item["url"])
             cnbc = CNBC()
-            article = cnb6c.extract_article(html)
+            article = cnbc.extract_article(html)
 
         elif item["publisher"] == "Money Morning":
             success, html = self.extract_html(item["url"])
