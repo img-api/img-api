@@ -10,41 +10,27 @@ from api.ticker.tickers_helpers import (standardize_ticker_format,
                                         standardize_ticker_format_to_yfinance)
 
 
-def parse_av_dates(date_string):
-    parsed_date = datetime.datetime.strptime(date_string, '%Y%m%dT%H%M%S')
-    return parsed_date
-
-def format_av_dates(date):
-    date = re.sub("-", "", date)
-    date = re.sub(" ", "", date)
-    date = re.sub(":", "", date)
-    return date
-
-def generate_external_uuid(item, ticker):
-    date = parse_av_date(item["time_published"])
-    date = format_av_dates(date)
-    return f"av_{ticker}_{date}"
 
 
-def get_av_news(db_ticker):
+def download_av_news(db_ticker):
     
     exchange = db_ticker.exchange
     ticker = db_ticker.ticker
     if exchange in ["NYSE", "NASDAQ", "NYQ", "NYE"]:
-        news = get_us_news(ticker)
+        news = get_usa_news(ticker)
         return news
     else:
         print("Functionality not available yet")
         return []
 
-def get_us_news(ticker):
+def get_usa_news(ticker):
     news = []
     url = f"https://www.alphavantage.co/query?function=NEWS_SENTIMENT&tickers={ticker}&apikey=JIHXVRY5SPIH16C9"
     r = requests.get(url)
     data = r.json()
     for news_item in data["feed"]:
         if news_item["source"] in ["CNBC", "Money Morning", "Motley Fool", "South China Morning Post", "Zacks Commentary"]:
-            relevance_score = get_relevance_score(ticker)
+            relevance_score = get_relevance_score(news_item, ticker)
             if relevance_score > 0.4:
                 news.append(news_item)
     return news
@@ -59,17 +45,17 @@ def get_relevance_score(news_item, ticker):
 
 def av_pipeline_process(db_ticker):
     try:
-        news = get_av_news(db_ticker)
+        news = download_av_news(db_ticker)
         if news == []:
             print("No AV news found")
-            db_ticker.set_state("PROCESSED")
+            db_ticker.set_state("AV PROCESSED")
             return db_ticker
         
-        
+        db_ticker.set_state("PROCESSING AV...")
         for item in news:
             update = False
-            external_uuid = generate_external_uuid(item, ticker)
-            db_news = DB_News.objects(external_uuid=external_uuid).first()
+            uuid = generate_uuid(item, ticker)
+            db_news = DB_News.objects(external_uuid=uuid).first()
             if db_news:
                 # We don't update news that we already have in the system
                 print_b(" ALREADY INDEXED " + item[["url"]])
@@ -93,7 +79,7 @@ def av_pipeline_process(db_ticker):
                         "date": date,
                         "title": item["title"],
                         "link": item["url"],
-                        "external_uuid": external_uuid,
+                        "external_uuid": uuid,
                         "publisher": item["source"]
                     }
             
@@ -113,7 +99,7 @@ def av_pipeline_process(db_ticker):
         
             extra = {
                 'source': 'ALPHAVANTAGE',
-                'status': 'WAITING_INDEX',
+                'status': 'AV_WAITING_INDEX',
                 'raw_data_id': raw_data_id
             }
         
@@ -124,9 +110,27 @@ def av_pipeline_process(db_ticker):
                 
             av = AlphaVantage()
             article = av.av_process_news(db_news)
-            db_ticker.set_state("AV PROCESSED")
+
+        db_ticker.set_state("AV PROCESSED")
     except Exception as e:
         print_exception(e, "CRASH ON AV NEWS PROCESSING")
     
     return db_ticker
         
+
+
+def parse_av_dates(date_string):
+    parsed_date = datetime.datetime.strptime(date_string, '%Y%m%dT%H%M%S')
+    return parsed_date
+
+def format_av_dates(date):
+    date = re.sub("-", "", date)
+    date = re.sub(" ", "", date)
+    date = re.sub(":", "", date)
+    return date
+
+def generate_uuid(item):
+    date = parse_av_dates(item["time_published"])
+    date = format_av_dates(date)
+    source = item["source"][0]
+    return f"av_{source}_{date}"
