@@ -16,7 +16,9 @@ from mongoengine.queryset.visitor import Q
 
 import yfinance as yf
 from .alpha_vantage.process_alpha_vantage import *
+from .alpha_vantage.alpha_vantage_pipeline import *
 from .Google.process_google_news import *
+from .Google.google_pipeline import *
 from .tickers_pipeline import ticker_pipeline_process
 from .yfinance.yfinance_news import yfetch_process_news
 from .yfinance.ytickers_pipeline import yticker_pipeline_process
