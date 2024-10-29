@@ -13,7 +13,6 @@ from api.ticker.tickers_helpers import (standardize_ticker_format,
 
 
 def download_av_news(db_ticker):
-    
     exchange = db_ticker.exchange
     ticker = db_ticker.ticker
     if exchange in ["NYSE", "NASDAQ", "NYQ", "NYE"]:

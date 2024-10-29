@@ -79,11 +79,11 @@ class AlphaVantage:
             article = zacks.extract_article(html)
 
         if article != "":
-            db_news.article = article
-            db_news.save(validate=False)
-            db_news.set_state("INDEXED")
+            item.article = article
+            item.save(validate=False)
+            item.set_state("INDEXED")
         else:
-            db_news.set_state("ERROR: ARTICLE NOT FOUND")
+            item.set_state("ERROR: ARTICLE NOT FOUND")
 
         return article
 
