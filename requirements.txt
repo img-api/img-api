@@ -75,3 +75,5 @@ requests_cache
 beautifulsoup4
 selenium
 psutil
+
+stripe

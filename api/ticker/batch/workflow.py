@@ -43,6 +43,11 @@ def ticker_process_news_sites(BATCH_SIZE=5):
         query = Q(status='INDEXED') & Q(ai_summary=None)
         news = DB_News.objects(query)[:BATCH_SIZE]
 
+    if news.count() == 0:
+        print_r(" PROCESSING INDEXED NEWS THAT FAILED FOR SOME REASON ")
+        query = Q(ai_summary=None)
+        news = DB_News.objects(query)[:BATCH_SIZE * 10]
+
     for item in news:
         try:
             print(" PROCESSING ITEM " + item.title)
