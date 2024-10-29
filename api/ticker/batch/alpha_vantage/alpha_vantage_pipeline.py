@@ -35,12 +35,6 @@ def get_usa_news(ticker):
                 news.append(news_item)
     return news
 
-def get_relevance_score(news_item, ticker):
-    for item in news["ticker_sentiment"]:
-        if item["ticker"] == ticker:
-            return float(item["relevance_score"])
-    return 0
-
 
 
 def av_pipeline_process(db_ticker):
@@ -51,14 +45,14 @@ def av_pipeline_process(db_ticker):
             db_ticker.set_state("AV PROCESSED")
             return db_ticker
         
-        db_ticker.set_state("PROCESSING AV...")
+        db_ticker.set_state("ALPHAVANTAGE")
         for item in news:
             update = False
-            uuid = generate_uuid(item, ticker)
+            uuid = generate_uuid(item)
             db_news = DB_News.objects(external_uuid=uuid).first()
             if db_news:
                 # We don't update news that we already have in the system
-                print_b(" ALREADY INDEXED " + item[["url"]])
+                print_b(" ALREADY INDEXED " + item["url"])
                 update = True
                 #continue
         
@@ -75,17 +69,14 @@ def av_pipeline_process(db_ticker):
             #standardize between the different news sources
             #alpha vantage doesn't have related tickers*
             date = parse_av_date(item["time_published"])
-            new_schema = {
-                        "date": date,
-                        "title": item["title"],
-                        "link": item["url"],
-                        "external_uuid": uuid,
-                        "publisher": item["source"]
-                    }
-            
-        
-            myupdate = prepare_update_with_schema(item, new_schema)
-            
+            myupdate = {
+                "title": item["title"],
+                "date": date,
+                "link": item["url"],
+                "external_uuid": uuid,
+                "publisher": item["source"]
+            }
+
             related_tickers = []
             for ticker_item in news["ticker_sentiment"]:
 
@@ -95,12 +86,12 @@ def av_pipeline_process(db_ticker):
                     full_symbol = get_full_symbol(ticker)
                     related_tickers.append(full_symbol)
 
-            myupdate['related_exchange_tickers'] = related_tickers
+            myupdate["related_exchange_tickers"] = related_tickers
         
             extra = {
-                'source': 'ALPHAVANTAGE',
-                'status': 'AV_WAITING_INDEX',
-                'raw_data_id': raw_data_id
+                "source": "ALPHAVANTAGE",
+                "status": 'AV_WAITING_INDEX',
+                "raw_data_id": raw_data_id
             }
         
             myupdate = {**myupdate, **extra}
@@ -130,7 +121,14 @@ def format_av_dates(date):
     return date
 
 def generate_uuid(item):
-    date = parse_av_dates(item["time_published"])
+    date = str(parse_av_dates(item["time_published"]))
     date = format_av_dates(date)
-    source = item["source"][0]
+    source = item["source"][0].lower()
     return f"av_{source}_{date}"
+
+
+def get_relevance_score(news_item, ticker):
+    for item in news["ticker_sentiment"]:
+        if item["ticker"] == ticker:
+            return float(item["relevance_score"])
+    return 0
