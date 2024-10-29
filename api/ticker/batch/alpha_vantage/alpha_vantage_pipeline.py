@@ -13,6 +13,9 @@ from api.ticker.tickers_helpers import (standardize_ticker_format,
 
 
 def download_av_news(db_ticker):
+
+    """Downloads news from Alpha Vantage. Currently, only USA functionality"""
+
     exchange = db_ticker.exchange
     ticker = db_ticker.ticker
     if exchange in ["NYSE", "NASDAQ", "NYQ", "NYE"]:
@@ -37,6 +40,9 @@ def get_usa_news(ticker):
 
 
 def av_pipeline_process(db_ticker):
+
+    """Pipeline for discovery & extraction of Alpha Vantage news from ticker"""
+
     try:
         news = download_av_news(db_ticker)
         if news == []:
@@ -66,7 +72,6 @@ def av_pipeline_process(db_ticker):
                 print_exception(e, "SAVE RAW DATA")
         
             #standardize between the different news sources
-            #alpha vantage doesn't have related tickers*
             date = parse_av_date(item["time_published"])
             myupdate = {
                 "title": item["title"],
@@ -108,7 +113,7 @@ def av_pipeline_process(db_ticker):
     return db_ticker
         
 
-
+#helper functions
 def parse_av_dates(date_string):
     parsed_date = datetime.datetime.strptime(date_string, '%Y%m%dT%H%M%S')
     return parsed_date
