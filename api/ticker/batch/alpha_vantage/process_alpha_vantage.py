@@ -74,7 +74,7 @@ class AlphaVantage:
             article = scmp.extract_article(html)
 
         elif item["publisher"] == "Zacks Commentary":
-            succe9ss, html = self.extract_zacks_html(news["url"])
+            success, html = self.extract_zacks_html(news["url"])
             zacks = Zacks()
             article = zacks.extract_article(html)
 
