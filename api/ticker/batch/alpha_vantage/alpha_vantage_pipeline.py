@@ -45,6 +45,7 @@ def av_pipeline_process(db_ticker):
 
     try:
         news = download_av_news(db_ticker)
+        print("downloading av news...", news)
         if news == []:
             print("No AV news found")
             db_ticker.set_state("AV PROCESSED")
@@ -105,6 +106,7 @@ def av_pipeline_process(db_ticker):
                 
             av = AlphaVantage()
             article = av.av_process_news(db_news)
+            print(article)
 
         db_ticker.set_state("AV PROCESSED")
     except Exception as e:
