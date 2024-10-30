@@ -6,6 +6,9 @@ yfinance_cache.*
 *.sqlite
 
 1
+2
+
+page_source*.html
 
 packages.microsoft.gpg
 

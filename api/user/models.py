@@ -1,7 +1,7 @@
 import os
 import shutil
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from api.galleries.models import DB_UserGalleries
 from api.media.models import File_Tracking
@@ -11,19 +11,22 @@ from api.query_helper import mongo_to_dict_helper
 from api.tools.signature_serializer import BadSignature, SignatureExpired
 from api.tools.signature_serializer import \
     TimedJSONWebSignatureSerializer as Serializer
-from flask import current_app
+from flask import current_app, json
 from flask_login import UserMixin, current_user
 from imgapi_launcher import db, login_manager
 from mongoengine import *
 
 
-class DB_UserSubscription(db.DynamicEmbeddedDocument):
-    category_id = db.StringField()
-    update_date = db.DateTimeField()
-
-
 class DB_UserSettings(db.DynamicEmbeddedDocument):
     send_email = db.BooleanField(default=False)
+
+
+class DB_UserPayments(db.DynamicEmbeddedDocument):
+    session_id = db.StringField()
+    product_id = db.StringField()
+    payment_date = db.DateTimeField()
+    expiration_date = db.DateTimeField()
+    payment_total = db.FloatField()
 
 
 @login_manager.user_loader
@@ -85,10 +88,13 @@ class User(UserMixin, db.DynamicDocument):
     is_admin = db.BooleanField(default=False)
     is_readonly = db.BooleanField(default=False)
 
+    current_subscription = db.StringField(default="")
+    current_subscription_expiration_date = db.DateTimeField()
+
+    list_payments = db.EmbeddedDocumentListField(DB_UserPayments, default=[])
+
     settings = db.EmbeddedDocumentField(DB_UserSettings, default=DB_UserSettings())
     galleries = db.EmbeddedDocumentField(DB_UserGalleries, default=DB_UserGalleries())
-
-    list_subscriptions = db.EmbeddedDocumentListField(DB_UserSubscription, default=[])
 
     # TODO: Special entries for an user. This should be dynamic, or be in settings.
     my_debug_interface = db.BooleanField(default=False)
@@ -98,6 +104,45 @@ class User(UserMixin, db.DynamicDocument):
         "first_name", "last_name", "is_public", "is_media_public", "email", "lang", "company", "about_me", "address",
         "city", "country", "postal_code"
     ]
+
+    def add_payment(self, product_id, session_id, payment_total, months=1):
+
+        try:
+            # Just a check when we have to call the pay platform to see if we are still up to date in payments.
+            expiration_days = 31 * months
+
+            payment_date = datetime.utcnow()
+            expiration_date = payment_date + timedelta(days=expiration_days)
+
+            new_payment = DB_UserPayments(session_id=session_id,
+                                          product_id=product_id,
+                                          payment_date=payment_date,
+                                          expiration_date=expiration_date,
+                                          payment_total=payment_total)
+
+            # Update the user model
+            self.list_payments.append(new_payment)
+            self.current_subscription = product_id
+            self.current_subscription_expiration_date = expiration_date
+            self.save(validate=False)
+
+        except Exception as err:
+            print_e(" CRASH saving payment! fuck! " + str(err))
+
+        log_entry = {
+            "session_id": session_id,
+            "product_id": product_id,
+            "payment_date": payment_date.isoformat(),
+            "expiration_date": expiration_date.isoformat(),
+            "payment_total": payment_total,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
+        log_file_path = "payments_log.json"
+        with open(log_file_path, "a") as log_file:
+            log_file.write(json.dumps(log_entry) + "\n")
+
+        return True
 
     def check_in_usage(self):
         try:

@@ -331,15 +331,77 @@ def get_IBD_articles(url, driver):
     article = ""
     user_agent = random.choice(firefox_user_agents)
 
-    link = driver.find_element(By.LINK_TEXT, "Continue Reading")
-    link.click()
-    paragraphs = driver.find_elements(By.TAG_NAME, "p")
-    for paragraph in paragraphs:
-        if paragraph.text != "":
-            article += paragraph.text
-        if "YOU MIGHT ALSO LIKE" in paragraph.text:
-            break
-    article.replace("YOU MIGHT ALSO LIKE", "")
+    try:
+        from selenium.webdriver.support import expected_conditions as EC
+        from selenium.webdriver.support.wait import WebDriverWait
+
+        try:
+            driver.get(url)
+
+            current_url = driver.execute_script("return window.location.href;")
+            print("Current URL:", current_url)
+
+            if 'consent' in current_url:
+                # We get the consent and click on it
+                link = WebDriverWait(driver, 1).until(
+                    EC.element_to_be_clickable((By.CLASS_NAME, "accept-all"))
+                )
+                link.click()
+
+        except Exception as e:
+            pass
+
+        try:
+            current_url = driver.execute_script("return window.location.href;")
+            print("Current URL:", current_url)
+
+            WebDriverWait(driver, 15).until(
+                EC.presence_of_element_located((By.TAG_NAME, "main"))
+            )
+
+            print("Main Page Title:", driver.title)
+
+            # Print all button elements on the main page
+            buttons = driver.find_elements(By.TAG_NAME, "button")
+            print(f"Found {len(buttons)} buttons on the main page.")
+            for index, button in enumerate(buttons):
+                try:
+                    if button.text:
+                        print(f"Button {index + 1}:")
+                        print("  Text:", button.text)
+                        #print("  ID:", button.get_attribute("id"))
+                        print("  Class:", button.get_attribute("class"))
+                        #print("  Name:", button.get_attribute("name"))
+                        print("  Type:", button.get_attribute("type"))
+                except Exception as e:
+                    print_exception(e, "CRASH")
+
+            with open(f"page_source_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html", "w", encoding="utf-8") as f:
+                f.write(driver.page_source)
+
+            link = WebDriverWait(driver, 15).until(
+                EC.element_to_be_clickable((By.CLASS_NAME, "readmore-button-class"))
+            )
+
+            print(" LOADED BUTTON ")
+            link.click()
+        except Exception as e:
+            print_exception(e, "CRASH")
+            print(" Failed pressing button continue ")
+            pass
+
+        print(" LINK PRESSED ")
+        paragraphs = driver.find_elements(By.TAG_NAME, "p")
+        for paragraph in paragraphs:
+            if paragraph.text != "":
+                article += paragraph.text
+            if "YOU MIGHT ALSO LIKE" in paragraph.text:
+                break
+        article.replace("YOU MIGHT ALSO LIKE", "")
+
+    except Exception as e:
+        print_exception(e, "CRASH")
+
     driver.quit()
     return article
 

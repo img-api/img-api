@@ -80,7 +80,7 @@ def api_get_ticker_process_batch(end=None, BATCH_SIZE=10):
     """
     lte = request.args.get("lte", "1 day")
     update = request.args.get("update", "true")
-    BATCH_SIZE = int(request.args.get("batch", BATCH_SIZE))
+    BATCH_SIZE = int(request.args.get("limit", BATCH_SIZE))
 
     end = datetime.fromtimestamp(get_timestamp_verbose(lte))
 

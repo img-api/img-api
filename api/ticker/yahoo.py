@@ -1,27 +1,22 @@
+import datetime
 import os
 import re
+import time
+import urllib
+from datetime import timedelta
+from urllib.request import Request, urlopen
 
-
+import pandas as pd
 import requests
 import requests_cache
-
-import urllib
-from urllib.request import urlopen, Request
-import pandas as pd
-import yfinance as yf
-
-import time
 import selenium
-from selenium import webdriver
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.common.by import By
-from selenium.webdriver.firefox.options import Options
-
-import datetime
-from datetime import timedelta
-
-from api.print_helper import *
+import yfinance as yf
 from api.company.models import DB_Company
+from api.print_helper import *
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.firefox.options import Options
 
 from .models import DB_Ticker
 
@@ -48,7 +43,7 @@ class Yahoo:
             for item in ticker.news:
                 yahoo_publishers.add(item["publisher"])
         return yahoo_publishers
-    
+
 
     def date_from_unix(self, string):
 
@@ -68,7 +63,7 @@ class Yahoo:
 
     def save_article(self, date, link, title, news_type, publisher, article, uuid, related_tickers = None):
 
-        """Creates a MongoDB article object. 
+        """Creates a MongoDB article object.
         Saves article into the relevant database"""
 
         news = DB_News(
@@ -85,13 +80,13 @@ class Yahoo:
         news.save()
 
 
-        
+
     def download_yahoo_news(self, ticker):
         ticker = yf.Ticker(f"{ticker}")
         for item in ticker.news:
             if item["publisher"] not in ["Barrons", "MT Newswires", "Investor's Business Daily", "Yahoo Finance Video"]:
                 success, article = self.download_article(item["link"])
-                
+
                 print(item["publisher"], article)
                 if success == 0:
                     news_type = "denied"
@@ -122,20 +117,22 @@ class Yahoo:
                             article = article,
                             uuid = "Y_" + item["uuid"],
                         related_tickers = item["relatedTickers"])
-        
+
 
     def download_article(self, url):
+        from selenium.webdriver.support import as, expected_conditions
+
         user_agent = random.choice(firefox_user_agents)
         options = Options()
         options.set_preference("general.useragent.override", user_agent)
         driver = webdriver.Firefox(options=options)
         try:
             driver.get(url)
-        
+
         except:
             #save into denied
             return [0, ""]
-        
+
         try:
             # Wait until the button is visible
             readmore_button = WebDriverWait(driver, 10).until(
@@ -148,14 +145,14 @@ class Yahoo:
 
             # Click the button
             readmore_button.click()
-        
+
             print("Clicked on the 'Read More' button successfully.")
 
         except Exception as e:
             print(f"Error: {e}")
-        
-        time.sleep(random.randint(2,10)) 
-        
+
+        time.sleep(random.randint(2,10))
+
         try:
             html = driver.page_source
         except Exception as e:
@@ -174,7 +171,7 @@ class Yahoo:
 
 
 
-                
+
     def download_ibd(self, url):
         user_agent = random.choice(firefox_user_agents)
         options = Options()
@@ -188,7 +185,7 @@ class Yahoo:
             link.click()
         except:
             pass
-        
+
         time.sleep(5)
         html = driver.page_source
         driver.quit()

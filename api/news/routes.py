@@ -47,6 +47,7 @@ def api_news_get_query():
     ret = {'status': 'success', 'news': news}
     return get_response_formatted(ret)
 
+
 @blueprint.route('/update', methods=['GET', 'POST'])
 @api_key_or_login_required
 @admin_login_required
@@ -136,6 +137,11 @@ def api_create_news_ai_summary(news, force_summary=False):
 
     articles = '\n'.join(news['articles'])
 
+    if "We, Yahoo, are part" in articles:
+        print(" FAILED LOADING ARTICLE - REINDEX ")
+        news.update(**{"articles": [], "force_reindex": True})
+        return
+
     data = {
         'type': 'summary',
         'id': str(news['id']),
@@ -147,6 +153,8 @@ def api_create_news_ai_summary(news, force_summary=False):
 
     if 'link' in news:
         data['link'] = news['link']
+
+        print(" UPLOADING TO PROCESS -> " + news['link'])
 
     if 'source' in news:
         data['source'] = news['source']
