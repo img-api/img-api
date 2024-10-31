@@ -427,7 +427,7 @@ def api_remove_a_ticker_by_id(ticker_id):
 # An user watchlist is a list of tickers in the format EXCHANGE:TICKER
 
 
-def get_watchlist_or_create(name):
+def get_watchlist_or_create(name = "default"):
     from flask_login import current_user
 
     watchlist = DB_TickerUserWatchlist.objects(username=current_user.username, list_name=name).first()
