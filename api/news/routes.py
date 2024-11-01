@@ -59,16 +59,20 @@ def api_news_get_query():
     news = build_query_from_request(DB_News, global_api=True)
 
     for article in news:
-        if 'ia_summary' not in article:
-            continue
-
         try:
-            sentiment, classification = parse_sentiment(article['ia_summary'])
-            if sentiment:
-                article['sentiment'] = sentiment
-                article['sentiment_score'] = classification
+            if 'ai_summary' in article:
+                sentiment, classification = parse_sentiment(article['ai_summary'])
+                if sentiment:
+                    article['sentiment'] = sentiment
+                    article['sentiment_score'] = classification
         except Exception as e:
             print_exception(e, "CRASH")
+
+    clean = request.args.get("cleanup", None)
+    if clean and (current_user.is_admin or current_user.username in ["contact@engineer.blue", "admin"]):
+        news.delete()
+        ret = {'status': "deleted"}
+        return get_response_formatted(ret)
 
     ret = {'news': news}
     return get_response_formatted(ret)
@@ -204,6 +208,8 @@ def api_create_news_ai_summary(news, force_summary=False):
 
     response = requests.post("http://lachati.com:5111/upload-json", json=data)
     response.raise_for_status()
+
+    news.set_state("WAITING_FOR_AI")
 
 
 @blueprint.route('/ai_summary', methods=['GET', 'POST'])
