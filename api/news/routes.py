@@ -23,6 +23,32 @@ from mongoengine.queryset import QuerySet
 from mongoengine.queryset.visitor import Q
 
 
+@blueprint.route('/create', methods=['GET', 'POST'])
+@api_key_or_login_required
+@admin_login_required
+def api_create_news_local():
+    """ Create a new article
+    ---
+    """
+
+    print("======= CREATE A SINGLE ARTICLE =============")
+
+    json = request.json
+
+    if 'id' in json:
+        return get_response_error_formatted(400, {'error_msg': "Error, please use UPDATE to update an entry"})
+
+    if 'link' not in json:
+        return get_response_error_formatted(400,
+                                            {'error_msg': "Missing link, not right format. Please check documentation"})
+
+    article = DB_News(**json)
+    article.save()
+
+    ret = {"news": [article]}
+    return get_response_formatted(ret)
+
+
 @blueprint.route('/query', methods=['GET', 'POST'])
 def api_news_get_query():
     """
@@ -33,19 +59,34 @@ def api_news_get_query():
     news = build_query_from_request(DB_News, global_api=True)
 
     for article in news:
-        if 'ia_summary' not in article:
-            continue
-
         try:
-            sentiment, classification = parse_sentiment(article['ia_summary'])
-            if sentiment:
-                article['sentiment'] = sentiment
-                article['sentiment_score'] = classification
+            if 'ai_summary' in article:
+                sentiment, classification = parse_sentiment(article['ai_summary'])
+                if sentiment:
+                    article['sentiment'] = sentiment
+                    article['sentiment_score'] = classification
         except Exception as e:
             print_exception(e, "CRASH")
 
-    ret = {'status': 'success', 'news': news}
+    clean = request.args.get("cleanup", None)
+    if clean and (current_user.is_admin or current_user.username in ["contact@engineer.blue", "admin"]):
+        news.delete()
+        ret = {'status': "deleted"}
+        return get_response_formatted(ret)
+
+    ret = {'news': news}
     return get_response_formatted(ret)
+
+
+def cleanup_update(article):
+    if 'creation_date' in article:
+        del article['creation_date']
+
+    if 'last_visited_date' in article:
+        del article['last_visited_date']
+
+    return article
+
 
 @blueprint.route('/update', methods=['GET', 'POST'])
 @api_key_or_login_required
@@ -62,6 +103,7 @@ def api_create_news_update_query():
         for article in json['news']:
             db_article = None
 
+            article = cleanup_update(article)
             if 'id' in article:
                 db_article = DB_News.objects(id=article['id']).first()
 
@@ -73,8 +115,8 @@ def api_create_news_update_query():
 
             ret.append(db_article)
 
-    ret = {'status': 'success', 'news': ret}
-    return get_response_formatted(ret.serialize())
+    ret = {'news': ret}
+    return get_response_formatted(ret)
 
 
 @blueprint.route('/get/<string:news_id>', methods=['GET', 'POST'])
@@ -97,30 +139,36 @@ def api_get_news_helper(news_id):
     return get_response_formatted(ret)
 
 
-@blueprint.route('/rm/<string:biz_id>', methods=['GET', 'POST'])
-@blueprint.route('/remove/<string:biz_id>', methods=['GET', 'POST'])
+@blueprint.route('/rm/<string:article_id>', methods=['GET', 'POST'])
+@blueprint.route('/remove/<string:article_id>', methods=['GET', 'POST'])
 @api_key_or_login_required
 @admin_login_required
-def api_remove_a_news_by_id(biz_id):
+def api_remove_a_news_by_id(article_id):
     """ Business deletion
     ---
     """
 
     # CHECK API ONLY ADMIN
-    if biz_id == "ALL":
+    if article_id == "ALL":
         DB_News.objects().delete()
         ret = {'status': "deleted"}
         return get_response_formatted(ret)
 
-    news = DB_News.objects(id=biz_id).first()
+    news = DB_News.objects(id=article_id).first()
 
     if not news:
         return get_response_error_formatted(404, {'error_msg': "News article not found for the current user"})
 
-    ret = {'status': "deleted", 'news': news.serialize()}
+    ret = {'status': "deleted", 'news': news}
 
     news.delete()
     return get_response_formatted(ret)
+
+
+@blueprint.route('/rm', methods=['GET', 'POST'])
+def api_remove_a_news_by_id_request():
+    article_id = request.args.get("id", None)
+    return api_remove_a_news_by_id(article_id)
 
 
 def api_create_news_ai_summary(news, force_summary=False):
@@ -136,6 +184,11 @@ def api_create_news_ai_summary(news, force_summary=False):
 
     articles = '\n'.join(news['articles'])
 
+    if "We, Yahoo, are part" in articles:
+        print(" FAILED LOADING ARTICLE - REINDEX ")
+        news.update(**{"articles": [], "force_reindex": True})
+        return
+
     data = {
         'type': 'summary',
         'id': str(news['id']),
@@ -148,11 +201,15 @@ def api_create_news_ai_summary(news, force_summary=False):
     if 'link' in news:
         data['link'] = news['link']
 
+        print(" UPLOADING TO PROCESS -> " + news['link'])
+
     if 'source' in news:
         data['source'] = news['source']
 
     response = requests.post("http://lachati.com:5111/upload-json", json=data)
     response.raise_for_status()
+
+    news.set_state("WAITING_FOR_AI")
 
 
 @blueprint.route('/ai_summary', methods=['GET', 'POST'])
@@ -252,4 +309,25 @@ def api_news_callback_ai_summary():
         news.update(**update)
 
     ret = {}
+    return get_response_formatted(ret)
+
+
+@blueprint.route('/my_portfolio', methods=['GET', 'POST'])
+@api_key_or_login_required
+def api_news_my_portfolio_query():
+    """
+    Builds a query with the current portfolio
+    """
+    from api.ticker.routes import get_watchlist_or_create
+
+    name = request.args.get("name", "default")
+
+    watchlist = get_watchlist_or_create(name)
+
+    ls = str.join(",", watchlist.exchange_tickers)
+    extra_args = {'related_exchange_tickers__in': ls}
+
+    news = build_query_from_request(DB_News, global_api=True, extra_args=extra_args)
+
+    ret = {'news': news}
     return get_response_formatted(ret)

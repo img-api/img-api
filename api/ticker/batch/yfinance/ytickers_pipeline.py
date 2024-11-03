@@ -214,8 +214,6 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
             yfetch_process_news(db_news)
             db_ticker.set_state("PROCESSED")
 
-            db_ticker.set_state("PROCESSED")
-
     except Exception as e:
         print_exception(e, "CRASH ON YAHOO NEWS PROCESSING")
 

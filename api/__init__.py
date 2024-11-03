@@ -285,7 +285,7 @@ def api_key_or_login_required(func):
             return get_response_error_formatted(errh.code, {'error_msg': errh.description})
 
         except Exception as err:
-            print(err, " CRASH ON USER. " + str(err))
+            print_exception(err, " CRASH ON USER. ")
             return get_response_error_formatted(400, {'error_msg': str(err)})
 
         return get_response_error_formatted(401, {'error_msg': "User Unauthorized, check token with admin"})
@@ -406,6 +406,7 @@ def register_api_blueprints(app):
             'people',
             'content',
             'company',
+            'payment',
             'galleries',
             'hello_world',
     ):

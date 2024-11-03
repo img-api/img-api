@@ -62,6 +62,7 @@ class DB_News(db.DynamicDocument):
     ai_summary = db.StringField()
 
     external_uuid = db.StringField()
+    force_reindex = db.BooleanField(default=False)
 
     # Tickers that are
     related_exchange_tickers = db.ListField(db.StringField(), default=list)
@@ -96,6 +97,8 @@ class DB_News(db.DynamicDocument):
 
     def set_state(self, state_msg):
         """ Update a processing state """
+
+        print_b(self.link + " " + self.status + " => " + state_msg)
 
         self.update(**{
             'force_reindex': False,

@@ -531,7 +531,7 @@ def query_clean_reserved(args):
     return args
 
 
-def build_query_from_request(MyClass, args=None, get_all=False, global_api=False):
+def build_query_from_request(MyClass, args=None, get_all=False, global_api=False, extra_args=None):
     """ Global API means that the data doesn't belong to a particular user """
 
     order_by = None
@@ -554,6 +554,9 @@ def build_query_from_request(MyClass, args=None, get_all=False, global_api=False
         skip = args.get("skip")
 
         args = query_clean_reserved(args)
+
+    if extra_args:
+        args.update(extra_args)
 
     query_set = QuerySet(MyClass, MyClass()._get_collection())
 
@@ -618,7 +621,7 @@ def build_query_from_url(args=None):
 
         Field not empty | null
         example:
-            /api/news/query?ia_summary__ne=NULL&order_by=-creation_date&creation_date__gte=1+day
+            /api/news/query?ai_summary__ne=NULL&order_by=-creation_date&creation_date__gte=1+day
 
     """
     if not args:
@@ -664,7 +667,7 @@ def build_query_from_url(args=None):
             if value == "NULL":
                 value = None
 
-            if len(arguments[key]) > 1:
+            if key in arguments and len(arguments[key]) > 1:
                 query_or = None
                 for v in arguments[key]:
                     newkey = {key: get_adaptive_value(key, v)}

@@ -20,6 +20,19 @@ from .tickers_pipeline import ticker_pipeline_process
 from .yfinance.yfinance_news import yfetch_process_news
 from .yfinance.ytickers_pipeline import yticker_pipeline_process
 
+####################################
+# PROCESS TO MICROSERVICE PLAN
+####################################
+
+# GET TICKERS THAT HAVE NOT BEING PROCESSED
+# https://tothemoon.life/api/ticker/index/batch/get_tickers?lte=1%20hour&limit=1
+
+# FIND NEWS THAT HAVE NOT BEING PROCESSED:
+# https://tothemoon.life/api/news/query?status=WAITING_INDEX&limit=1
+
+# UPDATE NEWS [WIP]
+#  https://tothemoon.life/api/news/update [POST]
+
 # RAW basic implementation before going for a future implmentation using
 # Something like temporal.io
 
@@ -30,14 +43,41 @@ def ticker_process_news_sites(BATCH_SIZE=5):
     """ Fetches all the news to be indexed and calls the API to fetch them
         We don't have yet a self-registering plugin api so we will just call manually depending on the source.
     """
+    print_big(" NEWS BATCH ")
+
+    update = False
+
+    item_news = DB_News.objects(ai_summary=None, status="INDEXED")[:BATCH_SIZE * 2]
+    for article in item_news:
+        try:
+            from api.news.routes import api_create_news_ai_summary
+            api_create_news_ai_summary(article)
+
+            article.set_state("RETRY_INDEX")
+        except Exception as e:
+            print_exception(e, "CRASHED")
+            pass
+
     query = Q(force_reindex=True)
     news = DB_News.objects(query)[:BATCH_SIZE]
     if news.count() == 0:
         query = Q(status='WAITING_INDEX')
         news = DB_News.objects(query)[:BATCH_SIZE]
 
+    if news.count() == 0:
+        print_r(" PROCESSING INDEXED NEWS THAT FAILED FOR SOME REASON ")
+        query = Q(status='INDEXED') & Q(ai_summary=None)
+        news = DB_News.objects(query)[:BATCH_SIZE]
+
+    if news.count() == 0:
+        print_r(" PROCESSING INDEXED NEWS THAT FAILED FOR SOME REASON ")
+        query = Q(ai_summary=None)
+        news = DB_News.objects(query)[:BATCH_SIZE * 10]
+
     for item in news:
         try:
+            print(" PROCESSING ITEM " + item.title)
+
             if item.force_reindex:
                 item.update(**{ 'force_reindex': False })
 

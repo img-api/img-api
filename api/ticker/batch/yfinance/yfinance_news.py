@@ -36,6 +36,7 @@ def yfetch_process_news(item, web_driver=None):
     Downloads the news into disk
     """
     from api.ticker.batch.html.selenium_integration import get_webdriver
+    from api.ticker.tickers_fetches import get_IBD_articles
 
     print_b("NEWS -> " + item.link)
 
@@ -93,16 +94,14 @@ def yfetch_process_news(item, web_driver=None):
                 articles.append(item["title"])
 
         elif item["publisher"] == "Investor's Business Daily":
-            while True:
-                try:
-                    article = get_IBD_articles(item["link"])
-                    if article != "":
-                        break
-                except:
-                    time.sleep(random.randint(5, 15))
-
-            article = clean_article(article)
-            articles.append(article)
+            try:
+                article = get_IBD_articles(item["link"], driver)
+                if article != "":
+                    print_b(" OK ")
+                    article = clean_article(article)
+                    articles.append(article)
+            except Exception as e:
+                print_exception(e, " FAILED ")
 
     #soup, raw_html = get_html(item.link)
 

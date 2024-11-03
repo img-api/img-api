@@ -10,7 +10,8 @@ from api import (api_key_login_or_anonymous, api_key_or_login_required, cache,
                  get_response_error_formatted, get_response_formatted)
 from api.api_redis import api_rq
 from api.print_helper import *
-from api.query_helper import build_query_from_request, mongo_to_dict_helper
+from api.query_helper import (build_query_from_request, get_timestamp_verbose,
+                              mongo_to_dict_helper)
 from api.ticker import blueprint
 from api.ticker.batch.workflow import (ticker_process_batch,
                                        ticker_process_invalidate,
@@ -68,6 +69,31 @@ def api_batch_dry_run():
 
     processed = ticker_process_batch(dry_run=True)
     return get_response_formatted({'processed': processed})
+
+
+@blueprint.route('/index/batch/get_tickers', methods=['GET', 'POST'])
+def api_get_ticker_process_batch(end=None, BATCH_SIZE=10):
+    """
+    Gets a list of tickers and calls the different APIs to capture and process the data.
+
+    Limit to BATCH_SIZE so we don't ask for too many at once to all APIs
+    """
+    lte = request.args.get("lte", "1 day")
+    update = request.args.get("update", "true")
+    BATCH_SIZE = int(request.args.get("limit", BATCH_SIZE))
+
+    end = datetime.fromtimestamp(get_timestamp_verbose(lte))
+
+    query = Q(force_reindex=True)
+    tickers = DB_Ticker.objects(query)[:BATCH_SIZE]
+    if tickers.count() == 0:
+        query = Q(last_processed_date__lte=end) | Q(last_processed_date=None)
+        tickers = DB_Ticker.objects(query)[:BATCH_SIZE]
+
+        for ticker in tickers:
+            ticker.set_state("API_FETCHED")
+
+    return get_response_formatted({'tickers': tickers})
 
 
 @blueprint.route('/index/batch/process', methods=['GET', 'POST'])
@@ -374,6 +400,8 @@ def api_get_ticker_get_price():
         'ticker': ticker_name,
         'income_statement': str(income_statement),
     }
+
+
 @blueprint.route('/rm/<string:ticker_id>', methods=['GET', 'POST'])
 @blueprint.route('/remove/<string:ticker_id>', methods=['GET', 'POST'])
 # TODO: CHECK API ONLY ADMIN
@@ -399,7 +427,7 @@ def api_remove_a_ticker_by_id(ticker_id):
 # An user watchlist is a list of tickers in the format EXCHANGE:TICKER
 
 
-def get_watchlist_or_create(name):
+def get_watchlist_or_create(name = "default"):
     from flask_login import current_user
 
     watchlist = DB_TickerUserWatchlist.objects(username=current_user.username, list_name=name).first()
@@ -471,7 +499,8 @@ def api_user_watchlist_operation(operation, name, exchange_ticker):
     ret = {'list_name': name, 'exchange_tickers': watchlist.exchange_tickers}
     return get_response_formatted(ret)
 
-@blueprint.route("user/test", methods = ["GET", "POST"])
+
+@blueprint.route("user/test", methods=["GET", "POST"])
 def yahoo_test():
     from tickers_fetches import download_yahoo_news
     tickers = ["MSFT", "KO"]
