@@ -336,12 +336,17 @@ class User(UserMixin, db.DynamicDocument):
 
         return gallery
 
+    def save(self, *args, **kwargs):
+        ret = super(User, self).save(*args, **kwargs)
+        ret.reload()
+        return ret
+
     def action_on_list(self, media_id, action, media_list_short_name):
         """ Performs an interaction on a media list """
         update, ret = self.galleries.perform(media_id, action, media_list_short_name)
 
         if update:
-            self.save()
+            self.save(validate=False)
 
         return ret
 

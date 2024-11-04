@@ -93,6 +93,13 @@ def yfetch_process_news(item, web_driver=None):
             item.articles = articles
             item.save(validate=False)
             item.set_state("INDEXED")
+            try:
+                from api.news.routes import api_create_news_ai_summary
+                api_create_news_ai_summary(item)
+            except Exception as e:
+                print_exception(e, "CRASHED")
+                pass
+
         else:
             item.set_state("ERROR: ARTICLES NOT FOUND")
 

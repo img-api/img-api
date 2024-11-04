@@ -195,6 +195,8 @@ def api_create_news_ai_summary(news, force_summary=False):
         news.update(**{"articles": [], "force_reindex": True})
         return
 
+    news.update(**{"ai_upload_date": datetime.now()})
+
     data = {
         'type': 'summary',
         'id': str(news['id']),

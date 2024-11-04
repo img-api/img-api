@@ -43,18 +43,18 @@ def ticker_process_news_sites(BATCH_SIZE=5):
     """ Fetches all the news to be indexed and calls the API to fetch them
         We don't have yet a self-registering plugin api so we will just call manually depending on the source.
     """
+    from api.news.routes import api_create_news_ai_summary
     print_big(" NEWS BATCH ")
 
     update = False
 
-    ai_timeout = datetime.fromtimestamp(get_timestamp_verbose("1 days"))
-    item_news = DB_News.objects(ai_summary=None, status="INDEXED", last_visited_date__lte=ai_timeout)[:BATCH_SIZE * 2]
+    ai_timeout = datetime.fromtimestamp(get_timestamp_verbose("1 hour"))
+    item_news = DB_News.objects(ai_summary=None, last_visited_date__lte=ai_timeout, articles__not__size=0).order_by('-creation_date')[:BATCH_SIZE * 2]
     for article in item_news:
         try:
-            from api.news.routes import api_create_news_ai_summary
             api_create_news_ai_summary(article)
 
-            article.set_state("RETRY_INDEX")
+            article.set_state("RETRY_AI_INDEX")
         except Exception as e:
             print_exception(e, "CRASHED")
             pass
@@ -86,13 +86,11 @@ def ticker_process_news_sites(BATCH_SIZE=5):
 
             if item.source == "YFINANCE":
                 yfetch_process_news(item)
-                continue
 
-            elif item.source == "AlphaVantage":
-                alpha_vantage_332process_news(item)
-
-            elif item.source == "Google":
-                google_process_news(item)
+            try:
+                api_create_news_ai_summary(item)
+            except Exception as e:
+                pass
 
         except Exception as e:
             item.set_state("ERROR: FETCH CRASHED, SEE LOGS!")

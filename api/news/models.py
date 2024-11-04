@@ -50,6 +50,7 @@ class DB_News(db.DynamicDocument):
 
     creation_date = db.DateTimeField()
     last_visited_date = db.DateTimeField()
+    ai_upload_date = db.DateTimeField()
 
     link = db.StringField()
     thumbnail_url = db.StringField()
