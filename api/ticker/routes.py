@@ -198,7 +198,7 @@ def api_get_query():
     """
     """
 
-    tickers = build_query_from_request(DB_Ticker)
+    tickers = build_query_from_request(DB_Ticker, global_api=True)
 
     ret = {'status': 'success', 'tickers': tickers}
     return get_response_formatted(ret)

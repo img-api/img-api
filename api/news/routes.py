@@ -270,7 +270,14 @@ def api_news_callback_ai_summary():
 
     json = request.json
 
+    if 'id' not in json:
+        return get_response_error_formatted(400, {'error_msg': "An id is required"})
+
     news = DB_News.objects(id=json['id']).first()
+
+    if not news:
+        print_r(" FAILED UPDATING AI " + json['id'] )
+        return get_response_formatted({})
 
     if 'type' in json:
         print_b(" NEWS AI_CALLBACK " + json['id'] + " " + str(news.title))

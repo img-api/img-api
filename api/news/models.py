@@ -59,6 +59,8 @@ class DB_News(db.DynamicDocument):
 
     articles = db.ListField(db.StringField(), default=list)
 
+    experiment = db.StringField()
+
     ai_summary = db.StringField()
 
     external_uuid = db.StringField()
