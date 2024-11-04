@@ -1,22 +1,22 @@
 import os
 import re
+from datetime import timedelta
+from urllib.request import Request, urlopen
 
 import requests
 import requests_cache
-
-from datetime import timedelta
-
 from api.print_helper import *
 from api.query_helper import *
-
-from urllib.request import urlopen, Request
 from bs4 import BeautifulSoup
 
 
-def get_webdriver():
+def get_webdriver(driver=None):
+    if driver:
+        return driver
+
     from selenium import webdriver
-    from selenium.webdriver.chrome.service import Service as ChromeService
     from selenium.webdriver.chrome.options import Options
+    from selenium.webdriver.chrome.service import Service as ChromeService
 
     chrome_executable_path = "./chrome/chrome/linux-128.0.6613.86/chrome-linux64/chrome"
     chromedriver_path = "./chrome/chromedriver-linux64/chromedriver"

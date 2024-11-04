@@ -38,25 +38,23 @@ def yfetch_process_news(item, web_driver=None):
     from api.ticker.batch.html.selenium_integration import get_webdriver
     from api.ticker.tickers_fetches import get_IBD_articles
 
+    if len(item.articles) > 0 and item.force_reindex == False:
+        print_b("ALREADY PROCESSED -> " + item.link)
+        return
+
     print_b("NEWS -> " + item.link)
 
     data_folder = item.get_data_folder()
     print_b("DATA FOLDER: " + data_folder)
 
-    if web_driver:
-        print_b(" REUSING WEBDRIVER ")
-        driver = web_driver
-    else:
-        driver = get_webdriver()
-
     articles = []
 
     print_b(" PUBLISHER " + item['publisher'])
-    if item["publisher"] not in ["Barrons", "Financial Times", "The Information", "MT Newswires", "Investor's Business Daily", "Yahoo Finance Video"]:
-        #user_agent = random.choice(firefox_user_agents)
-        #options = Options()
-        #options.set_preference("general.useragent.override", user_agent)
-
+    if item["publisher"] not in [
+            "Barrons", "Financial Times", "The Information", "MT Newswires", "Investor's Business Daily",
+            "Yahoo Finance Video"
+    ]:
+        driver = get_webdriver(web_driver)
         driver.get(item["link"])
 
         try:
@@ -88,43 +86,18 @@ def yfetch_process_news(item, web_driver=None):
             articles.append(article)
 
         driver.close()
-    else:
-        if item["publisher"] in ["Barrons", "MT Newswires"]:
-            if "title" in item:
-                articles.append(item["title"])
+        if not web_driver:
+            driver.quit()
 
-        elif item["publisher"] == "Investor's Business Daily":
-            try:
-                article = get_IBD_articles(item["link"], driver)
-                if article != "":
-                    print_b(" OK ")
-                    article = clean_article(article)
-                    articles.append(article)
-            except Exception as e:
-                print_exception(e, " FAILED ")
+        if len(articles) > 0:
+            item.articles = articles
+            item.save(validate=False)
+            item.set_state("INDEXED")
+        else:
+            item.set_state("ERROR: ARTICLES NOT FOUND")
 
-    #soup, raw_html = get_html(item.link)
-
-    #filename = str(item.id) + ".html"
-    #save_html_to_file(raw_html, filename, data_folder)
-
-
-    if not web_driver:
-        driver.quit()
-
-    # Reindex because we haven't finish this code
-
-    if len(articles) > 0:
-        item.articles = articles
-        item.save(validate=False)
-        item.set_state("INDEXED")
-    else:
-        item.set_state("ERROR: ARTICLES NOT FOUND")
 
 def date_from_unix(string):
-
     """Takes unix format and converts it into datetime object"""
 
     return datetime.fromtimestamp(float(string))
-
-

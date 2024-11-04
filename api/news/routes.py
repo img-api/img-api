@@ -15,7 +15,8 @@ from api import (admin_login_required, api_key_login_or_anonymous,
 from api.news import blueprint
 from api.news.models import DB_News
 from api.print_helper import *
-from api.query_helper import build_query_from_request, mongo_to_dict_helper
+from api.query_helper import (build_query_from_request, mongo_to_dict_helper,
+                              validate_and_convert_dates)
 from api.tools.validators import get_validated_email
 from flask import Response, abort, jsonify, redirect, request, send_file
 from flask_login import current_user
@@ -33,16 +34,17 @@ def api_create_news_local():
 
     print("======= CREATE A SINGLE ARTICLE =============")
 
-    json = request.json
+    jrequest = request.json
 
-    if 'id' in json:
+    if 'id' in jrequest:
         return get_response_error_formatted(400, {'error_msg': "Error, please use UPDATE to update an entry"})
 
-    if 'link' not in json:
+    if 'link' not in jrequest:
         return get_response_error_formatted(400,
                                             {'error_msg': "Missing link, not right format. Please check documentation"})
 
-    article = DB_News(**json)
+    validate_and_convert_dates(jrequest)
+    article = DB_News(**jrequest)
     article.save()
 
     ret = {"news": [article]}
@@ -78,16 +80,6 @@ def api_news_get_query():
     return get_response_formatted(ret)
 
 
-def cleanup_update(article):
-    if 'creation_date' in article:
-        del article['creation_date']
-
-    if 'last_visited_date' in article:
-        del article['last_visited_date']
-
-    return article
-
-
 @blueprint.route('/update', methods=['GET', 'POST'])
 @api_key_or_login_required
 @admin_login_required
@@ -103,9 +95,10 @@ def api_create_news_update_query():
         for article in json['news']:
             db_article = None
 
-            article = cleanup_update(article)
             if 'id' in article:
                 db_article = DB_News.objects(id=article['id']).first()
+
+            validate_and_convert_dates(article)
 
             if db_article:
                 db_article.update(**article)
@@ -119,18 +112,31 @@ def api_create_news_update_query():
     return get_response_formatted(ret)
 
 
-@blueprint.route('/get/<string:news_id>', methods=['GET', 'POST'])
+@blueprint.route('/force_reindex/<string:news_id>', methods=['GET', 'POST'])
+def api_get_force_reindex_helper(news_id):
+    """ News get ID
+    ---
+    """
+    article = DB_News.objects(id=news_id).first()
+
+    if not article:
+        return get_response_error_formatted(404, {'error_msg': "News article not found"})
+
+    article.status = "WAITING_REINDEX"
+    article.force_reindex = True
+    article.save(validate=False)
+    api_create_news_ai_summary(article)
+
+    ret = {'news': [article]}
+    return get_response_formatted(ret)
+
+
 @blueprint.route('/get/<string:news_id>', methods=['GET', 'POST'])
 def api_get_news_helper(news_id):
     """ News get ID
     ---
     """
-    if news_id == "ALL":
-        news = DB_News.objects()
-        ret = {'news': news}
-        return get_response_formatted(ret)
-
-    news = DB_News.objects(safe_name=news_id).first()
+    news = DB_News.objects(id=news_id).first()
 
     if not news:
         return get_response_error_formatted(404, {'error_msg': "News not found"})
@@ -144,7 +150,7 @@ def api_get_news_helper(news_id):
 @api_key_or_login_required
 @admin_login_required
 def api_remove_a_news_by_id(article_id):
-    """ Business deletion
+    """ News article deletion
     ---
     """
 
@@ -244,12 +250,12 @@ def api_get_gif():
 
     keywords = request.args.get("keywords", "SAD")
 
-    raw, gif = get_gif_for_sentiment(keywords)
+    raw, gif, format = get_gif_for_sentiment(keywords)
 
     raw = request.args.get("raw", None)
 
     if raw:
-        ret = {"keywords": keywords, 'url': gif, 'raw': raw}
+        ret = {"keywords": keywords, 'url': gif, 'raw': raw, 'format': format}
         return get_response_formatted(ret)
 
     response = requests.get(gif)
@@ -258,6 +264,9 @@ def api_get_gif():
 
     # Create a temporary file to store the gif data
     gif_data = BytesIO(response.content)
+    if format == "mp4":
+        return send_file(gif_data, mimetype='video/mp4', as_attachment=False, download_name='sentiment.mp4')
+
     return send_file(gif_data, mimetype='image/gif', as_attachment=False, download_name='sentiment.gif')
 
 
@@ -276,7 +285,7 @@ def api_news_callback_ai_summary():
     news = DB_News.objects(id=json['id']).first()
 
     if not news:
-        print_r(" FAILED UPDATING AI " + json['id'] )
+        print_r(" FAILED UPDATING AI " + json['id'])
         return get_response_formatted({})
 
     if 'type' in json:

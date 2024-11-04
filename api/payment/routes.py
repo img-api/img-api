@@ -79,7 +79,7 @@ def api_stripe_create_checkout_redirect():
 
     PUBLIC_HOST = get_host_name()
 
-    tier = request.args.get("tier", 'tier1_monthly')
+    tier = request.args.get("product", 'tier1_monthly')
     months = request.args.get("months", '1')
 
     prices = stripe.Price.list(lookup_keys=[tier])

@@ -47,7 +47,8 @@ def ticker_process_news_sites(BATCH_SIZE=5):
 
     update = False
 
-    item_news = DB_News.objects(ai_summary=None, status="INDEXED")[:BATCH_SIZE * 2]
+    ai_timeout = datetime.fromtimestamp(get_timestamp_verbose("1 days"))
+    item_news = DB_News.objects(ai_summary=None, status="INDEXED", last_visited_date__lte=ai_timeout)[:BATCH_SIZE * 2]
     for article in item_news:
         try:
             from api.news.routes import api_create_news_ai_summary

@@ -85,6 +85,23 @@ def classify_sentiment(sentiment_text):
 def get_gif_for_sentiment(sentiment):
     from flask import current_app
 
+    TENOR_API_KEY = current_app.config.get("TENOR_API_KEY", None)
+    if TENOR_API_KEY:
+        try:
+            url = f"https://tenor.googleapis.com/v2/search?q={sentiment}&key={TENOR_API_KEY}&client_key=TOTHEMOON&limit=8"
+            response = requests.get(url)
+            data = response.json()
+
+            mp4 = data['results'][0]['media_formats']['mp4']['url']
+            print_g(" SENTIMENT " + sentiment)
+            print_b(" MP4 => " + mp4)
+
+            return data, mp4, "mp4"
+
+        except Exception as e:
+            print_exception(e, "CRASHED LOADING TENOR GIF")
+
+
     GIPHY_API_KEY = current_app.config.get("GIPHY_API_KEY", None)
     if not GIPHY_API_KEY:
         return None, None
@@ -102,9 +119,9 @@ def get_gif_for_sentiment(sentiment):
 
     if data['data']:
         gif_url = data['data'][0]['images']['original']['url']
-        return data, gif_url
+        return data, gif_url, "gif"
     else:
-        return None, "No GIF found."
+        return None, "No GIF found.", None
 
 
 # Function to parse the sentiment from text
@@ -117,13 +134,11 @@ def parse_sentiment(text):
 
     if match:
         sentiment = match.group(1)
-        print(f"Extracted sentiment: {sentiment}")
+        #print(f"Extracted sentiment: {sentiment}")
 
         sentiment_words = extract_sentiments(text)
         score = compute_sentiment_score(sentiment_words)
         return sentiment, score
-    else:
-        print("No sentiment found")
 
     return None, None
 

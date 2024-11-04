@@ -246,6 +246,7 @@ def copy_replace_schema(source, destination, my_map):
 
     return destination
 
+
 def prepare_update_with_schema(source, my_map):
     """
         Helper to an update
@@ -531,6 +532,33 @@ def query_clean_reserved(args):
     return args
 
 
+def validate_and_convert_dates(data_obj):
+    try:
+        if isinstance(data_obj, dict):
+            items = data_obj.items()
+        else:
+            items = data_obj.__dict__.items()
+
+        for attr, value in items:
+            if not attr.endswith('_date'):
+                continue
+
+            # Check if the value is a float or int
+            if isinstance(value, (int, float)):
+                # Convert milliseconds to seconds if needed
+                if value > 10000000000:  # Greater than 10 billion likely means milliseconds
+                    value /= 1000
+                # Convert to datetime
+                try:
+                    data_obj[attr] = datetime.fromtimestamp(int(value))
+                except (ValueError, OverflowError) as e:
+                    raise ValueError(f"Invalid date value for {attr}: {value}") from e
+            elif not isinstance(value, datetime):
+                raise TypeError(f"{attr} must be a datetime object or convertible to datetime")
+    except Exception as e:
+        print_exception(e, "FAILED PARSING DATE")
+
+
 def build_query_from_request(MyClass, args=None, get_all=False, global_api=False, extra_args=None):
     """ Global API means that the data doesn't belong to a particular user """
 
@@ -681,6 +709,9 @@ def build_query_from_url(args=None):
                     # We don't support equal number... :(
                     if parms[-1] == "ne" and value == None:
                         pass
+
+                    elif parms[-1] in ['size']:
+                        value = int(value)
 
                     elif parms[-1] in ['gte', 'lte', 'lt', 'gt', 'ne']:
                         value = float(value)
