@@ -714,7 +714,11 @@ def build_query_from_url(args=None):
                         value = int(value)
 
                     elif parms[-1] in ['gte', 'lte', 'lt', 'gt', 'ne']:
-                        value = float(value)
+
+                        if parms[-2] == 'size':
+                            value = int(value)
+                        else:
+                            value = float(value)
 
                     elif parms[1] in ['in', 'nin', 'all']:
                         value = value.split(",")
