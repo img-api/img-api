@@ -85,6 +85,8 @@ def classify_sentiment(sentiment_text):
 def get_gif_for_sentiment(sentiment):
     from flask import current_app
 
+    from .models import DB_Gif
+
     TENOR_API_KEY = current_app.config.get("TENOR_API_KEY", None)
     if TENOR_API_KEY:
         try:
@@ -92,9 +94,14 @@ def get_gif_for_sentiment(sentiment):
             response = requests.get(url)
             data = response.json()
 
-            mp4 = data['results'][0]['media_formats']['mp4']['url']
+            gif_first = data['results'][0]
+            mp4 = gif_first['media_formats']['mp4']['url']
+
             print_g(" SENTIMENT " + sentiment)
             print_b(" MP4 => " + mp4)
+
+            db_gif = DB_Gif.objects(external_uuid = gif_first['id']).first()
+            # TODO Pass the gif and save it in our media gallery
 
             return data, mp4, "mp4"
 

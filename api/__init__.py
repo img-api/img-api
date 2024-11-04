@@ -395,6 +395,7 @@ def register_api_blueprints(app):
 
     #print_b(" API BLUE PRINTS ")
     for module_name in (
+            'gif',
             'user',
             'news',
             'jobs',

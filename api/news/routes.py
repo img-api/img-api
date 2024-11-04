@@ -56,7 +56,7 @@ def api_news_get_query():
     """
     Example of queries: https://dev.gputop.com/api/news/query?related_exchange_tickers=NASDAQ:NVO
     """
-    from .sentiment import parse_sentiment
+    from api.gif.sentiment import parse_sentiment
 
     news = build_query_from_request(DB_News, global_api=True)
 
@@ -242,40 +242,17 @@ def api_news_get_news_ai_summary():
 
 @blueprint.route('/gif', methods=['GET', 'POST'])
 #@api_key_or_login_required
-def api_get_gif():
+def api_news_get_gif():
     """ """
-    from io import BytesIO
-
-    from .sentiment import get_gif_for_sentiment
-
-    keywords = request.args.get("keywords", "SAD")
-
-    raw, gif, format = get_gif_for_sentiment(keywords)
-
-    raw = request.args.get("raw", None)
-
-    if raw:
-        ret = {"keywords": keywords, 'url': gif, 'raw': raw, 'format': format}
-        return get_response_formatted(ret)
-
-    response = requests.get(gif)
-    if response.status_code != 200:
-        return {"error": "Failed to download the gif"}, 500
-
-    # Create a temporary file to store the gif data
-    gif_data = BytesIO(response.content)
-    if format == "mp4":
-        return send_file(gif_data, mimetype='video/mp4', as_attachment=False, download_name='sentiment.mp4')
-
-    return send_file(gif_data, mimetype='image/gif', as_attachment=False, download_name='sentiment.gif')
-
+    from api.gif.routes import api_gif_get_from_request
+    return api_gif_get_from_request()
 
 @blueprint.route('/ai_callback', methods=['GET', 'POST'])
 #@api_key_or_login_required
 #@admin_login_required
 def api_news_callback_ai_summary():
     """ """
-    from .sentiment import parse_sentiment
+    from api.gif.sentiment import parse_sentiment
 
     json = request.json
 
