@@ -78,7 +78,7 @@ def api_get_ticker_process_batch(end=None, BATCH_SIZE=10):
 
     Limit to BATCH_SIZE so we don't ask for too many at once to all APIs
     """
-    lte = request.args.get("lte", "1 day")
+    lte = request.args.get("lte", "1 hour")
     update = request.args.get("update", "true")
     BATCH_SIZE = int(request.args.get("limit", BATCH_SIZE))
 
@@ -88,7 +88,7 @@ def api_get_ticker_process_batch(end=None, BATCH_SIZE=10):
     tickers = DB_Ticker.objects(query)[:BATCH_SIZE]
     if tickers.count() == 0:
         query = Q(last_processed_date__lte=end) | Q(last_processed_date=None)
-        tickers = DB_Ticker.objects(query)[:BATCH_SIZE]
+        tickers = DB_Ticker.objects(query).order_by('-last_processed_date')[:BATCH_SIZE]
 
         for ticker in tickers:
             ticker.set_state("API_FETCHED")
@@ -427,7 +427,7 @@ def api_remove_a_ticker_by_id(ticker_id):
 # An user watchlist is a list of tickers in the format EXCHANGE:TICKER
 
 
-def get_watchlist_or_create(name = "default"):
+def get_watchlist_or_create(name="default"):
     from flask_login import current_user
 
     watchlist = DB_TickerUserWatchlist.objects(username=current_user.username, list_name=name).first()
