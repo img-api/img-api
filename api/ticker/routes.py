@@ -91,7 +91,9 @@ def api_get_ticker_process_batch(end=None, BATCH_SIZE=10):
         tickers = DB_Ticker.objects(query).order_by('-last_processed_date')[:BATCH_SIZE]
 
         for ticker in tickers:
-            ticker.set_state("API_FETCHED")
+            if update == "true":
+                ticker.set_state("API_FETCHED")
+            ticker['verbose_date'] = ticker.last_processed_date.strftime("%m/%d/%Y, %H:%M:%S")
 
     return get_response_formatted({'tickers': tickers})
 
