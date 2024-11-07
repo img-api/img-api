@@ -36,7 +36,7 @@ class DB_Comments(DB_UserCheck, db.DynamicDocument):
 
     SAFE_KEYS = [
         "title", "content", "no_views", "no_likes", "no_dislikes", "parent_obj", "parent_obj_id", "parent_comment_id",
-        "is_report", "subscription"
+        "is_report", "subscription", "old_content", "old_title", "is_edited", "is_deleted",
     ]
 
     subscription = db.StringField()
@@ -46,6 +46,7 @@ class DB_Comments(DB_UserCheck, db.DynamicDocument):
     is_ghosted = db.BooleanField(default=False)
     is_moderated = db.BooleanField(default=False)
     is_report = db.BooleanField(default=False)
+    is_deleted = db.BooleanField(default=False)
 
     no_views = db.LongField()
     no_likes = db.LongField()
@@ -125,10 +126,23 @@ class DB_Comments(DB_UserCheck, db.DynamicDocument):
     def serialize(self):
         """ Cleanup version so we don't release confidential information """
         serialized = {
-            'is_NSFW': self.is_NSFW,
-            'username': self.username,
             'id': str(self.id),
-            'parent_id': str(self.id),
+            'username': self.username,
+            'parent_obj': self.parent_obj,
+            'parent_obj_id': self.parent_obj_id,
+            'parent_comment_id': self.parent_comment_id,
+
+            'title': self.title,
+            'content': self.content,
+
+            'is_NSFW': self.is_NSFW,
+            'is_edited': self.is_edited,
+            'is_report': self.is_report,
+
+            'no_views': self.no_views,
+            'no_likes': self.no_likes,
+            'no_dislikes': self.no_dislikes,
+
             'creation_date': time.mktime(self.creation_date.timetuple()),
         }
 

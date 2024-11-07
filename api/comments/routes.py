@@ -118,7 +118,37 @@ def api_update_comment():
     if 'content' in jrequest:
         jrequest['content'] = markdownify(jrequest['content']).strip()
 
+    jrequest['is_edited'] = True
     comment.update_with_checks(jrequest)
+    ret = {"comments": [comment]}
+    return get_response_formatted(ret)
+
+
+@blueprint.route('/delete', methods=['GET', 'POST'])
+@api_key_or_login_required
+def api_delete_comments_get_query():
+
+    jrequest = request.json
+
+    if 'id' not in jrequest:
+        return get_response_error_formatted(400, {'error_msg': "Error, wrong query"})
+
+    comment = DB_Comments.objects(id=jrequest['id']).first()
+
+    if comment.title:
+        jrequest['old_title'] = comment.title
+        jrequest['title'] = "..."
+
+    if comment.content:
+        jrequest['old_content'] = comment.content
+        jrequest['content'] = "*(deleted)*"
+
+    jrequest['is_deleted'] = True
+    comment.update_with_checks(jrequest)
+
+    if current_user.current_subscription:
+        comment.force_update(**{'username': "...redacted..."})
+
     ret = {"comments": [comment]}
     return get_response_formatted(ret)
 
@@ -137,7 +167,12 @@ def api_comments_get_query():
         ret = {'status': "deleted"}
         return get_response_formatted(ret)
 
-    ret = {'comments': comments}
+    cleanup = []
+
+    for comment in comments:
+        cleanup.append(comment.serialize())
+
+    ret = {'comments': cleanup}
     return get_response_formatted(ret)
 
 

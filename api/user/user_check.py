@@ -1,10 +1,9 @@
-from imgapi_launcher import db
-from flask_login import current_user
-from flask import abort
-
 from datetime import datetime
 
 from api.query_helper import get_value_type_helper
+from flask import abort
+from flask_login import current_user
+from imgapi_launcher import db
 
 
 class DB_UserCheck():
@@ -49,6 +48,10 @@ class DB_UserCheck():
         # Only admin can change an username
         if 'username' in kwargs and kwargs['username'] != current_user.username:
             return abort(401, "Unauthorized")
+
+    def force_update(self, *args, **kwargs):
+        ret = super(DB_UserCheck, self).update(*args, **kwargs)
+        return ret
 
     def update(self, *args, **kwargs):
         self.check_parms(*args, **kwargs)
