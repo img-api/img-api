@@ -408,6 +408,7 @@ def register_api_blueprints(app):
             'content',
             'company',
             'payment',
+            'comments',
             'galleries',
             'hello_world',
     ):

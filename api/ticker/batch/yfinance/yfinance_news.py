@@ -52,11 +52,13 @@ def yfetch_process_news(item, web_driver=None):
     print_b(" PUBLISHER " + item['publisher'])
     if item["publisher"] not in [
             "Barrons", "Financial Times", "The Information", "MT Newswires", "Investor's Business Daily",
-            "Yahoo Finance Video"
+
     ]:
         driver = get_webdriver(web_driver)
         driver.get(item["link"])
 
+        if item["publisher"] == "Yahoo Finance Video":
+            print_b(" FINANCE VIDEO ")
         try:
             # We get the consent
             link = driver.find_element(By.CLASS_NAME, "accept-all")
@@ -68,7 +70,8 @@ def yfetch_process_news(item, web_driver=None):
             link = driver.find_element(By.CLASS_NAME, "readmoreButtonText")
             link.click()
         except Exception as e:
-            print_exception(e, "CRASHED")
+            print_r(" No more read more button ")
+            #print_exception(e, "CRASHED")
             pass
 
         try:

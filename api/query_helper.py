@@ -743,3 +743,4 @@ def mongo_to_dict_result(objects, filter_out=None, add_empty_lists=True):
         print_exception(e, "FAIL")
 
     return ret
+

@@ -56,6 +56,7 @@ def api_news_get_query():
     """
     Example of queries: https://dev.gputop.com/api/news/query?related_exchange_tickers=NASDAQ:NVO
     """
+    from api.comments.routes import get_comments_count
     from api.gif.sentiment import parse_sentiment
 
     news = build_query_from_request(DB_News, global_api=True)
@@ -75,6 +76,9 @@ def api_news_get_query():
         news.delete()
         ret = {'status': "deleted"}
         return get_response_formatted(ret)
+
+    for article in news:
+        article['no_comments'] = get_comments_count(str(article.id))
 
     ret = {'news': news}
     return get_response_formatted(ret)
@@ -249,6 +253,7 @@ def api_news_get_gif():
     from api.gif.routes import api_gif_get_from_request
     return api_gif_get_from_request()
 
+
 @blueprint.route('/ai_callback', methods=['GET', 'POST'])
 #@api_key_or_login_required
 #@admin_login_required
@@ -313,6 +318,7 @@ def api_news_my_portfolio_query():
     """
     Builds a query with the current portfolio
     """
+    from api.comments.routes import get_comments_count
     from api.ticker.routes import get_watchlist_or_create
 
     name = request.args.get("name", "default")
@@ -323,6 +329,9 @@ def api_news_my_portfolio_query():
     extra_args = {'related_exchange_tickers__in': ls}
 
     news = build_query_from_request(DB_News, global_api=True, extra_args=extra_args)
+
+    for article in news:
+        article['no_comments'] = get_comments_count(str(article.id))
 
     ret = {'news': news}
     return get_response_formatted(ret)
