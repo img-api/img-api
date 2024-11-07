@@ -93,6 +93,36 @@ def api_create_new_comment():
     return get_response_formatted(ret)
 
 
+@blueprint.route('/update', methods=['GET', 'POST'])
+@api_key_or_login_required
+def api_update_comment():
+    """ Update a comment
+    """
+
+    jrequest = request.json
+
+    if 'id' not in jrequest:
+        return get_response_error_formatted(400, {'error_msg': "Error, please use create to update an entry"})
+
+    checks = ['content']
+    for check in checks:
+        if check not in jrequest:
+            return get_response_error_formatted(
+                400, {'error_msg': "Missing content, not right format. Please check documentation"})
+
+    comment = DB_Comments.objects(id=jrequest['id']).first()
+
+    if 'title' in jrequest:
+        jrequest['title'] = markdownify(jrequest['title']).strip()
+
+    if 'content' in jrequest:
+        jrequest['content'] = markdownify(jrequest['content']).strip()
+
+    comment.update_with_checks(jrequest)
+    ret = {"comments": [comment]}
+    return get_response_formatted(ret)
+
+
 @blueprint.route('/query', methods=['GET', 'POST'])
 def api_comments_get_query():
     """
