@@ -7,6 +7,7 @@ from datetime import timedelta
 import pandas as pd
 import requests
 import requests_cache
+import yfinance as yf
 from api.company.models import DB_Company
 from api.news.models import DB_News
 from api.print_helper import *
@@ -17,9 +18,6 @@ from mongoengine.queryset.visitor import Q
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.firefox.options import Options
-
-import yfinance as yf
-
 
 firefox_user_agents = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:103.0) Gecko/20100101 Firefox/103.0",
@@ -41,8 +39,8 @@ def clean_article(article):
 
 def get_webdriver():
     from selenium import webdriver
-    from selenium.webdriver.chrome.service import Service as ChromeService
     from selenium.webdriver.chrome.options import Options
+    from selenium.webdriver.chrome.service import Service as ChromeService
 
     chrome_executable_path = "./chrome/chrome/linux-128.0.6613.86/chrome-linux64/chrome"
     chromedriver_path = "./chrome/chromedriver-linux64/chromedriver"
@@ -70,7 +68,7 @@ def yfetch_process_news(item, web_driver=None):
     print_b("NEWS -> " + item.link)
 
     data_folder = item.get_data_folder()
-    print_b("DATA FOLDER: " + data_folder)
+    #print_b("DATA FOLDER: " + data_folder)
 
     if web_driver:
         print_b(" REUSING WEBDRIVER ")

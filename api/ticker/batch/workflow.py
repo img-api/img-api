@@ -118,17 +118,17 @@ def ticker_process_batch(end=None, dry_run=False, BATCH_SIZE=10):
     Limit to BATCH_SIZE so we don't ask for too many at once to all APIs
     """
 
-    # Get tickers processed more than X days ago.
-    # Less than or Equal to Last processed
-
-    if not end:
-        end = datetime.fromtimestamp(get_timestamp_verbose("1 days"))
+    # Ignore the end, we always want to process data now
+    #if not end:
+    #    end = datetime.fromtimestamp(get_timestamp_verbose("1 days"))
 
     query = Q(force_reindex=True)
-    tickers = DB_Ticker.objects(query)[:BATCH_SIZE]
+    # Newest first
+    tickers = DB_Ticker.objects(query).order_by('+last_processed_date')[:BATCH_SIZE]
+
+    # Order by oldest, always returns a result
     if tickers.count() == 0:
-        query = Q(last_processed_date__lte=end) | Q(last_processed_date=None)
-        tickers = DB_Ticker.objects(query)[:BATCH_SIZE]
+        tickers = DB_Ticker.objects().order_by('+last_processed_date')[:BATCH_SIZE]
 
     for db_ticker in tickers:
         if db_ticker.force_reindex:

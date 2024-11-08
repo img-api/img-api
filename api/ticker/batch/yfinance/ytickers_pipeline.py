@@ -119,8 +119,8 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
 
     if 'companyOfficers' in info:
         company_officers = info['companyOfficers']
-        for officer in company_officers:
-            print_b(f"TODO: Create person {officer['name']} => {officer['title']}")
+        #for officer in company_officers:
+        #    print_b(f"TODO: Create person {officer['name']} => {officer['title']}")
 
     if not dry_run:
         if not db_company:
@@ -137,7 +137,7 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
             db_news = DB_News.objects(external_uuid=item['uuid']).first()
             if db_news:
                 # We don't update news that we already have in the system
-                print_b(" ALREADY INDEXED " + item['link'])
+                print_b(" ALREADY INDEXED ")
                 update = True
 
                 try:

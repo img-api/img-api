@@ -45,11 +45,11 @@ def yfetch_process_news(item, web_driver=None):
     print_b("NEWS -> " + item.link)
 
     data_folder = item.get_data_folder()
-    print_b("DATA FOLDER: " + data_folder)
+    #print_b("DATA FOLDER: " + data_folder)
 
     articles = []
 
-    print_b(" PUBLISHER " + item['publisher'])
+    print_g(" PUBLISHER " + item['publisher'])
     if item["publisher"] not in [
             "Barrons", "Financial Times", "The Information", "MT Newswires", "Investor's Business Daily",
 

@@ -140,12 +140,12 @@ def get_timestamp_verbose(str):
     except ValueError:
         pass
 
-    if not 'hour' in str:
-        try:
-            return dateutil.parser.parse(str)
-        except Exception as e:
-            pass
-            #print_exception(e, "DATEUTIL")
+    #if not 'hour' in str:
+    #    try:
+    #        return dateutil.parser.parse(str)
+    #    except Exception as e:
+    #        pass
+    #        #print_exception(e, "DATEUTIL")
 
     try:
         month = month_string_to_number(str)

@@ -87,12 +87,13 @@ def api_get_ticker_process_batch(end=None, BATCH_SIZE=10):
     query = Q(force_reindex=True)
     tickers = DB_Ticker.objects(query)[:BATCH_SIZE]
     if tickers.count() == 0:
-        query = Q(last_processed_date__lte=end) | Q(last_processed_date=None)
-        tickers = DB_Ticker.objects(query).order_by('-last_processed_date')[:BATCH_SIZE]
+        #query = Q(last_processed_date__lte=end) | Q(last_processed_date=None)
+        tickers = DB_Ticker.objects().order_by('+last_processed_date')[:BATCH_SIZE]
 
         for ticker in tickers:
             if update == "true":
                 ticker.set_state("API_FETCHED")
+
             ticker['verbose_date'] = ticker.last_processed_date.strftime("%m/%d/%Y, %H:%M:%S")
 
     return get_response_formatted({'tickers': tickers})
@@ -112,7 +113,20 @@ def api_batch_process():
         This should go into a crontab / process coordinator
     """
 
-    processed = ticker_process_batch(dry_run=False)
+    lte = request.args.get("lte", "1 hour")
+    ts = get_timestamp_verbose(lte)
+    print_b(" PROCESS => " + str(ts))
+
+    end = datetime.fromtimestamp(ts)
+
+    print_b(" PROCESS REAL DATE " + str(end))
+    BATCH_SIZE = int(request.args.get("limit", 10))
+
+    processed = ticker_process_batch(end, BATCH_SIZE=BATCH_SIZE)
+
+    for p in processed:
+        p['verbose_date'] = str(p['last_processed_date'])
+
     return get_response_formatted({'processed': processed})
 
 
