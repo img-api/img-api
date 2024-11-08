@@ -108,10 +108,14 @@ def get_gif_for_sentiment(sentiment):
         except Exception as e:
             print_exception(e, "CRASHED LOADING TENOR GIF")
 
+    else:
+        print_r(" MISSING TENOR KEY ")
+
 
     GIPHY_API_KEY = current_app.config.get("GIPHY_API_KEY", None)
     if not GIPHY_API_KEY:
-        return None, None
+        print_r(" MISSING GIPHY KEY ")
+        return None, None, None
 
     if sentiment == "good":
         query = "happy"
