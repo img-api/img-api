@@ -15,8 +15,8 @@ from api import (admin_login_required, api_key_login_or_anonymous,
 from api.news import blueprint
 from api.news.models import DB_News
 from api.print_helper import *
-from api.query_helper import (build_query_from_request, mongo_to_dict_helper,
-                              validate_and_convert_dates)
+from api.query_helper import (build_query_from_request, get_timestamp_verbose,
+                              mongo_to_dict_helper, validate_and_convert_dates)
 from api.tools.validators import get_validated_email
 from flask import Response, abort, jsonify, redirect, request, send_file
 from flask_login import current_user
@@ -335,3 +335,4 @@ def api_news_my_portfolio_query():
 
     ret = {'news': news}
     return get_response_formatted(ret)
+
