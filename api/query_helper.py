@@ -710,15 +710,12 @@ def build_query_from_url(args=None):
                     if parms[-1] == "ne" and value == None:
                         pass
 
-                    elif parms[-1] in ['size']:
+                    # Looking for an specific size
+                    elif 'size' in parms[1:]:
                         value = int(value)
 
-                    elif parms[-1] in ['gte', 'lte', 'lt', 'gt', 'ne']:
-
-                        if parms[-2] == 'size':
-                            value = int(value)
-                        else:
-                            value = float(value)
+                    elif parms[-1] in ['gte', 'lte', 'lt', 'gt', 'ne', 'not']:
+                        value = float(value)
 
                     elif parms[1] in ['in', 'nin', 'all']:
                         value = value.split(",")
@@ -743,4 +740,3 @@ def mongo_to_dict_result(objects, filter_out=None, add_empty_lists=True):
         print_exception(e, "FAIL")
 
     return ret
-

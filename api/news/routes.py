@@ -336,3 +336,14 @@ def api_news_my_portfolio_query():
     ret = {'news': news}
     return get_response_formatted(ret)
 
+
+
+@blueprint.route('/query_test', methods=['GET', 'POST'])
+def api_news_get_test_query():
+    """
+    """
+
+    news = DB_News.objects(related_exchange_tickers__not__size=0).limit(10)
+
+    ret = {'news': news}
+    return get_response_formatted(ret)
