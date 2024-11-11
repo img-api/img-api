@@ -59,7 +59,14 @@ def api_news_get_query():
     from api.comments.routes import get_comments_count
     from api.gif.sentiment import parse_sentiment
 
-    news = build_query_from_request(DB_News, global_api=True)
+    extra_args = None
+
+    if not current_user.is_admin:
+        extra_args = {
+            "is_blocked": False
+        }
+
+    news = build_query_from_request(DB_News, global_api=True, extra_args=extra_args)
 
     for article in news:
         try:
