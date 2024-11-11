@@ -337,7 +337,6 @@ def api_news_my_portfolio_query():
     return get_response_formatted(ret)
 
 
-
 @blueprint.route('/query_test', methods=['GET', 'POST'])
 def api_news_get_test_query():
     """
@@ -346,4 +345,29 @@ def api_news_get_test_query():
     news = DB_News.objects(related_exchange_tickers__not__size=0).limit(10)
 
     ret = {'news': news}
+    return get_response_formatted(ret)
+
+
+@blueprint.route('/set/<string:my_id>/<string:my_key>', methods=['GET', 'POST'])
+@api_key_or_login_required
+@admin_login_required
+def api_set_news_property_content_key(my_id, my_key):
+    """ Sets this content variable """
+
+    value = request.args.get("value", None)
+    if not value and 'value' in request.json:
+        value = request.json['value']
+
+    if value == None:
+        return get_response_error_formatted(400, {'error_msg': "Wrong parameters."})
+
+    news = DB_News.objects(id=my_id).first()
+
+    if not news:
+        return get_response_error_formatted(400, {'error_msg': "Wrong parameters."})
+
+    if not news.set_key_value(my_key, value):
+        return get_response_error_formatted(400, {'error_msg': "Something went wrong saving this key."})
+
+    ret = {'news': [news]}
     return get_response_formatted(ret)

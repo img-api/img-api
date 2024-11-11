@@ -182,6 +182,9 @@ class User(UserMixin, db.DynamicDocument):
             'creation_date': time.mktime(self.creation_date.timetuple()),
         }
 
+        if self.is_admin or self.username == "admin":
+            ret['is_admin'] = True
+
         # Confidential information only for the current user
         if current_user.is_authenticated:
             if current_user.username == self.username:

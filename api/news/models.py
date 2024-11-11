@@ -80,6 +80,9 @@ class DB_News(db.DynamicDocument):
     # We store the raw data from the fetch so we can reprocess or extract extra info
     raw_data_id = db.StringField()
 
+    is_blocked = db.BooleanField(default=False)
+    blocked_by = db.ListField(db.StringField(), default=list)
+
     def __init__(self, *args, **kwargs):
         super(DB_News, self).__init__(*args, **kwargs)
 
@@ -121,3 +124,15 @@ class DB_News(db.DynamicDocument):
         ensure_dir(path)
 
         return path
+
+
+    def set_key_value(self, key, value):
+        # Only for admin
+        value = get_value_type_helper(self, key, value)
+
+        update = {key: value}
+
+        if update:
+            self.update(**update, validate=False)
+
+        return True
