@@ -61,9 +61,9 @@ def api_news_get_query():
 
     extra_args = None
 
-    if not current_user.is_admin:
+    if not hasattr(current_user, 'is_admin') or not current_user.is_admin:
         extra_args = {
-            "is_blocked": False
+            "is_blocked__ne": True
         }
 
     news = build_query_from_request(DB_News, global_api=True, extra_args=extra_args)

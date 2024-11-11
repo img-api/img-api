@@ -370,7 +370,8 @@ def api_group_news_query(full_ticker):
     # Create a dictionary to map tickers to their counts
     ticker_count_dict = {ticker: count for ticker, count in sorted_data_tuples}
 
-    del ticker_count_dict[full_ticker]
+    if full_ticker in ticker_count_dict:
+        del ticker_count_dict[full_ticker]
 
     # Sort related_companies by count based on the exchange_tickers in the result
     sorted_companies = sorted(
