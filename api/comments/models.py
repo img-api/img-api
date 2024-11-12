@@ -134,6 +134,7 @@ class DB_Comments(DB_UserCheck, db.DynamicDocument):
 
             'title': self.title,
             'content': self.content,
+            'subscription': self.subscription,
 
             'is_NSFW': self.is_NSFW,
             'is_edited': self.is_edited,
