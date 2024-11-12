@@ -1,25 +1,37 @@
 import os
 import re
+from datetime import timedelta
+from pathlib import Path
+from urllib.request import Request, urlopen
 
 import requests
 import requests_cache
-
-from datetime import timedelta
-
 from api.print_helper import *
 from api.query_helper import *
-
-from urllib.request import urlopen, Request
 from bs4 import BeautifulSoup
 
 
-def get_webdriver():
-    from selenium import webdriver
-    from selenium.webdriver.chrome.service import Service as ChromeService
-    from selenium.webdriver.chrome.options import Options
+def get_webdriver(driver=None):
+    if driver:
+        return driver
 
-    chrome_executable_path = "./chrome/chrome/linux-128.0.6613.86/chrome-linux64/chrome"
-    chromedriver_path = "./chrome/chromedriver-linux64/chromedriver"
+    from selenium import webdriver
+    from selenium.webdriver.chrome.options import Options
+    from selenium.webdriver.chrome.service import Service as ChromeService
+
+    current_file = Path(__file__).resolve()
+
+    # Get the parent directory of the current file
+    current_directory = current_file.parent
+
+    #print("Current file path:", current_file)
+    #print("Current directory:", current_directory)
+
+    chrome_executable_path = str(current_directory) + "/chrome/chrome/linux-128.0.6613.86/chrome-linux64/chrome"
+    chromedriver_path = str(current_directory) + "/chrome/chromedriver-linux64/chromedriver"
+
+    #print("Chrome path:", chrome_executable_path)
+    #print("Chromedriver path:", chromedriver_path)
 
     # Step 1: Setup Chrome options
     chrome_options = Options()

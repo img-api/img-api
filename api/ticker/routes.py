@@ -78,7 +78,7 @@ def api_get_ticker_process_batch(end=None, BATCH_SIZE=10):
 
     Limit to BATCH_SIZE so we don't ask for too many at once to all APIs
     """
-    lte = request.args.get("lte", "1 day")
+    lte = request.args.get("lte", "1 hour")
     update = request.args.get("update", "true")
     BATCH_SIZE = int(request.args.get("limit", BATCH_SIZE))
 
@@ -87,11 +87,14 @@ def api_get_ticker_process_batch(end=None, BATCH_SIZE=10):
     query = Q(force_reindex=True)
     tickers = DB_Ticker.objects(query)[:BATCH_SIZE]
     if tickers.count() == 0:
-        query = Q(last_processed_date__lte=end) | Q(last_processed_date=None)
-        tickers = DB_Ticker.objects(query)[:BATCH_SIZE]
+        #query = Q(last_processed_date__lte=end) | Q(last_processed_date=None)
+        tickers = DB_Ticker.objects().order_by('+last_processed_date')[:BATCH_SIZE]
 
         for ticker in tickers:
-            ticker.set_state("API_FETCHED")
+            if update == "true":
+                ticker.set_state("API_FETCHED")
+
+            ticker['verbose_date'] = ticker.last_processed_date.strftime("%m/%d/%Y, %H:%M:%S")
 
     return get_response_formatted({'tickers': tickers})
 
@@ -110,7 +113,20 @@ def api_batch_process():
         This should go into a crontab / process coordinator
     """
 
-    processed = ticker_process_batch(dry_run=False)
+    lte = request.args.get("lte", "1 hour")
+    ts = get_timestamp_verbose(lte)
+    print_b(" PROCESS => " + str(ts))
+
+    end = datetime.fromtimestamp(ts)
+
+    print_b(" PROCESS REAL DATE " + str(end))
+    BATCH_SIZE = int(request.args.get("limit", 10))
+
+    processed = ticker_process_batch(end, BATCH_SIZE=BATCH_SIZE)
+
+    for p in processed:
+        p['verbose_date'] = str(p['last_processed_date'])
+
     return get_response_formatted({'processed': processed})
 
 
@@ -198,7 +214,7 @@ def api_get_query():
     """
     """
 
-    tickers = build_query_from_request(DB_Ticker)
+    tickers = build_query_from_request(DB_Ticker, global_api=True)
 
     ret = {'status': 'success', 'tickers': tickers}
     return get_response_formatted(ret)
@@ -427,7 +443,7 @@ def api_remove_a_ticker_by_id(ticker_id):
 # An user watchlist is a list of tickers in the format EXCHANGE:TICKER
 
 
-def get_watchlist_or_create(name = "default"):
+def get_watchlist_or_create(name="default"):
     from flask_login import current_user
 
     watchlist = DB_TickerUserWatchlist.objects(username=current_user.username, list_name=name).first()

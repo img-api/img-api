@@ -43,17 +43,18 @@ def ticker_process_news_sites(BATCH_SIZE=5):
     """ Fetches all the news to be indexed and calls the API to fetch them
         We don't have yet a self-registering plugin api so we will just call manually depending on the source.
     """
+    from api.news.routes import api_create_news_ai_summary
     print_big(" NEWS BATCH ")
 
     update = False
 
-    item_news = DB_News.objects(ai_summary=None, status="INDEXED")[:BATCH_SIZE * 2]
+    ai_timeout = datetime.fromtimestamp(get_timestamp_verbose("1 hour"))
+    item_news = DB_News.objects(ai_summary=None, last_visited_date__lte=ai_timeout, articles__not__size=0).order_by('-creation_date')[:BATCH_SIZE * 2]
     for article in item_news:
         try:
-            from api.news.routes import api_create_news_ai_summary
             api_create_news_ai_summary(article)
 
-            article.set_state("RETRY_INDEX")
+            article.set_state("RETRY_AI_INDEX")
         except Exception as e:
             print_exception(e, "CRASHED")
             pass
@@ -85,13 +86,11 @@ def ticker_process_news_sites(BATCH_SIZE=5):
 
             if item.source == "YFINANCE":
                 yfetch_process_news(item)
-                continue
 
-            elif item.source == "AlphaVantage":
-                alpha_vantage_332process_news(item)
-
-            elif item.source == "Google":
-                google_process_news(item)
+            try:
+                api_create_news_ai_summary(item)
+            except Exception as e:
+                pass
 
         except Exception as e:
             item.set_state("ERROR: FETCH CRASHED, SEE LOGS!")
@@ -119,17 +118,17 @@ def ticker_process_batch(end=None, dry_run=False, BATCH_SIZE=10):
     Limit to BATCH_SIZE so we don't ask for too many at once to all APIs
     """
 
-    # Get tickers processed more than X days ago.
-    # Less than or Equal to Last processed
-
-    if not end:
-        end = datetime.fromtimestamp(get_timestamp_verbose("1 days"))
+    # Ignore the end, we always want to process data now
+    #if not end:
+    #    end = datetime.fromtimestamp(get_timestamp_verbose("1 days"))
 
     query = Q(force_reindex=True)
-    tickers = DB_Ticker.objects(query)[:BATCH_SIZE]
+    # Newest first
+    tickers = DB_Ticker.objects(query).order_by('+last_processed_date')[:BATCH_SIZE]
+
+    # Order by oldest, always returns a result
     if tickers.count() == 0:
-        query = Q(last_processed_date__lte=end) | Q(last_processed_date=None)
-        tickers = DB_Ticker.objects(query)[:BATCH_SIZE]
+        tickers = DB_Ticker.objects().order_by('+last_processed_date')[:BATCH_SIZE]
 
     for db_ticker in tickers:
         if db_ticker.force_reindex:

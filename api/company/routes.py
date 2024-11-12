@@ -3,6 +3,7 @@ import io
 import random
 import re
 import time
+from datetime import datetime
 
 import bcrypt
 import qrcode
@@ -13,7 +14,8 @@ from api import (api_key_login_or_anonymous, api_key_or_login_required, cache,
 from api.company import blueprint
 from api.company.models import DB_Company
 from api.print_helper import *
-from api.query_helper import build_query_from_request, mongo_to_dict_helper
+from api.query_helper import (build_query_from_request, get_timestamp_verbose,
+                              mongo_to_dict_helper)
 from api.tools.validators import get_validated_email
 from flask import Response, abort, jsonify, redirect, request, send_file
 from flask_login import current_user
@@ -208,6 +210,10 @@ def api_apply_stamp(biz_name, encrypted_date):
 
 @blueprint.route('/categories', methods=['GET', 'POST'])
 def company_explorer_categories():
+    """
+        Examples, you can search for a gics_sector or group by category and industry.
+        /api/company/categories?gics_sector=Basic%20Materials&group=gics_sub_industry
+    """
     exchange = request.args.get("exchange", "").upper()
     group = request.args.get("group", "gics_sector")
 
@@ -305,4 +311,79 @@ def api_company_callback_ai_summary():
             business.set_key_value('ai_summary', json['result'])
 
     ret = {}
+    return get_response_formatted(ret)
+
+
+@blueprint.route('/get_related/<string:full_ticker>', methods=['GET', 'POST'])
+#@api_key_or_login_required
+def api_group_news_query(full_ticker):
+    from api.news.models import DB_News
+
+    lte = request.args.get("gte", "2 months")
+    limit = int(request.args.get("limit", "25"))
+    end = datetime.fromtimestamp(get_timestamp_verbose(lte))
+
+    pipeline = [
+        # Step 1: Match documents based on creation_date and related_exchange_tickers array contents
+        {
+            "$match": {
+                "creation_date": {
+                    "$gte": end
+                },
+                "related_exchange_tickers": {
+                    "$in": [full_ticker]
+                },
+            }
+        },
+        # Step 2: Unwind the related_exchange_tickers array to process each ticker individually
+        {
+            "$unwind": "$related_exchange_tickers"
+        },
+        # Step 3: Group by each ticker and count occurrences
+        {
+            "$group": {
+                "_id": "$related_exchange_tickers",  # Group by each ticker
+                "count": {
+                    "$sum": 1
+                }  # Count each occurrence
+            }
+        }
+    ]
+
+    data = list(DB_News.objects.aggregate(*pipeline))
+
+    sorted_data_tuples = [(item["_id"], item["count"]) for item in sorted(data, key=lambda x: x['count'], reverse=True)]
+
+    check = [item[0] for item in sorted_data_tuples[0:limit]]
+    check_pipeline = [{
+        "$match": {
+            "exchange_tickers": {
+                "$in": check
+            },
+        },
+    }, {
+        "$project": {
+            "_id": 0,
+            "company_name": 1,
+            "exchange_tickers": 1,
+        }
+    }]
+
+    valid_tickers = list(DB_Company.objects.aggregate(*check_pipeline))
+
+    # Create a dictionary to map tickers to their counts
+    ticker_count_dict = {ticker: count for ticker, count in sorted_data_tuples}
+
+    if full_ticker in ticker_count_dict:
+        del ticker_count_dict[full_ticker]
+
+    # Sort related_companies by count based on the exchange_tickers in the result
+    sorted_companies = sorted(
+        valid_tickers,
+        key=lambda company: sum(ticker_count_dict.get(ticker, 0) for ticker in company["exchange_tickers"]),
+        reverse=True
+    )
+
+    ret = {'result': sorted_data_tuples, 'pipeline': pipeline, 'related_companies': sorted_companies}
+
     return get_response_formatted(ret)

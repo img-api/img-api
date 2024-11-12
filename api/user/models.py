@@ -178,8 +178,12 @@ class User(UserMixin, db.DynamicDocument):
             'is_anon': self.is_anon,
             'is_public': self.is_public,
             'is_media_public': self.is_media_public,
+            'subscription': self.current_subscription,
             'creation_date': time.mktime(self.creation_date.timetuple()),
         }
+
+        if self.is_admin or self.username == "admin":
+            ret['is_admin'] = True
 
         # Confidential information only for the current user
         if current_user.is_authenticated:
@@ -336,12 +340,17 @@ class User(UserMixin, db.DynamicDocument):
 
         return gallery
 
+    def save(self, *args, **kwargs):
+        ret = super(User, self).save(*args, **kwargs)
+        ret.reload()
+        return ret
+
     def action_on_list(self, media_id, action, media_list_short_name):
         """ Performs an interaction on a media list """
         update, ret = self.galleries.perform(media_id, action, media_list_short_name)
 
         if update:
-            self.save()
+            self.save(validate=False)
 
         return ret
 

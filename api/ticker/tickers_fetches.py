@@ -426,7 +426,7 @@ def get_yahoo_news(ticker):
 
     for item in ticker.news:
 
-        if item["publisher"] not in ["Barrons", "MT Newswires", "Investor's Business Daily", "Yahoo Finance Video"]:
+        if item["publisher"] not in ["Barrons", "MT Newswires",  "Yahoo Finance Video"]: # "Investor's Business Daily",
             user_agent = random.choice(firefox_user_agents)
             options = Options()
             options.set_preference("general.useragent.override", user_agent)
