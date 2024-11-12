@@ -210,6 +210,10 @@ def api_apply_stamp(biz_name, encrypted_date):
 
 @blueprint.route('/categories', methods=['GET', 'POST'])
 def company_explorer_categories():
+    """
+        Examples, you can search for a gics_sector or group by category and industry.
+        /api/company/categories?gics_sector=Basic%20Materials&group=gics_sub_industry
+    """
     exchange = request.args.get("exchange", "").upper()
     group = request.args.get("group", "gics_sector")
 
