@@ -128,10 +128,11 @@ class User(UserMixin, db.DynamicDocument):
 
             # Update the user model
             self.list_payments.append(new_payment)
+
+            self.current_subscription = product_id
             self.subscription = new_payment
             self.save(validate=False)
             self.reload()
-
 
         except Exception as err:
             print_e(" CRASH saving payment! fuck! " + str(err))
@@ -187,7 +188,6 @@ class User(UserMixin, db.DynamicDocument):
             'is_public': self.is_public,
             'is_media_public': self.is_media_public,
             'subscription': self.current_subscription,
-
             'creation_date': time.mktime(self.creation_date.timetuple()),
         }
 
