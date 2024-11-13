@@ -22,6 +22,7 @@ class DB_UserSettings(db.DynamicEmbeddedDocument):
 
 
 class DB_UserPayments(db.DynamicEmbeddedDocument):
+    status = db.StringField(default=None)
     session_id = db.StringField()
     customer_id = db.StringField()
     subscription_id = db.StringField()
@@ -29,6 +30,7 @@ class DB_UserPayments(db.DynamicEmbeddedDocument):
     payment_date = db.DateTimeField()
     expiration_date = db.DateTimeField()
     payment_total = db.FloatField()
+    cancel_at_period_end = db.BooleanField(default=False)
 
 
 @login_manager.user_loader
@@ -91,11 +93,7 @@ class User(UserMixin, db.DynamicDocument):
     is_readonly = db.BooleanField(default=False)
 
     current_subscription = db.StringField(default="")
-    current_subscription_status = db.StringField(default="")
-    current_subscription_session_id = db.StringField(default="")
-    current_subscription_customer_id = db.StringField(default="")
-    current_subscription_subscription_id = db.StringField(default="")
-    current_subscription_expiration_date = db.DateTimeField()
+    subscription = db.EmbeddedDocumentField(DB_UserPayments, default=None)
 
     list_payments = db.EmbeddedDocumentListField(DB_UserPayments, default=[])
 
@@ -130,12 +128,10 @@ class User(UserMixin, db.DynamicDocument):
 
             # Update the user model
             self.list_payments.append(new_payment)
-            self.current_subscription = product_id
-            self.current_subscription_session_id = session_id
-            self.current_subscription_customer_id = customer_id
-            self.current_subscription_subscription_id = subscription_id
-            self.current_subscription_expiration_date = expiration_date
+            self.subscription = new_payment
             self.save(validate=False)
+            self.reload()
+
 
         except Exception as err:
             print_e(" CRASH saving payment! fuck! " + str(err))
@@ -191,9 +187,16 @@ class User(UserMixin, db.DynamicDocument):
             'is_public': self.is_public,
             'is_media_public': self.is_media_public,
             'subscription': self.current_subscription,
-            'subscription_status': self.current_subscription_status,
+
             'creation_date': time.mktime(self.creation_date.timetuple()),
         }
+
+        if self.subscription:
+            subs_status = self.subscription.status
+            if subs_status == 'active' and self.subscription.cancel_at_period_end:
+                subs_status = "cancelled"
+
+            ret['subscription_status'] = subs_status
 
         if self.is_admin or self.username == "admin":
             ret['is_admin'] = True

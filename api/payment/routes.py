@@ -144,11 +144,7 @@ def api_stripe_success():
         # We just ignore the parameters on the query and we use what stripe gave us.
         # Someone can call this function all the times they want
 
-        customer_id = session['customer']
-        total_amount = session['amount_total']
-        subscription_id = session['subscription']
-
-        current_user.add_payment(tier, customer_id, session_id, subscription_id, total_amount, months)
+        current_user.add_payment(tier, session['customer'], session_id, session['subscription'], total_amount)
 
         get_subscription_status()
     except Exception as e:
@@ -177,14 +173,15 @@ def get_subscription_status():
     stripe.api_key = stripe_settings['api_key']
 
     # Retrieve subscription details
-    subscription_id = current_user.current_subscription_subscription_id
+    subscription_id = current_user.subscription.subscription_id
     if not subscription_id:
         return None
 
     try:
         # Example statuses: "active", "canceled", "past_due", etc.
         subscription = stripe.Subscription.retrieve(subscription_id)
-        current_user.current_subscription_status = subscription.status
+        current_user.subscription.status = subscription.status
+        current_user.subscription.cancel_at_period_end = subscription.cancel_at_period_end
         current_user.save(validate=False)
     except Exception as e:
         print_exception(e, "Crashed checking subscription ")
@@ -201,7 +198,10 @@ def api_get_subscription_status():
         if not subscription:
             get_response_error_formatted(403, {'error_msg': "Problems communicating to the subscription service."})
 
-        ret = {'subscription_status': subscription.status, 'user': current_user.serialize()}
+        ret = {
+            'subscription_status': subscription.status,
+            'user': current_user.serialize(),
+        }
         return get_response_formatted(ret)
     except stripe.error.StripeError as e:
         print(f"Error retrieving subscription: {e}")
@@ -230,7 +230,14 @@ def api_update_subscription_status():
 def api_create_customer_portal_link():
     YOUR_DOMAIN = "https://" + get_host_name() + "/api/payment/update"
 
-    session = stripe.billing_portal.Session.create(customer=current_user.current_subscription_customer_id,
+    stripe_settings = current_app.config.get('STRIPE_SETTINGS', None)
+    if not stripe_settings:
+        print_r(" NO STRIPE CONFIG ")
+        return None
+
+    stripe.api_key = stripe_settings['api_key']
+
+    session = stripe.billing_portal.Session.create(customer=current_user.subscription.customer_id,
                                                    return_url=YOUR_DOMAIN)
 
     return redirect(session.url)
