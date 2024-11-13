@@ -86,6 +86,7 @@ def api_stripe_create_checkout_redirect():
     prices = stripe.Price.list(lookup_keys=[tier])
 
     YOUR_DOMAIN = "https://" + PUBLIC_HOST
+    domain_callback = stripe_settings.get("domain_callback", YOUR_DOMAIN)
 
     username = "N/A"
     extra = '&tier=' + tier + '&months=' + months
@@ -113,8 +114,8 @@ def api_stripe_create_checkout_redirect():
                 },
             ],
             mode='subscription',
-            success_url=YOUR_DOMAIN + '/api/payment/success?session_id={CHECKOUT_SESSION_ID}&' + extra,
-            cancel_url=YOUR_DOMAIN + '/api/payment/cancel?session_id={CHECKOUT_SESSION_ID}',
+            success_url=domain_callback + '/api/payment/success?session_id={CHECKOUT_SESSION_ID}&' + extra,
+            cancel_url=domain_callback + '/api/payment/cancel?session_id={CHECKOUT_SESSION_ID}',
         )
     except Exception as e:
         print_exception(e, "CRASHED CONNECTING TO STRIPE")
@@ -138,13 +139,18 @@ def api_stripe_success():
             print_r(" NO STRIPE CONFIG ")
 
         stripe.api_key = stripe_settings['api_key']
-        session = stripe.checkout.Session.retrieve(session_id,)
+        session = stripe.checkout.Session.retrieve(session_id, )
 
         # We just ignore the parameters on the query and we use what stripe gave us.
         # Someone can call this function all the times they want
-        total_amount = session['amount_total']
-        current_user.add_payment(tier, session_id, total_amount, months)
 
+        customer_id = session['customer']
+        total_amount = session['amount_total']
+        subscription_id = session['subscription']
+
+        current_user.add_payment(tier, customer_id, session_id, subscription_id, total_amount, months)
+
+        get_subscription_status()
     except Exception as e:
         print_exception(e, "CRASHED")
 
@@ -160,3 +166,71 @@ def api_stripe_cancel():
     session_id = request.args.get("session_id", 'None')
     ret = {'session_id': session_id}
     return get_response_formatted(ret)
+
+
+def get_subscription_status():
+    stripe_settings = current_app.config.get('STRIPE_SETTINGS', None)
+    if not stripe_settings:
+        print_r(" NO STRIPE CONFIG ")
+        return None
+
+    stripe.api_key = stripe_settings['api_key']
+
+    # Retrieve subscription details
+    subscription_id = current_user.current_subscription_subscription_id
+    if not subscription_id:
+        return None
+
+    try:
+        # Example statuses: "active", "canceled", "past_due", etc.
+        subscription = stripe.Subscription.retrieve(subscription_id)
+        current_user.current_subscription_status = subscription.status
+        current_user.save(validate=False)
+    except Exception as e:
+        print_exception(e, "Crashed checking subscription ")
+        return None
+
+    return subscription
+
+
+@blueprint.route('/subscription', methods=['POST', 'GET'])
+@api_key_or_login_required
+def api_get_subscription_status():
+    try:
+        subscription = get_subscription_status()
+        if not subscription:
+            get_response_error_formatted(403, {'error_msg': "Problems communicating to the subscription service."})
+
+        ret = {'subscription_status': subscription.status, 'user': current_user.serialize()}
+        return get_response_formatted(ret)
+    except stripe.error.StripeError as e:
+        print(f"Error retrieving subscription: {e}")
+
+    return get_response_error_formatted(403, {'error_msg': "Please configure payment settings."})
+
+
+@blueprint.route('/update', methods=['POST', 'GET'])
+@api_key_or_login_required
+def api_update_subscription_status():
+    try:
+        subscription = get_subscription_status()
+        if not subscription:
+            return get_response_error_formatted(403,
+                                                {'error_msg': "Problems communicating to the subscription service."})
+
+        return redirect("/")
+    except stripe.error.StripeError as e:
+        print(f"Error retrieving subscription: {e}")
+
+    return get_response_error_formatted(403, {'error_msg': "Please configure payment settings."})
+
+
+@blueprint.route('/portal', methods=['POST', 'GET'])
+@api_key_or_login_required
+def api_create_customer_portal_link():
+    YOUR_DOMAIN = "https://" + get_host_name() + "/api/payment/update"
+
+    session = stripe.billing_portal.Session.create(customer=current_user.current_subscription_customer_id,
+                                                   return_url=YOUR_DOMAIN)
+
+    return redirect(session.url)

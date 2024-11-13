@@ -23,6 +23,8 @@ class DB_UserSettings(db.DynamicEmbeddedDocument):
 
 class DB_UserPayments(db.DynamicEmbeddedDocument):
     session_id = db.StringField()
+    customer_id = db.StringField()
+    subscription_id = db.StringField()
     product_id = db.StringField()
     payment_date = db.DateTimeField()
     expiration_date = db.DateTimeField()
@@ -89,7 +91,10 @@ class User(UserMixin, db.DynamicDocument):
     is_readonly = db.BooleanField(default=False)
 
     current_subscription = db.StringField(default="")
+    current_subscription_status = db.StringField(default="")
     current_subscription_session_id = db.StringField(default="")
+    current_subscription_customer_id = db.StringField(default="")
+    current_subscription_subscription_id = db.StringField(default="")
     current_subscription_expiration_date = db.DateTimeField()
 
     list_payments = db.EmbeddedDocumentListField(DB_UserPayments, default=[])
@@ -106,7 +111,7 @@ class User(UserMixin, db.DynamicDocument):
         "city", "country", "postal_code"
     ]
 
-    def add_payment(self, product_id, session_id, payment_total, months=1):
+    def add_payment(self, product_id, customer_id, session_id, subscription_id, payment_total, months=1):
 
         try:
             # Just a check when we have to call the pay platform to see if we are still up to date in payments.
@@ -116,6 +121,8 @@ class User(UserMixin, db.DynamicDocument):
             expiration_date = payment_date + timedelta(days=expiration_days)
 
             new_payment = DB_UserPayments(session_id=session_id,
+                                          customer_id=customer_id,
+                                          subscription_id=subscription_id,
                                           product_id=product_id,
                                           payment_date=payment_date,
                                           expiration_date=expiration_date,
@@ -125,6 +132,8 @@ class User(UserMixin, db.DynamicDocument):
             self.list_payments.append(new_payment)
             self.current_subscription = product_id
             self.current_subscription_session_id = session_id
+            self.current_subscription_customer_id = customer_id
+            self.current_subscription_subscription_id = subscription_id
             self.current_subscription_expiration_date = expiration_date
             self.save(validate=False)
 
@@ -133,6 +142,7 @@ class User(UserMixin, db.DynamicDocument):
 
         log_entry = {
             "session_id": session_id,
+            "customer_id": customer_id,
             "product_id": product_id,
             "payment_date": payment_date.isoformat(),
             "expiration_date": expiration_date.isoformat(),
@@ -181,6 +191,7 @@ class User(UserMixin, db.DynamicDocument):
             'is_public': self.is_public,
             'is_media_public': self.is_media_public,
             'subscription': self.current_subscription,
+            'subscription_status': self.current_subscription_status,
             'creation_date': time.mktime(self.creation_date.timetuple()),
         }
 
