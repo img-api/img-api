@@ -89,6 +89,7 @@ class User(UserMixin, db.DynamicDocument):
     is_readonly = db.BooleanField(default=False)
 
     current_subscription = db.StringField(default="")
+    current_subscription_session_id = db.StringField(default="")
     current_subscription_expiration_date = db.DateTimeField()
 
     list_payments = db.EmbeddedDocumentListField(DB_UserPayments, default=[])
@@ -123,6 +124,7 @@ class User(UserMixin, db.DynamicDocument):
             # Update the user model
             self.list_payments.append(new_payment)
             self.current_subscription = product_id
+            self.current_subscription_session_id = session_id
             self.current_subscription_expiration_date = expiration_date
             self.save(validate=False)
 

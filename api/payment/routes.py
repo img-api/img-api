@@ -44,7 +44,8 @@ def api_stripe_create_checkout_session():
 
     PUBLIC_HOST = get_host_name()
     PRICE_ID = stripe_settings['prices']['tier1']['product_id']
-    YOUR_DOMAIN = "https://" + PUBLIC_HOST
+
+    YOUR_DOMAIN = stripe_settings.get('PAYMENT_CALLBACK', "https://" + get_host_name())
 
     stripe.api_key = stripe_settings['api_key']
     try:
