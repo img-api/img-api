@@ -66,7 +66,7 @@ def google_pipeline_process(db_ticker):
         
             #standardize between the different news sources
             #alpha vantage doesn't have related tickers*
-            new_schema = {
+            myupdate = {
                         "date": parse_google_dates(item["published"]),
                         "title": item["title"],
                         "link": item["link"],
@@ -74,7 +74,6 @@ def google_pipeline_process(db_ticker):
                         "publisher": item["source"]
                     }
             
-            myupdate = prepare_update_with_schema(item, new_schema)
         
             extra = {
                 'source': 'GOOGLE',

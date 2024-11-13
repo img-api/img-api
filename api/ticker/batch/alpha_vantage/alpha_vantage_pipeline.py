@@ -95,7 +95,7 @@ def av_pipeline_process(db_ticker):
         
             extra = {
                 "source": "ALPHAVANTAGE",
-                "status": 'AV_WAITING_INDEX',
+                "status": 'WAITING_INDEX',
                 "raw_data_id": raw_data_id
             }
         

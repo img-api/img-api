@@ -79,8 +79,8 @@ class AlphaVantage:
             article = zacks.extract_article(html)
 
         if article != "":
-            item.article = article
-            item.save(validate=False)
+            item["article"] = article
+            item
             item.set_state("INDEXED")
         else:
             item.set_state("ERROR: ARTICLE NOT FOUND")
