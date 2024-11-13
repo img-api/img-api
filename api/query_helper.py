@@ -529,6 +529,7 @@ def query_clean_reserved(args):
     args.pop('order_by', None)
     args.pop('skip', None)
     args.pop('limit', None)
+    args.pop('only', None)
     return args
 
 
@@ -571,6 +572,8 @@ def build_query_from_request(MyClass, args=None, get_all=False, global_api=False
 
         limit = request.args.get("limit")
         skip = request.args.get("skip")
+        only = request.args.get("only")
+        exclude = request.args.get("exclude")
 
         args = query_clean_reserved(request.args.to_dict())
     else:
@@ -580,6 +583,9 @@ def build_query_from_request(MyClass, args=None, get_all=False, global_api=False
 
         limit = args.get("limit")
         skip = args.get("skip")
+
+        only = args.get("only")
+        exclude = args.get("exclude")
 
         args = query_clean_reserved(args)
 
@@ -624,6 +630,12 @@ def build_query_from_request(MyClass, args=None, get_all=False, global_api=False
 
         if limit:
             data = data.limit(int(limit))
+
+        if exclude:
+            data = data.exclude(*exclude.split(","))
+
+        if only:
+            data = data.only(*only.split(","))
 
     if not data:
         print_r("Data not found")
