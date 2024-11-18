@@ -9,7 +9,6 @@ import rsa
 from api.galleries.models import DB_UserGalleries
 from api.print_helper import *
 from api.query_helper import *
-from api.query_helper import mongo_to_dict_helper
 from api.tools.signature_serializer import BadSignature, SignatureExpired
 from api.tools.signature_serializer import \
     TimedJSONWebSignatureSerializer as Serializer
