@@ -266,7 +266,7 @@ def api_create_ai_summary(company, force_summary=False):
     }
 
     print_b(" INDEX " + company['safe_name'])
-    response = requests.post("http://lachati.com:5111/upload-json", json=data)
+    response = requests.post("https://singapore.lachati.com/api_v1/upload-json", json=data)
     response.raise_for_status()
 
 

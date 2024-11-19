@@ -131,13 +131,11 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
     try:
         news = yf_obj.news
         for item in news:
-            print_b(" PROCESS " + item['link'])
-
             update = False
             db_news = DB_News.objects(external_uuid=item['uuid']).first()
             if db_news:
                 # We don't update news that we already have in the system
-                print_b(" ALREADY INDEXED ")
+                #print_b(" ALREADY INDEXED ")
                 update = True
 
                 try:
@@ -147,6 +145,8 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
                     pass
 
                 continue
+
+            print_b(" PROCESS " + item['link'])
 
             raw_data_id = 0
             try:

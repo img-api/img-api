@@ -225,8 +225,13 @@ def api_create_news_ai_summary(news, force_summary=False):
     if 'source' in news:
         data['source'] = news['source']
 
-    response = requests.post("http://lachati.com:5111/upload-json", json=data)
+    response = requests.post("https://singapore.lachati.com/api_v1/upload-json", json=data)
     response.raise_for_status()
+
+    try:
+        json_response = response.json()
+    except Exception as e:
+        print_exception(e, "CRASH READING RESPONSE")
 
     news.set_state("WAITING_FOR_AI")
 

@@ -188,9 +188,10 @@ def api_create_prompt_ai_summary(db_prompt, force_summary=False):
         'type': 'user_prompt',
         'id': str(db_prompt.id),
         'prompt': prompt,
+        'priority': 1,
         'article': "DUMP TEST ARTICLE, SORRY AI",
         'callback_url': "http://dev.tothemoon.life/api/prompts/ai_callback"
     }
 
-    response = requests.post("http://lachati.com:5111/upload-json", json=data)
+    response = requests.post("https://singapore.lachati.com/api_v1/upload-json", json=data)
     response.raise_for_status()
