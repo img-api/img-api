@@ -40,17 +40,25 @@ def api_create_prompt_local():
     prompt = DB_UserPrompt(**jrequest)
     prompt.save()
 
+    priority = False
     try:
         if current_user.subscription.status == "active":
-            api_create_prompt_ai_summary(prompt)
+            priority = True
+
     except Exception as e:
         print_exception(e, "CRASHED UPLOADING TO AI")
 
+    res = api_create_prompt_ai_summary(prompt, priority)
     ret = {"prompts": [prompt]}
+
+    if 'queue_size' in res:
+        ret['queue_size'] = res['queue_size']
+
     return get_response_formatted(ret)
 
 
 @blueprint.route('/query', methods=['GET', 'POST'])
+@api_key_or_login_required
 def api_prompt_get_query():
     """
 
@@ -179,7 +187,7 @@ def api_set_news_property_content_key(my_id, my_key):
     return get_response_formatted(ret)
 
 
-def api_create_prompt_ai_summary(db_prompt, force_summary=False):
+def api_create_prompt_ai_summary(db_prompt, priority=False, force_summary=False):
     prompt = ""
 
     prompt += db_prompt.prompt
@@ -188,10 +196,22 @@ def api_create_prompt_ai_summary(db_prompt, force_summary=False):
         'type': 'user_prompt',
         'id': str(db_prompt.id),
         'prompt': prompt,
-        'priority': 1,
         'article': "DUMP TEST ARTICLE, SORRY AI",
         'callback_url': "https://tothemoon.life/api/prompts/ai_callback"
     }
 
+    if priority:
+        data['priority'] = priority
+
     response = requests.post("https://singapore.lachati.com/api_v1/upload-json", json=data)
     response.raise_for_status()
+
+    try:
+        json_response = response.json()
+        print_json(json_response)
+
+        return json_response
+    except Exception as e:
+        print_exception(e, "CRASH READING RESPONSE")
+
+    return {}
