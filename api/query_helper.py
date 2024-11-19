@@ -560,7 +560,7 @@ def validate_and_convert_dates(data_obj):
         print_exception(e, "FAILED PARSING DATE")
 
 
-def build_query_from_request(MyClass, args=None, get_all=False, global_api=False, extra_args=None):
+def build_query_from_request(MyClass, args=None, get_all=False, global_api=False, append_public=True, extra_args=None):
     """ Global API means that the data doesn't belong to a particular user """
 
     order_by = None
@@ -615,8 +615,13 @@ def build_query_from_request(MyClass, args=None, get_all=False, global_api=False
         if not global_api:
             if not current_user.is_authenticated:
                 query = Q(is_public=True) & query
-            else:
+            elif append_public:
+                # Do we want to add public data? we only have this method and it might break production
+                # We should refactor this and think about the logic, we might introduce security vulnerabilities here too.
                 query = (Q(username=current_user.username) | Q(is_public=True)) & query
+            else:
+                # Just lock to our user because we are looking at only data that belongs to this user.
+                query = (Q(username=current_user.username)) & query
 
         data = query_set.filter(query)
 

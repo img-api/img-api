@@ -40,6 +40,12 @@ def api_create_prompt_local():
     prompt = DB_UserPrompt(**jrequest)
     prompt.save()
 
+    try:
+        if current_user.subscription.status == "active":
+            api_create_prompt_ai_summary(prompt)
+    except Exception as e:
+        print_exception(e, "CRASHED UPLOADING TO AI")
+
     ret = {"prompts": [prompt]}
     return get_response_formatted(ret)
 
@@ -51,7 +57,7 @@ def api_prompt_get_query():
     """
     extra_args = None
 
-    prompts = build_query_from_request(DB_UserPrompt, global_api=False, extra_args=extra_args)
+    prompts = build_query_from_request(DB_UserPrompt, global_api=False, append_public=False, extra_args=extra_args)
 
     ret = {'prompts': prompts}
     return get_response_formatted(ret)
@@ -62,9 +68,9 @@ def api_get_prompt_helper(prompt_id):
     """ Prompt ID
     ---
     """
-    news = DB_UserPrompt.objects(id=prompt_id).first()
+    prompts = DB_UserPrompt.objects(id=prompt_id).first()
 
-    if not news:
+    if not prompts:
         return get_response_error_formatted(404, {'error_msg': "User prompt not found"})
 
     ret = {'prompts': [prompts]}
@@ -74,7 +80,6 @@ def api_get_prompt_helper(prompt_id):
 @blueprint.route('/rm/<string:prompt_id>', methods=['GET', 'POST'])
 @blueprint.route('/remove/<string:prompt_id>', methods=['GET', 'POST'])
 @api_key_or_login_required
-@admin_login_required
 def api_remove_a_prompt_by_id(prompt_id):
     """ Prompt deletion
     ---
@@ -82,8 +87,9 @@ def api_remove_a_prompt_by_id(prompt_id):
 
     # CHECK API ONLY ADMIN
     if prompt_id == "ALL":
-        prompt_id.objects().delete()
-        ret = {'status': "deleted"}
+        res = DB_UserPrompt.objects()
+        ret = {'status': "deleted", 'prompts': res}
+        res.delete()
         return get_response_formatted(ret)
 
     prompts = DB_UserPrompt.objects(id=prompt_id).first()
@@ -100,51 +106,7 @@ def api_remove_a_prompt_by_id(prompt_id):
 @blueprint.route('/rm', methods=['GET', 'POST'])
 def api_remove_a_prompt_by_id_request():
     prompt_id = request.args.get("id", None)
-    return api_remove_a_news_by_id(prompt_id)
-
-
-def api_create_prompt_ai_summary(db_prompt):
-
-    prompt = "Summarize this, and format it max one paragraph, "
-    prompt += "use markdown to highlight important facts, "
-    prompt += "give a sentiment at the end about the company in the stock market."
-
-    if not news['articles'] or len(news['articles']) == 0:
-        return
-
-    if not force_summary and 'ai_summary' in news:
-        return
-
-    articles = '\n'.join(news['articles'])
-
-    if "We, Yahoo, are part" in articles:
-        print(" FAILED LOADING ARTICLE - REINDEX ")
-        news.update(**{"articles": [], "force_reindex": True})
-        return
-
-    news.update(**{"ai_upload_date": datetime.now()})
-
-    data = {
-        'type': 'summary',
-        'id': str(news['id']),
-        'prompt': prompt,
-        'article': articles,
-        'message': prompt + articles,
-        'callback_url': "https://tothemoon.life/api/news/ai_callback"
-    }
-
-    if 'link' in news:
-        data['link'] = news['link']
-
-        print(" UPLOADING TO PROCESS -> " + news['link'])
-
-    if 'source' in news:
-        data['source'] = news['source']
-
-    response = requests.post("http://lachati.com:5111/upload-json", json=data)
-    response.raise_for_status()
-
-    news.set_state("WAITING_FOR_AI")
+    return api_remove_a_prompt_by_id(prompt_id)
 
 
 @blueprint.route('/ai_callback', methods=['GET', 'POST'])
@@ -156,14 +118,14 @@ def api_prompt_callback_ai_summary():
     if 'id' not in json:
         return get_response_error_formatted(400, {'error_msg': "An id is required"})
 
-    news = DB_News.objects(id=json['id']).first()
+    db_prompt = DB_UserPrompt.objects(id=json['id']).first()
 
-    if not news:
+    if not db_prompt:
         print_r(" FAILED UPDATING AI " + json['id'])
         return get_response_formatted({})
 
     if 'type' in json:
-        print_b(" NEWS AI_CALLBACK " + json['id'] + " " + str(news.title))
+        print_b(" NEWS AI_CALLBACK " + json['id'] + " " + str(db_prompt.prompt))
 
         sentiment = None
         classification = 0
@@ -184,19 +146,9 @@ def api_prompt_callback_ai_summary():
             except Exception as e:
                 pass
 
-        if t == 'summary':
-            ai_summary = json['result']
-            update = {'ai_summary': ai_summary}
-
-        if ai_summary and not sentiment:
-            sentiment, classification = parse_sentiment(ai_summary)
-
-        if sentiment:
-            update['sentiment'] = sentiment
-            update['sentiment_score'] = classification
-
         update['last_visited_date'] = datetime.now()
-        news.update(**update)
+        update['status'] = "PROCESSED"
+        db_prompt.update(**update, is_admin=True)
 
     ret = {}
     return get_response_formatted(ret)
@@ -225,3 +177,20 @@ def api_set_news_property_content_key(my_id, my_key):
 
     ret = {'news': [news]}
     return get_response_formatted(ret)
+
+
+def api_create_prompt_ai_summary(db_prompt, force_summary=False):
+    prompt = ""
+
+    prompt += db_prompt.prompt
+
+    data = {
+        'type': 'user_prompt',
+        'id': str(db_prompt.id),
+        'prompt': prompt,
+        'article': "DUMP TEST ARTICLE, SORRY AI",
+        'callback_url': "http://dev.tothemoon.life/api/prompts/ai_callback"
+    }
+
+    response = requests.post("http://lachati.com:5111/upload-json", json=data)
+    response.raise_for_status()

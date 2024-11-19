@@ -308,7 +308,8 @@ def api_company_callback_ai_summary():
             functions = {'tools': json['dict']}
             business.update(**functions)
         elif t == 'summary':
-            business.set_key_value('ai_summary', json['result'])
+            if 'result' in json:
+                business.set_key_value('ai_summary', json['result'])
 
     ret = {}
     return get_response_formatted(ret)

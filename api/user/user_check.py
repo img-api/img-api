@@ -54,7 +54,9 @@ class DB_UserCheck():
         return ret
 
     def update(self, *args, **kwargs):
-        self.check_parms(*args, **kwargs)
+        if 'is_admin' not in kwargs or kwargs['is_admin'] == False:
+            self.check_parms(*args, **kwargs)
+
         ret = super(DB_UserCheck, self).update(*args, **kwargs)
         return ret
 

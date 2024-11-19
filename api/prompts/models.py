@@ -14,11 +14,14 @@ from imgapi_launcher import db, login_manager
 from mongoengine import *
 
 
-class DB_Prompt(db.DynamicDocument):
+class DB_UserPrompt(DB_UserCheck, db.DynamicDocument):
     meta = {
         'strict': False,
         'allow_inheritance': True,
     }
+
+    username = db.StringField()
+    is_public = db.BooleanField(default=True)
 
     owner = db.StringField()
     status = db.StringField()
@@ -35,6 +38,8 @@ class DB_Prompt(db.DynamicDocument):
 
     prompt = db.StringField()
 
+    type = db.StringField(default="user_prompt")
+
     selection = db.ListField(db.StringField(), default=list)
 
     force_reindex = db.BooleanField(default=False)
@@ -43,12 +48,16 @@ class DB_Prompt(db.DynamicDocument):
         if not self.creation_date:
             self.creation_date = datetime.now()
 
-        ret = super(DB_Prompt, self).save(*args, **kwargs)
+        ret = super(DB_UserPrompt, self).save(*args, **kwargs)
         return ret.reload()
+
+    def update(self, *args, **kwargs):
+        return super(DB_UserPrompt, self).update(*args, **kwargs)
+
 
     def delete(self, *args, **kwargs):
         print(" DELETED User Prompt ")
-        return super(DB_Prompt, self).delete(*args, **kwargs)
+        return super(DB_UserPrompt, self).delete(*args, **kwargs)
 
     def set_state(self, state_msg):
         """ Update a processing state """
@@ -74,8 +83,3 @@ class DB_Prompt(db.DynamicDocument):
             self.update(**update, validate=False)
 
         return True
-
-
-class DB_UserPrompt(DB_UserCheck, DB_Prompt):
-    username = db.StringField()
-    is_public = db.BooleanField(default=True)
