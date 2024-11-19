@@ -6,11 +6,12 @@ from datetime import datetime
 
 import bcrypt
 import validators
-from api import (api_key_login_or_anonymous, api_key_or_login_required, cache,
+from api import (admin_login_required, api_key_login_or_anonymous,
+                 api_key_or_login_required, cache,
                  get_response_error_formatted, get_response_formatted, mail)
 from api.galleries.models import DB_MediaList
 from api.print_helper import *
-from api.query_helper import mongo_to_dict_helper
+from api.query_helper import build_query_from_request, mongo_to_dict_helper
 from api.tools import ensure_dir, generate_file_md5, is_api_call
 from api.tools.validators import is_valid_username
 from api.user import blueprint
@@ -636,6 +637,37 @@ def api_user_logout():
         return get_response_formatted({'status': 'success', 'msg': 'user logged out'})
 
     return redirect("/")
+
+
+@blueprint.route('/admin/query', methods=['GET', 'POST'])
+@api_key_or_login_required
+@admin_login_required
+def api_user_get_query():
+    users = build_query_from_request(User, global_api=True)
+    ret = {'users': users}
+    return get_response_formatted(ret)
+
+
+@blueprint.route('/admin/get/<string:username>', methods=['GET', 'POST'])
+@api_key_or_login_required
+@admin_login_required
+def api_user_get_query_only(username):
+    if username == "ALL":
+        users = User.objects()
+        return get_response_formatted({'users': users})
+
+    users = User.objects(username=username)
+    return get_response_formatted({'users': users})
+
+
+@blueprint.route('/admin/rm/<string:username>', methods=['GET', 'POST'])
+@api_key_or_login_required
+@admin_login_required
+def api_user_remove_user(username):
+    users = User.objects(username=username)
+    ret = {'users': users}
+    users.delete()
+    return get_response_formatted(ret)
 
 
 @blueprint.route('/media/<string:media_id>/<string:action>/<string:my_list>', methods=['GET'])

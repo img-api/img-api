@@ -37,8 +37,8 @@ def api_create_prompt_local():
     jrequest['prompt'] = markdownify(jrequest['prompt']).strip()
     jrequest['status'] = "INDEX"
 
-    prompt = DB_UserPrompt(**jrequest)
-    prompt.save()
+    db_prompt = DB_UserPrompt(**jrequest)
+    db_prompt.save()
 
     priority = False
     try:
@@ -46,10 +46,10 @@ def api_create_prompt_local():
             priority = True
 
     except Exception as e:
-        print_exception(e, "CRASHED UPLOADING TO AI")
+        pass
 
-    res = api_create_prompt_ai_summary(prompt, priority)
-    ret = {"prompts": [prompt]}
+    res = api_create_prompt_ai_summary(db_prompt, priority)
+    ret = {"prompts": [db_prompt]}
 
     if 'queue_size' in res:
         ret['queue_size'] = res['queue_size']
@@ -215,3 +215,22 @@ def api_create_prompt_ai_summary(db_prompt, priority=False, force_summary=False)
         print_exception(e, "CRASH READING RESPONSE")
 
     return {}
+
+
+@blueprint.route('/state', methods=['GET', 'POST'])
+@api_key_or_login_required
+@admin_login_required
+def api_llama_get_state():
+    response = requests.post("https://singapore.lachati.com/api_v1/")
+    response.raise_for_status()
+
+    try:
+        json_response = response.json()
+        print_json(json_response)
+
+        return json_response
+    except Exception as e:
+        print_exception(e, "CRASH READING RESPONSE")
+
+    return {}
+
