@@ -127,7 +127,6 @@ class DB_News(db.DynamicDocument):
 
         return path
 
-
     def set_key_value(self, key, value):
         # Only for admin
         value = get_value_type_helper(self, key, value)
@@ -138,3 +137,28 @@ class DB_News(db.DynamicDocument):
             self.update(**update, validate=False)
 
         return True
+
+    def get_arguments_param(self, key, default=None):
+        """ We will deprecate this eventually and hide better the raw AI function calls """
+        try:
+            return self['tools'][0]['function']['arguments'][key]
+        except:
+            pass
+
+        return default
+
+    # Helpers to access the different things that we have a bit messed up at the moment.
+    def get_title(self):
+        return self.get_arguments_param("title", self.title)
+
+    def get_no_bullshit(self):
+        return self.get_arguments_param("no_bullshit", self.title)
+
+    def get_interest_score(self):
+        return self.get_arguments_param("interest_score", 0)
+
+    def get_paragraph(self):
+        return self.get_arguments_param("paragraph", self.ai_summary)
+
+    def get_summary(self):
+        return self.get_arguments_param("summary", self.ai_summary)

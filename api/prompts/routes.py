@@ -138,6 +138,8 @@ def api_prompt_callback_ai_summary():
         sentiment = None
         classification = 0
 
+        update = {}
+
         t = json['type']
         if t == 'dict':
             tools = json['dict']
@@ -153,6 +155,9 @@ def api_prompt_callback_ai_summary():
                 classification = int(tools[0]['function']['arguments']['sentiment_score'])
             except Exception as e:
                 pass
+
+        if t == 'user_prompt':
+            update = {'ai_summary': json['result']}
 
         update['last_visited_date'] = datetime.now()
         update['status'] = "PROCESSED"
@@ -187,6 +192,19 @@ def api_set_news_property_content_key(my_id, my_key):
     return get_response_formatted(ret)
 
 
+def api_build_article_query(db_prompt):
+    from api.news.routes import get_portfolio_query
+
+    if not db_prompt.selection or 'PORTFOLIO' in db_prompt.selection:
+        news = get_portfolio_query()
+
+    content = ""
+    for article in news:
+        content += article.get_title() + " " + article.get_summary()
+
+    return content
+
+
 def api_create_prompt_ai_summary(db_prompt, priority=False, force_summary=False):
     prompt = ""
 
@@ -197,7 +215,7 @@ def api_create_prompt_ai_summary(db_prompt, priority=False, force_summary=False)
         'prefix': "PROMPT_" + db_prompt.username,
         'id': str(db_prompt.id),
         'prompt': prompt,
-        'article': "DUMP TEST ARTICLE, SORRY AI",
+        'article': api_build_article_query(db_prompt),
         'callback_url': "https://tothemoon.life/api/prompts/ai_callback"
     }
 
@@ -234,4 +252,3 @@ def api_llama_get_state():
         print_exception(e, "CRASH READING RESPONSE")
 
     return {}
-

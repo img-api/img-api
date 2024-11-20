@@ -570,7 +570,7 @@ def build_query_from_request(MyClass, args=None, get_all=False, global_api=False
         get_all = request.args.get("get_all")
         order_by = request.args.get("order_by")
 
-        limit = request.args.get("limit")
+        limit = request.args.get("limit", 25)
         skip = request.args.get("skip")
         only = request.args.get("only")
         exclude = request.args.get("exclude")
@@ -581,7 +581,7 @@ def build_query_from_request(MyClass, args=None, get_all=False, global_api=False
         get_all = args.get("get_all")
         order_by = args.get("order_by")
 
-        limit = args.get("limit")
+        limit = args.get("limit", 25)
         skip = args.get("skip")
 
         only = args.get("only")

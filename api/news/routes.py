@@ -135,7 +135,7 @@ def api_get_force_reindex_helper(news_id):
     article.status = "WAITING_REINDEX"
     article.force_reindex = True
     article.save(validate=False)
-    api_create_news_ai_summary(article)
+    api_create_news_ai_summary(article, priority=True, force_summary=True)
 
     ret = {'news': [article]}
     return get_response_formatted(ret)
@@ -187,7 +187,7 @@ def api_remove_a_news_by_id_request():
     return api_remove_a_news_by_id(article_id)
 
 
-def api_create_news_ai_summary(news, force_summary=False):
+def api_create_news_ai_summary(news, priority=False, force_summary=False):
     prompt = "Summarize this, and format it max one paragraph, "
     prompt += "use markdown to highlight important facts, "
     prompt += "give a sentiment at the end about the company in the stock market."
@@ -215,6 +215,9 @@ def api_create_news_ai_summary(news, force_summary=False):
         'message': prompt + articles,
         'callback_url': "https://tothemoon.life/api/news/ai_callback"
     }
+
+    if priority:
+        data['priority'] = 1
 
     if 'link' in news:
         data['link'] = news['link']
@@ -330,7 +333,7 @@ def api_news_callback_ai_translation():
             article.save(validate=False)
 
         if 'translations' not in article:
-            translations = { lang: {}}
+            translations = {lang: {}}
         else:
             translations = copy.deepcopy(article['translations'])
 
@@ -339,7 +342,7 @@ def api_news_callback_ai_translation():
         else:
             translations[lang][field] = result
 
-        update = { 'translations': translations}
+        update = {'translations': translations}
         article.update(**update, validate=False)
 
     ret = {}
@@ -362,7 +365,7 @@ def api_news_get_news_ai_summary():
         news = build_query_from_request(DB_News, global_api=True)
 
     for item_news in news:
-        api_create_news_ai_summary(item_news, True)
+        api_create_news_ai_summary(item_news, force_summary=True)
 
     ret = {'news': news}
     return get_response_formatted(ret)
@@ -435,6 +438,17 @@ def api_news_callback_ai_summary():
     return get_response_formatted(ret)
 
 
+def get_portfolio_query(name_list="default", limit=20):
+    from api.ticker.routes import get_watchlist_or_create
+
+    watchlist = get_watchlist_or_create(name_list)
+    ls = str.join(",", watchlist.exchange_tickers)
+
+    extra_args = {'related_exchange_tickers__in': ls, "limit": 10}
+    news = build_query_from_request(DB_News, global_api=True, extra_args=extra_args)
+    return news
+
+
 @blueprint.route('/my_portfolio', methods=['GET', 'POST'])
 @api_key_or_login_required
 def api_news_my_portfolio_query():
@@ -442,16 +456,10 @@ def api_news_my_portfolio_query():
     Builds a query with the current portfolio
     """
     from api.comments.routes import get_comments_count
-    from api.ticker.routes import get_watchlist_or_create
 
     name = request.args.get("name", "default")
 
-    watchlist = get_watchlist_or_create(name)
-
-    ls = str.join(",", watchlist.exchange_tickers)
-    extra_args = {'related_exchange_tickers__in': ls}
-
-    news = build_query_from_request(DB_News, global_api=True, extra_args=extra_args)
+    news = get_portfolio_query(name)
 
     for article in news:
         article['no_comments'] = get_comments_count(str(article.id))
