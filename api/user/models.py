@@ -413,17 +413,19 @@ class User(UserMixin, db.DynamicDocument):
         privacy = File_Tracking.objects(username=self.username, is_public=not is_public)
         privacy.update(**{"is_public": is_public}, validate=False)
 
-    def set_key_value(self, key, value):
-        if not self.is_current_user():
-            return False
+    def set_key_value(self, key, value, is_admin=False):
+        # No checks if the user is admin
+        if not is_admin:
+            if not self.is_current_user():
+                return False
 
-        # My own fields that can be edited:
-        if not key.startswith('my_') and key not in self.public_keys:
-            return False
+            # My own fields that can be edited:
+            if not key.startswith('my_') and key not in self.public_keys:
+                return False
 
-        # We don't let the user to change its name, but it should be already cought on the previous check for public_keys
-        if key == "username":
-            return False
+            # We don't let the user to change its name, but it should be already cought on the previous check for public_keys
+            if key == "username":
+                return False
 
         value = get_value_type_helper(self, key, value)
 

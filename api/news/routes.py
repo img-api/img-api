@@ -1,4 +1,5 @@
 import binascii
+import copy
 import io
 import random
 import re
@@ -62,9 +63,7 @@ def api_news_get_query():
     extra_args = None
 
     if not hasattr(current_user, 'is_admin') or not current_user.is_admin:
-        extra_args = {
-            "is_blocked__ne": True
-        }
+        extra_args = {"is_blocked__ne": True}
 
     news = build_query_from_request(DB_News, global_api=True, extra_args=extra_args)
 
@@ -236,6 +235,117 @@ def api_create_news_ai_summary(news, force_summary=False):
     news.set_state("WAITING_FOR_AI")
 
 
+def api_create_news_translation(id, text, field, language):
+    prompt = "You are an expert translator, translate the following into " + language + ". "
+
+    if not text:
+        return
+
+    content = "| " + text + " |"
+
+    data = {
+        'type': 'translation',
+        'id': str(id),
+        'prompt': prompt,
+        'field': field,
+        'language': language,
+        'prefix': "TRANSLATION_" + language + "_" + field + "_",
+        'article': content,
+        'callback_url': "http://dev.tothemoon.life/api/news/ai_callback_translation"
+    }
+
+    response = requests.post("https://singapore.lachati.com/api_v1/upload-json", json=data)
+    response.raise_for_status()
+
+    try:
+        json_response = response.json()
+    except Exception as e:
+        print_exception(e, "CRASH READING RESPONSE")
+
+    return data
+
+
+@blueprint.route('/translate/<string:news_id>/<string:language>', methods=['GET', 'POST'])
+def api_get_news_translate(news_id, language):
+    """
+        Translate into different languages use "es-ES" format
+    """
+    article = DB_News.objects(id=news_id).first()
+
+    if not article:
+        return get_response_error_formatted(404, {'error_msg': "News article not found"})
+
+    #if 'title' in article:
+    #    content += "<|TEXT|> " + article['title'] + "<|TEXT|> "
+
+    data1 = api_create_news_translation(article['id'], article['ai_summary'], 'ai_summary', language)
+    ret = {'news': [article], 'ai_summary': data1}
+
+    if 'tools' in article:
+        try:
+            args = article['tools'][0]['function']['arguments']
+
+            data2 = api_create_news_translation(article['id'], args['no_bullshit'], 'no_bs', language)
+            ret['no_bs'] = data2
+
+    #        content += "<|NOBS|> " + args['No_bullshit']
+    #        content += "<|SUMMARY|> " + args['summary']
+    #        content += "<|PARAGRAPH|> " + args['paragraph']
+    #        content += "<|AI_COMMENTS|> Be you! "
+        except Exception as e:
+            pass
+
+    return get_response_formatted(ret)
+
+
+@blueprint.route('/ai_callback_translation', methods=['GET', 'POST'])
+#@api_key_or_login_required
+#@admin_login_required
+def api_news_callback_ai_translation():
+    """ """
+    from api.gif.sentiment import parse_sentiment
+
+    json_data = request.json
+
+    if 'id' not in json_data:
+        return get_response_error_formatted(400, {'error_msg': "An id is required"})
+
+    article = DB_News.objects(id=json_data['id']).first()
+
+    if not article:
+        print_r(" FAILED UPDATING AI " + json_data['id'])
+        return get_response_formatted({})
+
+    if 'type' in json_data:
+        lang = json_data['language']
+        field = json_data['field']
+        if 'dict' not in json_data:
+            print_r(" FAILED UPDATING AI " + json_data['id'])
+            return get_response_formatted({})
+
+        result = json_data['dict']
+
+        if lang not in article.languages:
+            article.languages.append(lang)
+            article.save(validate=False)
+
+        if 'translations' not in article:
+            translations = { lang: {}}
+        else:
+            translations = copy.deepcopy(article['translations'])
+
+        if lang not in translations:
+            translations[lang] = {field: result}
+        else:
+            translations[lang][field] = result
+
+        update = { 'translations': translations}
+        article.update(**update, validate=False)
+
+    ret = {}
+    return get_response_formatted(ret)
+
+
 @blueprint.route('/ai_summary', methods=['GET', 'POST'])
 @api_key_or_login_required
 @admin_login_required
@@ -318,6 +428,7 @@ def api_news_callback_ai_summary():
             update['sentiment_score'] = classification
 
         update['last_visited_date'] = datetime.now()
+        update["status"] = "PROCESSED"
         news.update(**update)
 
     ret = {}

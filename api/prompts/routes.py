@@ -194,6 +194,7 @@ def api_create_prompt_ai_summary(db_prompt, priority=False, force_summary=False)
 
     data = {
         'type': 'user_prompt',
+        'prefix': "PROMPT_" + db_prompt.username,
         'id': str(db_prompt.id),
         'prompt': prompt,
         'article': "DUMP TEST ARTICLE, SORRY AI",
@@ -221,7 +222,7 @@ def api_create_prompt_ai_summary(db_prompt, priority=False, force_summary=False)
 @api_key_or_login_required
 @admin_login_required
 def api_llama_get_state():
-    response = requests.post("https://singapore.lachati.com/api_v1/")
+    response = requests.get("https://singapore.lachati.com/api_v1/")
     response.raise_for_status()
 
     try:

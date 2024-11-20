@@ -660,6 +660,28 @@ def api_user_get_query_only(username):
     return get_response_formatted({'users': users})
 
 
+@blueprint.route('/admin/set/<string:username>/<string:my_key>', methods=['GET', 'POST'])
+@api_key_or_login_required
+@admin_login_required
+def admin_set_user_info(username, my_key):
+    user = User.objects(username=username).first()
+    if not user:
+        return get_response_error_formatted(400, {'error_msg': "Username doesn't exist."})
+
+    value = request.args.get("value", None)
+    if not value and 'value' in request.json:
+        value = request.json['value']
+
+    if value == None:
+        return get_response_error_formatted(400, {'error_msg': "Wrong parameters."})
+
+    if not user.set_key_value(my_key, value, is_admin=True):
+        return get_response_error_formatted(400, {'error_msg': "Something went wrong saving this key."})
+
+    ret = {"user": user.serialize()}
+    return get_response_formatted(ret)
+
+
 @blueprint.route('/admin/rm/<string:username>', methods=['GET', 'POST'])
 @api_key_or_login_required
 @admin_login_required

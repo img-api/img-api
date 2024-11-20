@@ -83,6 +83,8 @@ class DB_News(db.DynamicDocument):
     is_blocked = db.BooleanField(default=False)
     blocked_by = db.ListField(db.StringField(), default=list)
 
+    languages = db.ListField(db.StringField(), default=list)
+
     def __init__(self, *args, **kwargs):
         super(DB_News, self).__init__(*args, **kwargs)
 
