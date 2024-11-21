@@ -23,6 +23,8 @@ class DB_UserPrompt(DB_UserCheck, db.DynamicDocument):
     username = db.StringField()
     is_public = db.BooleanField(default=True)
 
+    use_markdown = db.BooleanField(default=True)
+
     owner = db.StringField()
     status = db.StringField()
 

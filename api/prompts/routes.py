@@ -195,18 +195,42 @@ def api_set_news_property_content_key(my_id, my_key):
 def api_build_article_query(db_prompt):
     from api.news.routes import get_portfolio_query
 
-    if 'PORTFOLIO' in db_prompt.selection:
-        news = get_portfolio_query()
-    else:
-        news = get_portfolio_query(tickers_list=db_prompt.selection)
-
+    news = None
+    tkrs = None
     content = ""
-    for index, article in enumerate(news):
-        tickers = str.join(",", article.related_exchange_tickers)
-        content += " * Article #" + str(index) + " from " + article.publisher
-        content += "| Title: " + article.get_title()
-        content += "| Content: " + article.get_summary()
-        content += "| Tickers: " + tickers
+
+    if 'PORTFOLIO' in db_prompt.selection:
+        news, tkrs = get_portfolio_query()
+    else:
+        news, tkrs = get_portfolio_query(tickers_list=db_prompt.selection)
+
+    if not news:
+        news, tkrs = get_portfolio_query(tickers_list=["NASDAQ:INTC", "NASDAQ:NVDA", "NASDAQ:AAPL"])
+
+    if tkrs:
+        content += "# Selected news from " + tkrs + "\n\n"
+
+    if news:
+        unique_tickers = set()
+
+        for index, article in enumerate(news):
+            unique_tickers = set(article.related_exchange_tickers) | unique_tickers
+            content += "___ Article " + str(index) + " from " + article.publisher + "___\n"
+            content += "## Title: " + article.get_title() + "\n\n"
+            content += article.get_summary() + "\n\n"
+            content += "\n\n---\n"
+
+        tickers = str.join(",", unique_tickers)
+        content += "## Tickers: " + tickers + "\n\n"
+
+    if 'CHAT' in db_prompt.selection:
+        db_prompts = DB_UserPrompt.objects(username=current_user.username, ai_summary__ne=None,
+                                           selection="CHAT").order_by('+creation_date').limit(25)
+        content += "--- CHAT MODE\n\n"
+        for db_prompt in db_prompts:
+            content += "DATE> " + str(db_prompt.creation_date) + "\n\n"
+            content += current_user.username + "> " + db_prompt.prompt + "\n\n"
+            content += "AI> " + db_prompt.ai_summary + "\n\n"
 
     return content
 
@@ -215,6 +239,9 @@ def api_create_prompt_ai_summary(db_prompt, priority=False, force_summary=False)
     prompt = ""
 
     prompt += db_prompt.prompt
+
+    if db_prompt.use_markdown:
+        prompt += " use markdown to highlight important facts, "
 
     content = api_build_article_query(db_prompt)
     data = {

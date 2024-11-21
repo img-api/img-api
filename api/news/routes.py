@@ -449,7 +449,7 @@ def get_portfolio_query(name_list="default", tickers_list=None, limit=20):
 
     extra_args = {'related_exchange_tickers__in': ls, "limit": limit}
     news = build_query_from_request(DB_News, global_api=True, extra_args=extra_args)
-    return news
+    return news, ls
 
 
 @blueprint.route('/my_portfolio', methods=['GET', 'POST'])
@@ -462,12 +462,12 @@ def api_news_my_portfolio_query():
 
     name = request.args.get("name", "default")
 
-    news = get_portfolio_query(name)
+    news, portfolio_tickers = get_portfolio_query(name)
 
     for article in news:
         article['no_comments'] = get_comments_count(str(article.id))
 
-    ret = {'news': news}
+    ret = {'news': news, 'portfolio': portfolio_tickers}
     return get_response_formatted(ret)
 
 
