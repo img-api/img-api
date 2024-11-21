@@ -226,7 +226,7 @@ def api_build_article_query(db_prompt):
     if 'CHAT' in db_prompt.selection:
         db_prompts = DB_UserPrompt.objects(username=current_user.username, ai_summary__ne=None,
                                            selection="CHAT").order_by('+creation_date').limit(25)
-        content += "--- CHAT MODE\n\n"
+        content += "---\n\n CHAT MEMORY\n\n"
         for db_prompt in db_prompts:
             content += "DATE> " + str(db_prompt.creation_date) + "\n\n"
             content += current_user.username + "> " + db_prompt.prompt + "\n\n"
