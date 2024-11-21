@@ -195,12 +195,18 @@ def api_set_news_property_content_key(my_id, my_key):
 def api_build_article_query(db_prompt):
     from api.news.routes import get_portfolio_query
 
-    if not db_prompt.selection or 'PORTFOLIO' in db_prompt.selection:
+    if 'PORTFOLIO' in db_prompt.selection:
         news = get_portfolio_query()
+    else:
+        news = get_portfolio_query(tickers_list=db_prompt.selection)
 
     content = ""
-    for article in news:
-        content += article.get_title() + " " + article.get_summary()
+    for index, article in enumerate(news):
+        tickers = str.join(",", article.related_exchange_tickers)
+        content += " * Article #" + str(index) + " from " + article.publisher
+        content += "| Title: " + article.get_title()
+        content += "| Content: " + article.get_summary()
+        content += "| Tickers: " + tickers
 
     return content
 
@@ -210,12 +216,13 @@ def api_create_prompt_ai_summary(db_prompt, priority=False, force_summary=False)
 
     prompt += db_prompt.prompt
 
+    content = api_build_article_query(db_prompt)
     data = {
         'type': 'user_prompt',
         'prefix': "PROMPT_" + db_prompt.username,
         'id': str(db_prompt.id),
         'prompt': prompt,
-        'article': api_build_article_query(db_prompt),
+        'article': content,
         'callback_url': "https://tothemoon.life/api/prompts/ai_callback"
     }
 
@@ -228,6 +235,12 @@ def api_create_prompt_ai_summary(db_prompt, priority=False, force_summary=False)
     try:
         json_response = response.json()
         print_json(json_response)
+
+        db_prompt.update(**{
+            'content': content,
+            'ai_upload_date': datetime.now(),
+            'ai_queue_size': json_response['queue_size']
+        })
 
         return json_response
     except Exception as e:
