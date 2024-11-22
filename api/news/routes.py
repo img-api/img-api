@@ -52,6 +52,20 @@ def api_create_news_local():
     return get_response_formatted(ret)
 
 
+@blueprint.route('/search/<string:search_terms>', methods=['GET', 'POST'])
+def api_news_search_some_text(search_terms):
+    """
+    """
+    if len(search_terms) < 3:
+        # Not worth searching for smaller words.
+        return get_response_formatted({'news': []})
+
+    db_news = DB_News.objects(articles__icontains=search_terms + " ").order_by('-creation_date').limit(10)
+
+    ret = {'news': db_news}
+    return get_response_formatted(ret)
+
+
 @blueprint.route('/query', methods=['GET', 'POST'])
 def api_news_get_query():
     """
@@ -188,10 +202,6 @@ def api_remove_a_news_by_id_request():
 
 
 def api_create_news_ai_summary(news, priority=False, force_summary=False):
-    prompt = "Summarize this, and format it max one paragraph, "
-    prompt += "use markdown to highlight important facts, "
-    prompt += "give a sentiment at the end about the company in the stock market."
-
     if not news['articles'] or len(news['articles']) == 0:
         return
 
@@ -204,6 +214,10 @@ def api_create_news_ai_summary(news, priority=False, force_summary=False):
         print(" FAILED LOADING ARTICLE - REINDEX ")
         news.update(**{"articles": [], "force_reindex": True})
         return
+
+    prompt = "Summarize this, and format it max one paragraph, "
+    prompt += "use markdown to highlight important facts, "
+    prompt += "give a sentiment at the end about the company in the stock market."
 
     news.update(**{"ai_upload_date": datetime.now()})
 

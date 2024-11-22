@@ -147,7 +147,6 @@ def api_update_ticker(full_symbol):
     """ We invalidate a ticker so we load everything.
     """
     from .tickers_helpers import extract_ticker_from_symbol
-
     ticker = extract_ticker_from_symbol(full_symbol)
 
     processed = ticker_process_invalidate(ticker)

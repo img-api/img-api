@@ -15,7 +15,7 @@ from api.company import blueprint
 from api.company.models import DB_Company
 from api.print_helper import *
 from api.query_helper import (build_query_from_request, get_timestamp_verbose,
-                              mongo_to_dict_helper)
+                              is_mongo_id, mongo_to_dict_helper)
 from api.tools.validators import get_validated_email
 from flask import Response, abort, jsonify, redirect, request, send_file
 from flask_login import current_user
@@ -80,7 +80,7 @@ def api_company_get_suggestions():
     suggs = company_get_suggestions(query)
 
     #extra = [{"company_name": rec.company_name, "exchange_tickers": rec.exchange_tickers} for rec in suggs]
-    extra = [rec.exchange_tickers for rec in suggs]
+    extra = [rec.exchange_tickers[0] for rec in suggs]
 
     suggestions = [rec.company_name for rec in suggs]
     ret = {'suggestions': suggestions, 'extra': extra, "query": query}
@@ -140,7 +140,10 @@ def api_get_business_info(biz_name):
         ret = {'company': result_array}
         return get_response_formatted(ret)
 
-    business = DB_Company.objects(safe_name=biz_name).first()
+    if is_mongo_id(biz_name):
+        business = DB_Company.objects(id=biz_name).first()
+    else:
+        business = DB_Company.objects(safe_name=biz_name).first()
 
     if not business:
         return get_response_error_formatted(404, {'error_msg': "Business not found"})
@@ -382,9 +385,26 @@ def api_group_news_query(full_ticker):
     sorted_companies = sorted(
         valid_tickers,
         key=lambda company: sum(ticker_count_dict.get(ticker, 0) for ticker in company["exchange_tickers"]),
-        reverse=True
-    )
+        reverse=True)
 
     ret = {'result': sorted_data_tuples, 'pipeline': pipeline, 'related_companies': sorted_companies}
 
     return get_response_formatted(ret)
+
+
+@blueprint.route('/invalidate/<string:company_id>', methods=['GET', 'POST'])
+def api_update_company(company_id):
+    """ We refetch a company
+    """
+    from api.ticker.batch.workflow import ticker_process_invalidate_full_symbol
+    from api.ticker.tickers_fetches import create_or_update_ticker
+
+
+    db_company = DB_Company.objects(id=company_id).first()
+    if not db_company or not db_company.exchange_tickers:
+        return get_response_error_formatted(404, {'error_msg': "Business doesn't have tickers!"})
+
+    ticker = db_company.exchange_tickers[-1]
+    processed = ticker_process_invalidate_full_symbol(ticker)
+
+    return get_response_formatted({'processed': processed})

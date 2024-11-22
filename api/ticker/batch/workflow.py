@@ -1,5 +1,6 @@
 import os
 import re
+from collections import Counter
 from datetime import timedelta
 
 import pandas as pd
@@ -18,7 +19,8 @@ import yfinance as yf
 
 from .tickers_pipeline import ticker_pipeline_process
 from .yfinance.yfinance_news import yfetch_process_news
-from .yfinance.ytickers_pipeline import yticker_pipeline_process
+from .yfinance.ytickers_pipeline import (yticker_check_tickers,
+                                         yticker_pipeline_process)
 
 ####################################
 # PROCESS TO MICROSERVICE PLAN
@@ -49,7 +51,8 @@ def ticker_process_news_sites(BATCH_SIZE=5):
     update = False
 
     ai_timeout = datetime.fromtimestamp(get_timestamp_verbose("1 hour"))
-    item_news = DB_News.objects(ai_summary=None, last_visited_date__lte=ai_timeout, articles__not__size=0).order_by('-creation_date')[:BATCH_SIZE * 2]
+    item_news = DB_News.objects(ai_summary=None, last_visited_date__lte=ai_timeout,
+                                articles__not__size=0).order_by('-creation_date')[:BATCH_SIZE * 2]
     for article in item_news:
         try:
             api_create_news_ai_summary(article)
@@ -80,11 +83,17 @@ def ticker_process_news_sites(BATCH_SIZE=5):
             print(" PROCESSING ITEM " + item.title)
 
             if item.force_reindex:
-                item.update(**{ 'force_reindex': False })
+                item.update(**{'force_reindex': False})
 
             item.set_state("INDEX_START")
 
             if item.source == "YFINANCE":
+                if 'related_exchange_tickers' in item:
+                    clean = yticker_check_tickers(item['related_exchange_tickers'])
+
+                    if clean and Counter(clean) != Counter(item['related_exchange_tickers']):
+                        item.update(**{'related_exchange_tickers': clean})
+
                 yfetch_process_news(item)
 
             try:
@@ -98,6 +107,7 @@ def ticker_process_news_sites(BATCH_SIZE=5):
 
     return news
 
+
 def kill_chrome():
     import os
     import signal
@@ -110,6 +120,7 @@ def kill_chrome():
         if cmdline == cmdline_pattern:
             print(f"Found process: PID = {process.info['pid']}, Command Line: {' '.join(cmdline)}")
             os.kill(process.info['pid'], signal.SIGKILL)
+
 
 def ticker_process_batch(end=None, dry_run=False, BATCH_SIZE=10):
     """
@@ -132,7 +143,7 @@ def ticker_process_batch(end=None, dry_run=False, BATCH_SIZE=10):
 
     for db_ticker in tickers:
         if db_ticker.force_reindex:
-            db_ticker.update(**{ 'force_reindex': False })
+            db_ticker.update(**{'force_reindex': False})
 
         db_ticker.set_state("PIPELINE_START")
 
@@ -144,6 +155,24 @@ def ticker_process_batch(end=None, dry_run=False, BATCH_SIZE=10):
             print_exception(e, "CRASHED PROCESSING BATCH")
 
     #kill_chrome()
+    return tickers
+
+
+def ticker_process_invalidate_full_symbol(full_symbol):
+    from api.ticker.tickers_helpers import split_full_symbol
+
+    exchange, ticker = split_full_symbol(full_symbol)
+
+    query = Q(ticker=ticker) & Q(exchange=exchange)
+    tickers = DB_Ticker.objects(query)
+    for db_ticker in tickers:
+        db_ticker.set_state("PIPELINE_START")
+
+        try:
+            yticker_pipeline_process(db_ticker)
+        except Exception as e:
+            print_exception(e, "CRASHED PROCESSING BATCH")
+
     return tickers
 
 

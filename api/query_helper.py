@@ -14,6 +14,10 @@ from werkzeug.exceptions import BadRequest
 from api.print_helper import *
 
 
+def is_mongo_id(string):
+    # Check if the string is exactly 24 characters long and contains only hexadecimal digits
+    return bool(re.fullmatch(r'[0-9a-f]{24}', string))
+
 def get_adaptive_value(key, value):
     # Just check if true or false and change accordingly
     if key.find("date") != -1:

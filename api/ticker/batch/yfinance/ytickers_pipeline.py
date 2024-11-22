@@ -14,7 +14,8 @@ from api.query_helper import copy_replace_schema
 from api.ticker.batch.yfinance.yfinance_news import yfetch_process_news
 from api.ticker.connector_yfinance import fetch_tickers_info
 from api.ticker.models import DB_Ticker, DB_TickerSimple
-from api.ticker.tickers_helpers import (standardize_ticker_format,
+from api.ticker.tickers_helpers import (extract_ticker_from_symbol,
+                                        standardize_ticker_format,
                                         standardize_ticker_format_to_yfinance)
 # Perform complex queries to mongo
 from mongoengine.queryset import QuerySet
@@ -66,6 +67,75 @@ def ticker_update_financials(full_symbol, max_age_minutes=2):
         fin.update(**financial_data, validate=False)
 
     return fin
+
+
+def yticker_check_tickers(relatedTickers):
+    from api.ticker.tickers_fetches import create_or_update_company
+
+    try:
+        result = []
+        for local_ticker in relatedTickers:
+            query = DB_Ticker.query_exchange_ticker(local_ticker)
+            db_ticker = DB_Ticker.objects(query).first()
+            if db_ticker:
+                result.append(db_ticker.full_symbol())
+                continue
+
+            stock = extract_ticker_from_symbol(local_ticker)
+            yf_obj = fetch_tickers_info(stock, no_cache=False)
+            if not yf_obj:
+                continue
+
+            info = yf_obj.info
+
+            ticker = info['symbol']
+            exchange = info['exchange']
+            my_company = info['longName']
+
+            new_schema = {
+                'website': 'website',
+                'company_name': 'longName',
+                'long_name': 'longName',
+                'long_business_summary': 'longBusinessSummary',
+                'main_address': 'address1',
+                'main_address_1': 'address2',
+                'city': 'city',
+                'state': 'state',
+                'zipcode': 'zip',
+                'country': 'country',
+                'phone_number': 'phone',
+                'gics_sector': 'sector',
+                'gics_sub_industry': 'industry',
+            }
+
+            my_company = prepare_update_with_schema(info, new_schema)
+            db_company = create_or_update_company(my_company, exchange, ticker)
+
+            result.append(db_company.exchange_tickers[-1])
+    except Exception as e:
+        print_exception(e, "CRASHED FINDING NEW TICKERS")
+        return None
+
+    return result
+
+
+def fix_news_ticker(db_ticker, db_news):
+    # FIX Old code did assign everything to nasdaq :(
+    try:
+        full_symbol = db_ticker.full_symbol()
+
+        rel_tickers = db_news.related_exchange_tickers
+        if full_symbol not in rel_tickers:
+            try:
+                rel_tickers.remove("NASDAQ:" + db_ticker.ticker) # PATCH FORCE REMOVE NASDAQ WRONG TICKER
+            except:
+                pass
+
+            rel_tickers.append(full_symbol)
+            db_news.update(**{'related_exchange_tickers': rel_tickers})
+
+    except Exception as e:
+        print_exception(e, "CRASHED FIXING NEWS")
 
 
 def yticker_pipeline_process(db_ticker, dry_run=False):
@@ -134,12 +204,15 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
             update = False
             db_news = DB_News.objects(external_uuid=item['uuid']).first()
             if db_news:
+
                 # We don't update news that we already have in the system
                 #print_b(" ALREADY INDEXED ")
                 update = True
 
                 try:
                     api_create_news_ai_summary(db_news)
+
+                    fix_news_ticker(db_ticker, db_news)
                 except Exception as e:
                     print_exception(e, "CRASHED")
                     pass
@@ -181,6 +254,8 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
             related_tickers = []
 
             if 'relatedTickers' in item:
+                yticker_check_tickers(item['relatedTickers'])
+
                 for ticker in item['relatedTickers']:
 
                     if ticker == db_ticker.ticker:
