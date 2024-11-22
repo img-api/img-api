@@ -201,11 +201,10 @@ def api_build_article_query(db_prompt):
 
     if 'PORTFOLIO' in db_prompt.selection:
         news, tkrs = get_portfolio_query()
+        if not news:
+            news, tkrs = get_portfolio_query(tickers_list=["NASDAQ:INTC", "NASDAQ:NVDA", "NASDAQ:AAPL"])
     else:
         news, tkrs = get_portfolio_query(tickers_list=db_prompt.selection)
-
-    if not news:
-        news, tkrs = get_portfolio_query(tickers_list=["NASDAQ:INTC", "NASDAQ:NVDA", "NASDAQ:AAPL"])
 
     if tkrs:
         content += "# Selected news from " + tkrs + "\n\n"
@@ -240,9 +239,6 @@ def api_create_prompt_ai_summary(db_prompt, priority=False, force_summary=False)
 
     prompt += db_prompt.prompt
 
-    if db_prompt.use_markdown:
-        prompt += " use markdown to highlight important facts, "
-
     content = api_build_article_query(db_prompt)
     data = {
         'type': 'user_prompt',
@@ -252,6 +248,9 @@ def api_create_prompt_ai_summary(db_prompt, priority=False, force_summary=False)
         'article': content,
         'callback_url': "https://tothemoon.life/api/prompts/ai_callback"
     }
+
+    if db_prompt.use_markdown:
+        data['use_markdown'] = True
 
     if priority:
         data['priority'] = priority

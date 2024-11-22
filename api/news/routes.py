@@ -230,6 +230,9 @@ def api_create_news_ai_summary(news, priority=False, force_summary=False):
         'callback_url': "https://tothemoon.life/api/news/ai_callback"
     }
 
+    if os.environ.get('FLASK_ENV', None) == "development":
+        data['callback_url'] = "http://dev.tothemoon.life/api/news/ai_callback"
+
     if priority:
         data['priority'] = 1
 
@@ -424,12 +427,14 @@ def api_news_callback_ai_summary():
             update = {'ai_summary': ai_summary, 'tools': tools}
 
             try:
-                sentiment = tools[0]['function']['arguments']['sentiment']
+                args = tools[0]['function']['arguments']
+                update.update(args)
             except Exception as e:
                 print_exception(e, "CRASHED READING SENTIMENT")
 
             try:
-                classification = int(tools[0]['function']['arguments']['sentiment_score'])
+                sentiment = args['sentiment']
+                classification = int(args['sentiment_score'])
             except Exception as e:
                 pass
 
@@ -439,8 +444,6 @@ def api_news_callback_ai_summary():
 
         if ai_summary and not sentiment:
             sentiment, classification = parse_sentiment(ai_summary)
-
-        if sentiment:
             update['sentiment'] = sentiment
             update['sentiment_score'] = classification
 
