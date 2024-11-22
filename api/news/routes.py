@@ -226,7 +226,6 @@ def api_create_news_ai_summary(news, priority=False, force_summary=False):
         'id': str(news['id']),
         'prompt': prompt,
         'article': articles,
-        'message': prompt + articles,
         'callback_url': "https://tothemoon.life/api/news/ai_callback"
     }
 
@@ -428,6 +427,9 @@ def api_news_callback_ai_summary():
 
             try:
                 args = tools[0]['function']['arguments']
+
+                # Sometimes llama writes the arguments wrong :(
+                args = {key.lower(): value for key, value in args.items()}
                 update.update(args)
             except Exception as e:
                 print_exception(e, "CRASHED READING SENTIMENT")
@@ -445,7 +447,7 @@ def api_news_callback_ai_summary():
         if ai_summary and not sentiment:
             sentiment, classification = parse_sentiment(ai_summary)
             update['sentiment'] = sentiment
-            update['sentiment_score'] = classification
+            update['sentiment_score'] = classification[0]
 
         update['last_visited_date'] = datetime.now()
         update["status"] = "PROCESSED"

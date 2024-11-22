@@ -71,6 +71,7 @@ def save_article(self, date, link, title, news_type, publisher, article, uuid, r
         last_visited_date = datetime.now(),
         link = link,
         title = title,
+        source_title = title,
         news_type = news_type,
         publisher = publisher,
         news_article = article,

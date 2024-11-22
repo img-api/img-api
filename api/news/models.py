@@ -47,6 +47,7 @@ class DB_News(db.DynamicDocument):
 
     status = db.StringField()
     title = db.StringField()
+    source_title = db.StringField()
 
     creation_date = db.DateTimeField()
     last_visited_date = db.DateTimeField()
@@ -61,6 +62,11 @@ class DB_News(db.DynamicDocument):
     articles = db.ListField(db.StringField(), default=list)
 
     experiment = db.StringField()
+
+    interest_score = db.IntField()
+    sentiment_score = db.IntField()
+
+    stock_price = db.FloatField()
 
     ai_summary = db.StringField()
 
