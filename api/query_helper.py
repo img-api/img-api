@@ -363,7 +363,8 @@ def mongo_get_value(return_data, field, field_name, data, filter_out, add_empty_
             else:
                 return_data[field_name] = data
         except Exception as e:
-            print_exception(e, "FAILED")
+            return_data[field_name] = 0
+            print_exception(e, field_name + " FAILED")
             pass
 
     elif isinstance(field, db.ListField):
