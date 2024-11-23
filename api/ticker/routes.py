@@ -94,7 +94,7 @@ def api_get_ticker_process_batch(end=None, BATCH_SIZE=10):
             if update == "true":
                 ticker.set_state("API_FETCHED")
 
-            ticker['verbose_date'] = ticker.last_processed_date.strftime("%m/%d/%Y, %H:%M:%S")
+            ticker['verbose_date'] = ticker.last_processed_date.strftime("%Y/%m/%d, %H:%M:%S")
 
     return get_response_formatted({'tickers': tickers})
 

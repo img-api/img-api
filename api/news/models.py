@@ -164,10 +164,18 @@ class DB_News(db.DynamicDocument):
 
     # Helpers to access the different things that we have a bit messed up at the moment.
     def get_title(self):
-        return self.get_arguments_param("title", self.source_title)
+        if self.source_title:
+            return self.source_title
+        res = self.get_arguments_param("title", self.title)
+        if not res:
+            return ""
+
+        return res
 
     def get_no_bullshit(self):
-        return self.get_arguments_param("no_bullshit", self.source_title)
+        res = self.get_arguments_param("no_bullshit", self.source_title)
+        if not res:
+            return self.get_title()
 
     def get_interest_score(self):
         return self.get_arguments_param("interest_score", 0)

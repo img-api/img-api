@@ -1,4 +1,5 @@
 import io
+import os
 import random
 import re
 import time
@@ -135,9 +136,6 @@ def api_prompt_callback_ai_summary():
     if 'type' in json:
         print_b(" NEWS AI_CALLBACK " + json['id'] + " " + str(db_prompt.prompt))
 
-        sentiment = None
-        classification = 0
-
         update = {}
 
         t = json['type']
@@ -146,20 +144,15 @@ def api_prompt_callback_ai_summary():
             ai_summary = json['ai_summary']
             update = {'ai_summary': ai_summary, 'tools': tools}
 
-            try:
-                sentiment = tools[0]['function']['arguments']['sentiment']
-            except Exception as e:
-                print_exception(e, "CRASHED READING SENTIMENT")
-
-            try:
-                classification = int(tools[0]['function']['arguments']['sentiment_score'])
-            except Exception as e:
-                pass
-
         if t == 'user_prompt':
             update = {'ai_summary': json['result']}
 
         update['last_visited_date'] = datetime.now()
+        update['last_visited_verbose'] = datetime.now().strftime("%Y/%m/%d, %H:%M:%S")
+
+        if os.environ.get('FLASK_ENV', None) == "development":
+            update['dev'] = True
+
         update['status'] = "PROCESSED"
         db_prompt.update(**update, is_admin=True)
 

@@ -461,6 +461,11 @@ def api_news_callback_ai_summary():
                 return get_response_formatted({})
 
         update['last_visited_date'] = datetime.now()
+        update['last_visited_verbose'] = datetime.now().strftime("%Y/%m/%d, %H:%M:%S")
+
+        if os.environ.get('FLASK_ENV', None) == "development":
+            update['dev'] = True
+
         update["status"] = "PROCESSED"
         try:
             news.update(**update, validate=False)
@@ -554,15 +559,14 @@ def api_news_redo_database_cleanup():
             else:
                 AI = article['tools'][0]['function']['arguments']
 
-            update = { 'unset__sentiment_score': 1, 'AI': AI, 'unset__tools': 1 }
+            update = {'unset__sentiment_score': 1, 'AI': AI, 'unset__tools': 1}
             article.update(**update)
             article.reload()
 
         except Exception as e:
             print_exception(e, "CRASHED")
-            update = { 'unset__tools': 1 }
+            update = {'unset__tools': 1}
             article.update(**update)
-
 
     # Remove tools if AI exists
     # DB_News.objects(AI__exists=True).update(unset__tools=1)
