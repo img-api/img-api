@@ -539,3 +539,36 @@ def api_set_news_property_content_key(my_id, my_key):
 
     ret = {'news': [news]}
     return get_response_formatted(ret)
+
+
+@blueprint.route('/redo_database', methods=['GET', 'POST'])
+@api_key_or_login_required
+@admin_login_required
+def api_news_redo_database_cleanup():
+    news = DB_News.objects(tools__exists=1).limit(1000)
+
+    for article in news:
+        try:
+            if 'gif_keywords' in article['tools']:
+                AI = article['tools']
+            else:
+                AI = article['tools'][0]['function']['arguments']
+
+            update = { 'unset__sentiment_score': 1, 'AI': AI, 'unset__tools': 1 }
+            article.update(**update)
+            article.reload()
+
+        except Exception as e:
+            print_exception(e, "CRASHED")
+            update = { 'unset__tools': 1 }
+            article.update(**update)
+
+
+    # Remove tools if AI exists
+    # DB_News.objects(AI__exists=True).update(unset__tools=1)
+
+    for article in news:
+        article['articles'] = ""
+
+    ret = {'news': news}
+    return get_response_formatted(ret)

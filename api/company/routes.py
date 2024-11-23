@@ -35,6 +35,13 @@ def api_company_get_query():
 
     companies = build_query_from_request(DB_Company, global_api=True)
 
+    if len(companies) == 0:
+        # Patch to fix issue with tickers that refer to the same company.
+        query = request.args.get("exchange_tickers", None).upper()
+        if '-' in query:
+            arr = query.split('-')
+            companies = DB_Company.objects(exchange_tickers=arr[0])
+
     ret = {'companies': companies}
     return get_response_formatted(ret)
 
@@ -398,7 +405,6 @@ def api_update_company(company_id):
     """
     from api.ticker.batch.workflow import ticker_process_invalidate_full_symbol
     from api.ticker.tickers_fetches import create_or_update_ticker
-
 
     db_company = DB_Company.objects(id=company_id).first()
     if not db_company or not db_company.exchange_tickers:
