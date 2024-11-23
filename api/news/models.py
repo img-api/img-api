@@ -151,6 +151,11 @@ class DB_News(db.DynamicDocument):
     def get_arguments_param(self, key, default=None):
         """ We will deprecate this eventually and hide better the raw AI function calls """
         try:
+            return self['AI'][key]
+        except:
+            pass
+
+        try:
             return self['tools'][0]['function']['arguments'][key]
         except:
             pass
@@ -159,10 +164,10 @@ class DB_News(db.DynamicDocument):
 
     # Helpers to access the different things that we have a bit messed up at the moment.
     def get_title(self):
-        return self.get_arguments_param("title", self.title)
+        return self.get_arguments_param("title", self.source_title)
 
     def get_no_bullshit(self):
-        return self.get_arguments_param("no_bullshit", self.title)
+        return self.get_arguments_param("no_bullshit", self.source_title)
 
     def get_interest_score(self):
         return self.get_arguments_param("interest_score", 0)

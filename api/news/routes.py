@@ -435,6 +435,19 @@ def api_news_callback_ai_summary():
                 args = {key.lower(): value for key, value in args.items()}
                 update['AI'] = args
 
+                if 'title' in args:
+                    update['title'] = args['title']
+
+                try:
+                    update['interest_score'] = int(args['interest_score'])
+                except:
+                    pass
+
+                try:
+                    update['sentiment_score'] = int(args['sentiment_score'])
+                except:
+                    pass
+
             except Exception as e:
                 print_exception(e, "CRASHED READING SENTIMENT")
 
