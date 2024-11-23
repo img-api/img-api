@@ -444,10 +444,13 @@ def api_news_callback_ai_summary():
             ai_summary = json['result']
             update = {'ai_summary': ai_summary}
 
-        if ai_summary and not sentiment:
-            sentiment, classification = parse_sentiment(ai_summary)
-            update['sentiment'] = sentiment
-            update['sentiment_score'] = classification[0]
+        try:
+            if ai_summary and not sentiment:
+                sentiment, classification = parse_sentiment(ai_summary)
+                update['sentiment'] = sentiment
+    #            update['sentiment_score'] = classification[0]
+        except Exception as e:
+            print_r(" Failed sentiment ")
 
         update['last_visited_date'] = datetime.now()
         update["status"] = "PROCESSED"

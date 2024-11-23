@@ -209,6 +209,9 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
                 #print_b(" ALREADY INDEXED ")
                 update = True
 
+                if not db_news.source_title:
+                    db_news.update(**{ 'source_title': item['title'] })
+
                 try:
                     api_create_news_ai_summary(db_news)
 
@@ -232,7 +235,7 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
                 print_exception(e, "SAVE RAW DATA")
 
             new_schema = {
-                'title': 'title',
+                'source_title': 'title',
                 'link': 'link',
                 'external_uuid': 'uuid',
                 'publisher': 'publisher',

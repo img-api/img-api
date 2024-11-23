@@ -51,9 +51,9 @@ def yfetch_process_news(item, web_driver=None):
 
     print_g(" PUBLISHER " + item['publisher'])
     if item["publisher"] not in [
-            "Barrons", "Financial Times", "The Information", "MT Newswires", "Investor's Business Daily",
-
+        'TEST',
     ]:
+    # "Barrons", "Financial Times", "The Information", "MT Newswires", "Investor's Business Daily",
         driver = get_webdriver(web_driver)
         driver.get(item["link"])
 
