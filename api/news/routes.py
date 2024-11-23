@@ -210,8 +210,10 @@ def api_create_article_ai_summary(article, priority=False, force_summary=False):
 
     articles = '\n'.join(article['articles'])
 
-    if 'source_title' in article:
-        articles = "ORIGINAL TITLE: " + article['source_title'] + "\n" + articles
+    # Should we include the title to orient the AI? This seems to make it replace our generated title :(
+
+    #if 'source_title' in article:
+    #    articles = "ORIGINAL TITLE: " + article['source_title'] + "\n" + articles
 
     if "We, Yahoo, are part" in articles:
         print(" FAILED LOADING ARTICLE - REINDEX ")
