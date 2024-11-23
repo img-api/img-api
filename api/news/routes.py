@@ -445,7 +445,7 @@ def api_news_callback_ai_summary():
                 ai_summary = json['result']
                 update = {'ai_summary': ai_summary}
             else:
-                update["status"] = "FAILED"
+                update = {'status': "FAILED"}
                 return get_response_formatted({})
 
         update['last_visited_date'] = datetime.now()
