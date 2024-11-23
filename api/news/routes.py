@@ -419,28 +419,27 @@ def api_news_callback_ai_summary():
     if 'type' in json:
         print_b(" NEWS AI_CALLBACK " + json['id'] + " " + str(news.title))
 
-        sentiment = None
-        classification = 0
-
         t = json['type']
+        update = {}
+
+        if 'ai_summary' in json:
+            update = {'ai_summary': json['ai_summary']}
+
         if t == 'dict':
             tools = json['dict']
-            ai_summary = json['ai_summary']
-            update = {'ai_summary': ai_summary, 'tools': tools}
 
             try:
                 args = tools[0]['function']['arguments']
 
                 # Sometimes llama writes the arguments wrong :(
                 args = {key.lower(): value for key, value in args.items()}
-                update.update(args)
+                update['AI'] = args
+
             except Exception as e:
                 print_exception(e, "CRASHED READING SENTIMENT")
 
         if t == 'summary':
-            if 'ai_summary' in json:
-                update = {'ai_summary': json['ai_summary']}
-            elif 'result' in json:
+            if 'result' in json:
                 update = {'ai_summary': json['result']}
             else:
                 update = {'status': "FAILED"}
@@ -448,7 +447,11 @@ def api_news_callback_ai_summary():
 
         update['last_visited_date'] = datetime.now()
         update["status"] = "PROCESSED"
-        news.update(**update)
+        try:
+            news.update(**update, validate=False)
+        except Exception as e:
+            print_exception(e, "cRASHED VALIDATING")
+            print_r("STOP")
 
     ret = {}
     return get_response_formatted(ret)
