@@ -229,11 +229,11 @@ def api_create_article_ai_summary(article, priority=False, force_summary=False):
         'id': str(article['id']),
         'prompt': prompt,
         'article': articles,
-        'callback_url': "https://tothemoon.life/api/article/ai_callback"
+        'callback_url': "https://tothemoon.life/api/news/ai_callback"
     }
 
     if os.environ.get('FLASK_ENV', None) == "development":
-        data['callback_url'] = "http://dev.tothemoon.life/api/article/ai_callback"
+        data['callback_url'] = "http://dev.tothemoon.life/api/news/ai_callback"
 
     if priority:
         data['priority'] = 1
@@ -440,10 +440,8 @@ def api_news_callback_ai_summary():
         if t == 'summary':
             if 'ai_summary' in json:
                 update = {'ai_summary': json['ai_summary']}
-
             elif 'result' in json:
-                ai_summary = json['result']
-                update = {'ai_summary': ai_summary}
+                update = {'ai_summary': json['result']}
             else:
                 update = {'status': "FAILED"}
                 return get_response_formatted({})

@@ -747,6 +747,8 @@ def build_query_from_url(args=None):
 
     return query
 
+def mongo_prevalidate_fields(object, values):
+    return object
 
 def mongo_to_dict_result(objects, filter_out=None, add_empty_lists=True):
     """ Converts a list of mongo objects and creates a valid dictionary,

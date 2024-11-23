@@ -94,6 +94,10 @@ class DB_News(db.DynamicDocument):
     def __init__(self, *args, **kwargs):
         super(DB_News, self).__init__(*args, **kwargs)
 
+    def update(self, *args, **kwargs):
+        #mongo_prevalidate_fields(self)
+        return super(DB_News, self).update(*args, **kwargs)
+
     def save(self, *args, **kwargs):
         if not self.creation_date:
             self.creation_date = datetime.now()
