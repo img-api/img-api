@@ -149,7 +149,7 @@ def api_get_force_reindex_helper(news_id):
     article.status = "WAITING_REINDEX"
     article.force_reindex = True
     article.save(validate=False)
-    api_create_news_ai_summary(article, priority=True, force_summary=True)
+    api_create_article_ai_summary(article, priority=True, force_summary=True)
 
     ret = {'news': [article]}
     return get_response_formatted(ret)
@@ -201,47 +201,50 @@ def api_remove_a_news_by_id_request():
     return api_remove_a_news_by_id(article_id)
 
 
-def api_create_news_ai_summary(news, priority=False, force_summary=False):
-    if not news['articles'] or len(news['articles']) == 0:
+def api_create_article_ai_summary(article, priority=False, force_summary=False):
+    if not article['articles'] or len(article['articles']) == 0:
         return
 
-    if not force_summary and 'ai_summary' in news:
+    if not force_summary and 'ai_summary' in article:
         return
 
-    articles = '\n'.join(news['articles'])
+    articles = '\n'.join(article['articles'])
+
+    if 'source_title' in article:
+        articles = "ORIGINAL TITLE: " + article['source_title'] + "\n" + articles
 
     if "We, Yahoo, are part" in articles:
         print(" FAILED LOADING ARTICLE - REINDEX ")
-        news.update(**{"articles": [], "force_reindex": True})
+        article.update(**{"articles": [], "force_reindex": True})
         return
 
     prompt = "Summarize this, and format it max one paragraph, "
     prompt += "use markdown to highlight important facts, "
     prompt += "give a sentiment at the end about the company in the stock market."
 
-    news.update(**{"ai_upload_date": datetime.now()})
+    article.update(**{"ai_upload_date": datetime.now()})
 
     data = {
         'type': 'summary',
-        'id': str(news['id']),
+        'id': str(article['id']),
         'prompt': prompt,
         'article': articles,
-        'callback_url': "https://tothemoon.life/api/news/ai_callback"
+        'callback_url': "https://tothemoon.life/api/article/ai_callback"
     }
 
     if os.environ.get('FLASK_ENV', None) == "development":
-        data['callback_url'] = "http://dev.tothemoon.life/api/news/ai_callback"
+        data['callback_url'] = "http://dev.tothemoon.life/api/article/ai_callback"
 
     if priority:
         data['priority'] = 1
 
-    if 'link' in news:
-        data['link'] = news['link']
+    if 'link' in article:
+        data['link'] = article['link']
 
-        print(" UPLOADING TO PROCESS -> " + news['link'])
+        print(" UPLOADING TO PROCESS -> " + article['link'])
 
-    if 'source' in news:
-        data['source'] = news['source']
+    if 'source' in article:
+        data['source'] = article['source']
 
     response = requests.post("https://singapore.lachati.com/api_v1/upload-json", json=data)
     response.raise_for_status()
@@ -251,7 +254,7 @@ def api_create_news_ai_summary(news, priority=False, force_summary=False):
     except Exception as e:
         print_exception(e, "CRASH READING RESPONSE")
 
-    news.set_state("WAITING_FOR_AI")
+    article.set_state("WAITING_FOR_AI")
 
 
 def api_create_news_translation(id, text, field, language):
@@ -381,7 +384,7 @@ def api_news_get_news_ai_summary():
         news = build_query_from_request(DB_News, global_api=True)
 
     for item_news in news:
-        api_create_news_ai_summary(item_news, force_summary=True)
+        api_create_article_ai_summary(item_news, force_summary=True)
 
     ret = {'news': news}
     return get_response_formatted(ret)
@@ -434,23 +437,9 @@ def api_news_callback_ai_summary():
             except Exception as e:
                 print_exception(e, "CRASHED READING SENTIMENT")
 
-            try:
-                sentiment = args['sentiment']
-                classification = int(args['sentiment_score'])
-            except Exception as e:
-                pass
-
         if t == 'summary':
             ai_summary = json['result']
             update = {'ai_summary': ai_summary}
-
-        try:
-            if ai_summary and not sentiment:
-                sentiment, classification = parse_sentiment(ai_summary)
-                update['sentiment'] = sentiment
-    #            update['sentiment_score'] = classification[0]
-        except Exception as e:
-            print_r(" Failed sentiment ")
 
         update['last_visited_date'] = datetime.now()
         update["status"] = "PROCESSED"

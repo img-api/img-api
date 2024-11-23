@@ -143,7 +143,7 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
         Our fetching pipeline will call different status
     """
     from api.company.routes import api_create_ai_summary
-    from api.news.routes import api_create_news_ai_summary
+    from api.news.routes import api_create_article_ai_summary
     from api.ticker.routes import get_full_symbol
 
     print_b("PROCESSING: " + db_ticker.full_symbol())
@@ -213,7 +213,7 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
                     db_news.update(**{ 'source_title': item['title'] })
 
                 try:
-                    api_create_news_ai_summary(db_news)
+                    api_create_article_ai_summary(db_news)
 
                     fix_news_ticker(db_ticker, db_news)
                 except Exception as e:

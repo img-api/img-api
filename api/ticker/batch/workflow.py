@@ -45,7 +45,7 @@ def ticker_process_news_sites(BATCH_SIZE=5):
     """ Fetches all the news to be indexed and calls the API to fetch them
         We don't have yet a self-registering plugin api so we will just call manually depending on the source.
     """
-    from api.news.routes import api_create_news_ai_summary
+    from api.news.routes import api_create_article_ai_summary
     print_big(" NEWS BATCH ")
 
     update = False
@@ -55,7 +55,7 @@ def ticker_process_news_sites(BATCH_SIZE=5):
                                 articles__not__size=0).order_by('-creation_date')[:BATCH_SIZE * 2]
     for article in item_news:
         try:
-            api_create_news_ai_summary(article)
+            api_create_article_ai_summary(article)
 
             article.set_state("RETRY_AI_INDEX")
         except Exception as e:
@@ -97,7 +97,7 @@ def ticker_process_news_sites(BATCH_SIZE=5):
                 yfetch_process_news(item)
 
             try:
-                api_create_news_ai_summary(item)
+                api_create_article_ai_summary(item)
             except Exception as e:
                 pass
 
