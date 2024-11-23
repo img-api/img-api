@@ -438,8 +438,15 @@ def api_news_callback_ai_summary():
                 print_exception(e, "CRASHED READING SENTIMENT")
 
         if t == 'summary':
-            ai_summary = json['result']
-            update = {'ai_summary': ai_summary}
+            if 'ai_summary' in json:
+                update = {'ai_summary': json['ai_summary']}
+
+            elif 'result' in json:
+                ai_summary = json['result']
+                update = {'ai_summary': ai_summary}
+            else:
+                update["status"] = "FAILED"
+                return get_response_formatted({})
 
         update['last_visited_date'] = datetime.now()
         update["status"] = "PROCESSED"
