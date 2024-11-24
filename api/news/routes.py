@@ -248,7 +248,7 @@ def api_create_article_ai_summary(article, priority=False, force_summary=False):
     if 'source' in article:
         data['source'] = article['source']
 
-    response = requests.post("https://singapore.lachati.com/api_v1/upload-json", json=data)
+    response = requests.post("https://lachati.com/api_v1/upload-json", json=data)
     response.raise_for_status()
 
     try:
@@ -278,7 +278,7 @@ def api_create_news_translation(id, text, field, language):
         'callback_url': "http://dev.tothemoon.life/api/news/ai_callback_translation"
     }
 
-    response = requests.post("https://singapore.lachati.com/api_v1/upload-json", json=data)
+    response = requests.post("https://lachati.com/api_v1/upload-json", json=data)
     response.raise_for_status()
 
     try:

@@ -12,7 +12,7 @@ import validators
 from api import (api_key_login_or_anonymous, api_key_or_login_required, cache,
                  get_response_error_formatted, get_response_formatted)
 from api.company import blueprint
-from api.company.models import DB_Company
+from api.company.models import DB_Company, DB_CompanyPrompt
 from api.print_helper import *
 from api.query_helper import (build_query_from_request, get_timestamp_verbose,
                               is_mongo_id, mongo_to_dict_helper)
@@ -276,7 +276,7 @@ def api_create_ai_summary(company, force_summary=False):
     }
 
     print_b(" INDEX " + company['safe_name'])
-    response = requests.post("https://singapore.lachati.com/api_v1/upload-json", json=data)
+    response = requests.post("https://lachati.com/api_v1/upload-json", json=data)
     response.raise_for_status()
 
 
@@ -414,3 +414,138 @@ def api_update_company(company_id):
     processed = ticker_process_invalidate_full_symbol(ticker)
 
     return get_response_formatted({'processed': processed})
+
+
+def api_build_company_state_query(db_company):
+    from api.news.routes import get_portfolio_query
+
+    content = ""
+    news, tkrs = get_portfolio_query(tickers_list=db_company.exchange_tickers)
+
+    if not news:
+        return
+
+    unique_tickers = set()
+
+    for index, article in enumerate(news):
+        unique_tickers = set(article.related_exchange_tickers) | unique_tickers
+        content += "___ Article " + str(index) + " from " + article.publisher + "___\n"
+        content += "## Title: " + article.get_title() + "\n\n"
+        content += article.get_summary() + "\n\n"
+        content += "\n\n---\n"
+
+    #tickers = str.join(",", unique_tickers)
+    #content += "## Tickers: " + tickers + "\n\n"
+
+    prompt = "Given the articles for "
+    prompt += db_company.long_name
+    prompt += "What is the current state of the company ?"
+
+    system = "Analyze the provided articles to assess the performance of the company mentioned and its potential impact on stock market trends. Focus on the following aspects:"
+    system += "Company Performance:"
+    #system += "Financial metrics (revenue, profit, losses, etc.)."
+    system += "Recent achievements, product launches, or innovations."
+    system += "Management decisions, leadership changes, or strategic announcements."
+    system += "Any risks, challenges, or controversies highlighted."
+    system += "Market Sentiment:"
+    system += "Extract and summarize the tone of the article (positive, neutral, or negative)."
+    system += "Identify any indications of market confidence or concerns about the company."
+    system += "Note mentions of investor behavior or reactions."
+    system += "Industry and Market Impact:"
+    system += "Discuss the company's position within its industry."
+    system += "Highlight any trends or competitive dynamics affecting the company."
+    system += "Note how broader market conditions (e.g., interest rates, geopolitical events) are influencing its performance."
+    system += "Future Outlook:"
+    system += "Identify predictions or expectations about the company or its stock."
+    system += "Summarize any analyst opinions or forecasts."
+    system += "Highlight any plans or milestones mentioned that could affect future performance."
+    system += "Provide a concise summary of your findings, structured in bullet points or short paragraphs. Focus on actionable insights relevant to investors or market analysts."
+
+    jrequest = {
+        "company_id": str(db_company.id),
+        "prompt": prompt + content,
+        "article": content,
+        "system": system,
+    }
+
+    db_prompt = DB_CompanyPrompt(**jrequest)
+    db_prompt.save()
+
+    data = {
+        'type': 'company_prompt',
+        'system': system,
+        'prompt': prompt,
+        'company': db_company.safe_name,
+        'prefix': "9_" + db_company.safe_name,
+        'id': str(db_prompt.id),
+        'callback_url': "https://tothemoon.life/api/company/ai_prompt"
+    }
+
+    if os.environ.get('FLASK_ENV', None) == "development":
+        data['callback_url'] = "http://dev.tothemoon.life/api/company/ai_prompt"
+
+    response = requests.post("https://lachati.com/api_v1/upload-json", json=data)
+    response.raise_for_status()
+
+    try:
+        json_response = response.json()
+        print_json(json_response)
+
+        db_prompt.update(**{'ai_upload_date': datetime.now(), 'ai_queue_size': json_response['queue_size']})
+    except Exception as e:
+        print_exception(e, "CRASH READING RESPONSE")
+
+    return db_prompt
+
+
+@blueprint.route('/prompt/<string:ticker>', methods=['GET', 'POST'])
+def api_get_company_prompt(ticker):
+    """ Example of creating a prompt:
+        https://dev.tothemoon.life/api/company/prompt/NASDAQ:INTC
+    """
+    db_company = DB_Company.objects(exchange_tickers=ticker).first()
+    if not db_company:
+        return get_response_error_formatted(404, {'error_msg': "Business doesn't have tickers!"})
+
+    processed = api_build_company_state_query(db_company)
+    return get_response_formatted({'processed': processed})
+
+
+@blueprint.route('/ai_prompt', methods=['GET', 'POST'])
+#@api_key_or_login_required
+#@admin_login_required
+def api_prompt_callback_company():
+    json = request.json
+
+    if 'id' not in json:
+        return get_response_error_formatted(400, {'error_msg': "An id is required"})
+
+    db_prompt = DB_CompanyPrompt.objects(id=json['id']).first()
+
+    if not db_prompt:
+        print_r(" FAILED UPDATING AI " + json['id'])
+        return get_response_formatted({})
+
+    update = {}
+    update['last_visited_date'] = datetime.now()
+    update['last_visited_verbose'] = datetime.now().strftime("%Y/%m/%d, %H:%M:%S")
+    update['status'] = "PROCESSED"
+    update['ai_summary'] = json['result']
+
+    db_prompt.update(**update)
+
+    return get_response_formatted({})
+
+
+@blueprint.route('/query_prompts', methods=['GET', 'POST'])
+#@api_key_or_login_required
+def api_company_get_query_prompts():
+    delete = request.args.get("cleanup", None)
+
+    prompts = build_query_from_request(DB_CompanyPrompt, global_api=True)
+    ret = {'prompts': prompts}
+
+    if delete:
+        prompts.delete()
+
+    return get_response_formatted(ret)

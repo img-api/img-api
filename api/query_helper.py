@@ -525,6 +525,7 @@ def mongo_to_dict_helper(obj, filter_out=None, add_empty_lists=True):
 
 def query_clean_reserved(args):
     args.pop('fields', None)
+    args.pop('cleanup', None)
     args.pop('key', None)
     args.pop('k', None)
     args.pop('value', None)

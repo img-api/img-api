@@ -200,3 +200,71 @@ class DB_Company(db.DynamicDocument):
 
         if ex_update:
             self.save(validate=False)
+
+
+class DB_CompanyPrompt(db.DynamicDocument):
+    meta = {
+        'strict': False,
+        'allow_inheritance': True,
+    }
+
+    company_id = db.StringField()
+    is_public = db.BooleanField(default=True)
+
+    use_markdown = db.BooleanField(default=True)
+
+    status = db.StringField()
+
+    creation_date = db.DateTimeField()
+    last_visited_date = db.DateTimeField()
+
+    # List of articles to process or be added
+    articles_id = db.ListField(db.StringField(), default=list)
+
+    ai_summary = db.StringField()
+    ai_upload_date = db.DateTimeField()
+
+    prompt = db.StringField()
+
+    type = db.StringField(default="prompt")
+
+    force_reindex = db.BooleanField(default=False)
+
+    def save(self, *args, **kwargs):
+        if not self.creation_date:
+            self.creation_date = datetime.now()
+
+        ret = super(DB_CompanyPrompt, self).save(*args, **kwargs)
+        return ret.reload()
+
+    def update(self, *args, **kwargs):
+        return super(DB_CompanyPrompt, self).update(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        print(" DELETED Company Prompt ")
+        return super(DB_CompanyPrompt, self).delete(*args, **kwargs)
+
+    def set_state(self, state_msg):
+        """ Update a processing state """
+
+        print_b(self.link + " " + self.status + " => " + state_msg)
+
+        self.update(**{
+            'force_reindex': False,
+            'status': state_msg,
+            'last_visited_date': datetime.now()
+        },
+                    validate=False)
+
+        self.reload()
+        return self
+
+    def set_key_value(self, key, value):
+        value = get_value_type_helper(self, key, value)
+
+        update = {key: value}
+
+        if update:
+            self.update(**update, validate=False)
+
+        return True
