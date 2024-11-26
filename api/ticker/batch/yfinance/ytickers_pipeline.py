@@ -24,6 +24,39 @@ from mongoengine.queryset.visitor import Q
 import yfinance as yf
 
 
+def fetch_historical_data(full_symbol, start_date=None, end_date=None, interval='1mo'):
+    """
+    Fetch historical data for the given ticker using yfinance.
+
+    Args:
+        full_symbol (str): The ticker symbol.
+        start_date (str): Start date in 'YYYY-MM-DD' format. Defaults to one year ago.
+        end_date (str): End date in 'YYYY-MM-DD' format. Defaults to today.
+        interval (str): Data interval (e.g., '1d', '1wk', '1mo').
+
+    Returns:
+        pandas.DataFrame: Historical data.
+    """
+    # Default to one year of data if no dates are provided
+    if not start_date:
+        start_date = (datetime.today() - timedelta(days=365)).strftime('%Y-%m-%d')
+    if not end_date:
+        end_date = datetime.today().strftime('%Y-%m-%d')
+
+    yticker = standardize_ticker_format_to_yfinance(full_symbol)
+
+    try:
+        # Fetch data
+        historical_data = yf.download(yticker, start=start_date, end=end_date, interval=interval)
+        if historical_data.empty:
+            raise ValueError("No data fetched for ticker.")
+    except Exception as e:
+        print(f"Error fetching historical data: {e}")
+        return None
+
+    return historical_data
+
+
 def ticker_update_financials(full_symbol, max_age_minutes=2):
     """ This is a very slow ticker fetch system, we use yfinance here
         But we could call any of the other APIs
@@ -127,7 +160,7 @@ def fix_news_ticker(db_ticker, db_news):
         rel_tickers = db_news.related_exchange_tickers
         if full_symbol not in rel_tickers:
             try:
-                rel_tickers.remove("NASDAQ:" + db_ticker.ticker) # PATCH FORCE REMOVE NASDAQ WRONG TICKER
+                rel_tickers.remove("NASDAQ:" + db_ticker.ticker)  # PATCH FORCE REMOVE NASDAQ WRONG TICKER
             except:
                 pass
 
@@ -210,7 +243,7 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
                 update = True
 
                 if not db_news.source_title:
-                    db_news.update(**{ 'source_title': item['title'] })
+                    db_news.update(**{'source_title': item['title']})
 
                 try:
                     api_create_article_ai_summary(db_news)

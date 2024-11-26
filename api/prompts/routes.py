@@ -36,6 +36,10 @@ def api_create_prompt_local():
         return get_response_error_formatted(400, {'error_msg': "Error, please use UPDATE to update an entry"})
 
     jrequest['prompt'] = markdownify(jrequest['prompt']).strip()
+
+    if 'system' in jrequest and jrequest['system']:
+        jrequest['system'] = markdownify(jrequest['system']).strip()
+
     jrequest['status'] = "INDEX"
 
     db_prompt = DB_UserPrompt(**jrequest)
@@ -96,7 +100,7 @@ def api_remove_a_prompt_by_id(prompt_id):
 
     # CHECK API ONLY ADMIN
     if prompt_id == "ALL":
-        res = DB_UserPrompt.objects()
+        res = DB_UserPrompt.objects(username=current_user.username)
         ret = {'status': "deleted", 'prompts': res}
         res.delete()
         return get_response_formatted(ret)
@@ -154,6 +158,13 @@ def api_prompt_callback_ai_summary():
             update['dev'] = True
 
         update['status'] = "PROCESSED"
+
+        if 'raw' in json:
+            update['raw'] = json['raw']
+
+        if 'raw_tools' in json:
+            update['raw_tools'] = json['raw_tools']
+
         db_prompt.update(**update, is_admin=True)
 
     ret = {}
@@ -185,6 +196,20 @@ def api_set_news_property_content_key(my_id, my_key):
     return get_response_formatted(ret)
 
 
+def api_build_chats_query(db_prompt):
+    content = ""
+    if 'CHAT' in db_prompt.selection:
+        db_prompts = DB_UserPrompt.objects(username=current_user.username, ai_summary__ne=None,
+                                           selection="CHAT").order_by('+creation_date').limit(25)
+        content += "---"
+        for db_prompt in db_prompts:
+            content += "DATE> " + str(db_prompt.creation_date) + "\n\n"
+            content += current_user.username + "> " + db_prompt.prompt + "\n\n"
+            content += "AI> " + db_prompt.ai_summary + "\n\n"
+
+    return content
+
+
 def api_build_article_query(db_prompt):
     from api.news.routes import get_portfolio_query
 
@@ -208,21 +233,15 @@ def api_build_article_query(db_prompt):
         for index, article in enumerate(news):
             unique_tickers = set(article.related_exchange_tickers) | unique_tickers
             content += "___ Article " + str(index) + " from " + article.publisher + "___\n"
+            content += "> DATE " + str(article.creation_date.strftime("%Y/%m/%d, %H:%M")) + "\n"
+
+            content += "> STOCK PRICE " + str(article.stock_price) + "\n"
             content += "## Title: " + article.get_title() + "\n\n"
             content += article.get_summary() + "\n\n"
             content += "\n\n---\n"
 
         tickers = str.join(",", unique_tickers)
         content += "## Tickers: " + tickers + "\n\n"
-
-    if 'CHAT' in db_prompt.selection:
-        db_prompts = DB_UserPrompt.objects(username=current_user.username, ai_summary__ne=None,
-                                           selection="CHAT").order_by('+creation_date').limit(25)
-        content += "---\n\n CHAT MEMORY\n\n"
-        for db_prompt in db_prompts:
-            content += "DATE> " + str(db_prompt.creation_date) + "\n\n"
-            content += current_user.username + "> " + db_prompt.prompt + "\n\n"
-            content += "AI> " + db_prompt.ai_summary + "\n\n"
 
     return content
 
@@ -232,15 +251,29 @@ def api_create_prompt_ai_summary(db_prompt, priority=False, force_summary=False)
 
     prompt += db_prompt.prompt
 
-    content = api_build_article_query(db_prompt)
+    chat_content = api_build_chats_query(db_prompt)
     data = {
         'type': 'user_prompt',
         'prefix': "PROMPT_" + db_prompt.username,
         'id': str(db_prompt.id),
         'prompt': prompt,
-        'article': content,
+        'assistant': chat_content,
         'callback_url': "https://tothemoon.life/api/prompts/ai_callback"
     }
+
+    if os.environ.get('FLASK_ENV', None) == "development":
+        data['callback_url'] = "http://dev.tothemoon.life/api/prompts/ai_callback"
+
+    system = "> CURRENT DATE " + str(datetime.now().strftime("%Y/%m/%d, %H:%M")) + "\n"
+
+    if 'system' in db_prompt:
+        system += db_prompt['system']
+
+    articles_content = api_build_article_query(db_prompt)
+    if articles_content:
+        system += articles_content
+
+    data['system'] = system
 
     if db_prompt.use_markdown:
         data['use_markdown'] = True
