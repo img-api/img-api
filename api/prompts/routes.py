@@ -247,6 +247,10 @@ def api_build_article_query(db_prompt):
     return content
 
 
+def cut_string(s, limit):
+    return s[-limit:] if len(s) > limit else s
+
+
 def api_create_prompt_ai_summary(db_prompt, priority=False, force_summary=False):
     articles_content = api_build_article_query(db_prompt)
 
@@ -266,7 +270,7 @@ def api_create_prompt_ai_summary(db_prompt, priority=False, force_summary=False)
         'prefix': "PROMPT_" + db_prompt.username,
         'prompt': prompt,
         'system': system,
-        'assistant': articles_content[:4096] + chat_content,
+        'assistant': cut_string(articles_content, 4096) + cut_string(chat_content, 2048),
         'callback_url': "https://tothemoon.life/api/prompts/ai_callback"
     }
 
