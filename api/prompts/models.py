@@ -44,6 +44,8 @@ class DB_UserPrompt(DB_UserCheck, db.DynamicDocument):
 
     selection = db.ListField(db.StringField(), default=list)
 
+    system_name = db.StringField()
+
     force_reindex = db.BooleanField(default=False)
 
     def save(self, *args, **kwargs):

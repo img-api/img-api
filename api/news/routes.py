@@ -220,7 +220,7 @@ def api_create_article_ai_summary(article, priority=False, force_summary=False):
         'type': 'summary',
         'id': str(article['id']),
         'prompt': prompt,
-        'article': articles,
+        'article': articles[:4096],
         'callback_url': "https://tothemoon.life/api/news/ai_callback"
     }
 

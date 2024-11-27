@@ -251,7 +251,7 @@ def api_create_prompt_ai_summary(db_prompt, priority=False, force_summary=False)
     prompt = ""
 
     articles_content = api_build_article_query(db_prompt)
-    prompt += db_prompt.prompt[:256]
+    prompt += db_prompt.prompt[:1024]
 
     system = ""
     system +="Today is " + str(datetime.now().strftime("%Y/%m/%d, %H:%M")) + "\n"
