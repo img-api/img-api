@@ -266,7 +266,7 @@ def api_create_prompt_ai_summary(db_prompt, priority=False, force_summary=False)
         'prefix': "PROMPT_" + db_prompt.username,
         'prompt': prompt,
         'system': system,
-        'assistant': chat_content + articles_content[:2048],
+        'assistant': articles_content[:4096] + chat_content,
         'callback_url': "https://tothemoon.life/api/prompts/ai_callback"
     }
 
