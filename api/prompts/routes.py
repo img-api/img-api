@@ -249,31 +249,31 @@ def api_build_article_query(db_prompt):
 def api_create_prompt_ai_summary(db_prompt, priority=False, force_summary=False):
     prompt = ""
 
-    prompt += db_prompt.prompt
+    articles_content = api_build_article_query(db_prompt)
+    if articles_content:
+        prompt += articles_content
+
+    prompt += db_prompt.prompt[:200]
+
+    system = ""
+    if 'system' in db_prompt:
+        system += db_prompt['system']
+
+    system +="> CURRENT DATE " + str(datetime.now().strftime("%Y/%m/%d, %H:%M")) + "\n"
 
     chat_content = api_build_chats_query(db_prompt)
     data = {
         'type': 'user_prompt',
         'prefix': "PROMPT_" + db_prompt.username,
         'id': str(db_prompt.id),
-        'prompt': prompt,
-        'assistant': chat_content,
+        'prompt': system + chat_content + prompt,
         'callback_url': "https://tothemoon.life/api/prompts/ai_callback"
     }
+    data['system'] = system
 
     if os.environ.get('FLASK_ENV', None) == "development":
         data['callback_url'] = "http://dev.tothemoon.life/api/prompts/ai_callback"
 
-    system = "> CURRENT DATE " + str(datetime.now().strftime("%Y/%m/%d, %H:%M")) + "\n"
-
-    if 'system' in db_prompt:
-        system += db_prompt['system']
-
-    articles_content = api_build_article_query(db_prompt)
-    if articles_content:
-        system += articles_content
-
-    data['system'] = system
 
     if db_prompt.use_markdown:
         data['use_markdown'] = True

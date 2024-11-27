@@ -80,7 +80,7 @@ def ticker_process_news_sites(BATCH_SIZE=5):
 
     for item in news:
         try:
-            print(" PROCESSING ITEM " + item.title)
+            print(" PROCESSING ITEM " + str(item.source_title))
 
             if item.force_reindex:
                 item.update(**{'force_reindex': False})

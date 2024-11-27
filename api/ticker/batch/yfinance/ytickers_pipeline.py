@@ -120,6 +120,9 @@ def yticker_check_tickers(relatedTickers):
                 continue
 
             info = yf_obj.info
+            if not info:
+                print_r(" NO Info fould for ticker? ")
+                return
 
             ticker = info['symbol']
             exchange = info['exchange']
