@@ -81,16 +81,6 @@ def api_news_get_query():
 
     news = build_query_from_request(DB_News, global_api=True, extra_args=extra_args)
 
-    for article in news:
-        try:
-            if 'ai_summary' in article:
-                sentiment, classification = parse_sentiment(article['ai_summary'])
-                if sentiment:
-                    article['sentiment'] = sentiment
-                    article['sentiment_score'] = classification
-        except Exception as e:
-            print_exception(e, "CRASH")
-
     clean = request.args.get("cleanup", None)
     if clean and (current_user.is_admin or current_user.username in ["contact@engineer.blue", "admin"]):
         news.delete()
@@ -98,7 +88,7 @@ def api_news_get_query():
         return get_response_formatted(ret)
 
     for article in news:
-        article['no_comments'] = get_comments_count(str(article.id))
+        article.precalculate_cache()
 
     ret = {'news': news}
     return get_response_formatted(ret)

@@ -27,7 +27,7 @@ from mongoengine.queryset import QuerySet
 from mongoengine.queryset.visitor import Q
 
 from .models import (DB_Ticker, DB_TickerHighRes, DB_TickerSimple,
-                     DB_TickerUserWatchlist)
+                     DB_TickerTimeSeries, DB_TickerUserWatchlist)
 
 
 @blueprint.route('/index/discovery', methods=['POST', 'GET'])
@@ -202,7 +202,7 @@ def api_get_suggestions():
         for rec in db_tickers:
             rec.reindex()
 
-    ret = {'status': 'success', 'suggestions': unique_list, "query": query}
+    ret = {'suggestions': unique_list, "query": query}
     return get_response_formatted(ret)
 
 
@@ -215,7 +215,16 @@ def api_get_query():
 
     tickers = build_query_from_request(DB_Ticker, global_api=True)
 
-    ret = {'status': 'success', 'tickers': tickers}
+    ret = {'tickers': tickers}
+    return get_response_formatted(ret)
+
+
+@blueprint.route('/ts/query', methods=['GET', 'POST'])
+@api_key_or_login_required
+def api_get_financial_query():
+    time_series = build_query_from_request(DB_TickerTimeSeries, global_api=True)
+
+    ret = {'ts': time_series}
     return get_response_formatted(ret)
 
 

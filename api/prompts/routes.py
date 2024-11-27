@@ -203,7 +203,7 @@ def api_build_chats_query(db_prompt):
                                            selection="CHAT").order_by('+creation_date').limit(25)
         content += "---"
         for db_prompt in db_prompts:
-            content += "DATE> " + str(db_prompt.creation_date) + "\n\n"
+            content += "DATE> " + str(db_prompt.creation_date)[:16] + "\n\n"
             content += current_user.username + "> " + db_prompt.prompt + "\n\n"
             content += "AI> " + db_prompt.ai_summary + "\n\n"
 
@@ -224,24 +224,25 @@ def api_build_article_query(db_prompt):
     else:
         news, tkrs = get_portfolio_query(tickers_list=db_prompt.selection)
 
-    if tkrs:
-        content += "# Selected news from " + tkrs + "\n\n"
+    #if tkrs:
+    #    content += "# Selected news from " + tkrs + "\n\n"
 
     if news:
         unique_tickers = set()
 
         for index, article in enumerate(news):
             unique_tickers = set(article.related_exchange_tickers) | unique_tickers
-            content += "___ Article " + str(index) + " from " + article.publisher + "___\n"
-            content += "> DATE " + str(article.creation_date.strftime("%Y/%m/%d, %H:%M")) + "\n"
+            content += "| Article " + str(index) + " from " + article.publisher + "\n"
+            content += "| Date " + str(article.creation_date.strftime("%Y/%m/%d")) + "\n"
 
-            content += "> STOCK PRICE " + str(article.stock_price) + "\n"
-            content += "## Title: " + article.get_title() + "\n\n"
-            content += article.get_summary() + "\n\n"
-            content += "\n\n---\n"
+            if article.stock_price:
+                content += "| Stock Price " + str(article.stock_price) + "\n"
+
+            content += article.get_title() + "\n"
+            content += article.get_paragraph()[:200] + "\n\n"
 
         tickers = str.join(",", unique_tickers)
-        content += "## Tickers: " + tickers + "\n\n"
+        #content += "## Tickers: " + tickers + "\n\n"
 
     return content
 
@@ -250,23 +251,22 @@ def api_create_prompt_ai_summary(db_prompt, priority=False, force_summary=False)
     prompt = ""
 
     articles_content = api_build_article_query(db_prompt)
-    if articles_content:
-        prompt += articles_content
-
-    prompt += db_prompt.prompt[:200]
+    prompt += db_prompt.prompt[:256]
 
     system = ""
+    system +="Today is " + str(datetime.now().strftime("%Y/%m/%d, %H:%M")) + "\n"
     if 'system' in db_prompt:
         system += db_prompt['system']
-
-    system +="> CURRENT DATE " + str(datetime.now().strftime("%Y/%m/%d, %H:%M")) + "\n"
+    else:
+        system += "Your name is TOTHEMOON, you are an expert system that can provide financial advice due regulations in the country. \n"
 
     chat_content = api_build_chats_query(db_prompt)
     data = {
         'type': 'user_prompt',
         'prefix': "PROMPT_" + db_prompt.username,
         'id': str(db_prompt.id),
-        'prompt': system + chat_content + prompt,
+        'assistant': chat_content + articles_content[:2048],
+        'prompt': prompt,
         'callback_url': "https://tothemoon.life/api/prompts/ai_callback"
     }
     data['system'] = system
@@ -289,7 +289,7 @@ def api_create_prompt_ai_summary(db_prompt, priority=False, force_summary=False)
         print_json(json_response)
 
         db_prompt.update(**{
-            'content': content,
+            #'raw': json_response,
             'ai_upload_date': datetime.now(),
             'ai_queue_size': json_response['queue_size']
         })

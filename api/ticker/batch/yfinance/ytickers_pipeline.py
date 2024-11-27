@@ -13,7 +13,7 @@ from api.query_helper import *
 from api.query_helper import copy_replace_schema
 from api.ticker.batch.yfinance.yfinance_news import yfetch_process_news
 from api.ticker.connector_yfinance import fetch_tickers_info
-from api.ticker.models import DB_Ticker, DB_TickerSimple
+from api.ticker.models import DB_Ticker, DB_TickerSimple, DB_TickerTimeSeries
 from api.ticker.tickers_helpers import (extract_ticker_from_symbol,
                                         standardize_ticker_format,
                                         standardize_ticker_format_to_yfinance)
@@ -88,7 +88,9 @@ def ticker_update_financials(full_symbol, max_age_minutes=2):
 
     try:
         financial_data = prepare_update_with_schema(yf_obj.info, new_schema)
+        ticker_save_financials(full_symbol, yf_obj)
     except Exception as e:
+        #print_exception(e, "CRASH")
         return fin
 
     financial_data['exchange_ticker'] = full_symbol
@@ -100,6 +102,50 @@ def ticker_update_financials(full_symbol, max_age_minutes=2):
         fin.update(**financial_data, validate=False)
 
     return fin
+
+
+def ticker_save_financials(full_symbol, yf_obj, max_age_minutes=5):
+    """ This is a very slow ticker fetch system, we use yfinance here
+        But we could call any of the other APIs
+    """
+    try:
+        fin = DB_TickerTimeSeries.objects(exchange_ticker=full_symbol).order_by("-creation_date").limit(1).first()
+
+        if fin and fin.age_minutes() < max_age_minutes:
+            return fin
+
+        if not yf_obj or not yf_obj.info:
+            return
+
+        if 'currentPrice' not in yf_obj.info:
+            return
+
+        if not yf_obj.info['currentPrice']:
+            return fin
+
+        new_schema = {
+            'price': 'currentPrice',
+            'ratio': 'currentRatio',
+            'day_low': 'dayLow',
+            'day_high': 'dayHigh',
+            'current_open': 'open',
+            'previous_close': 'previousClose',
+            'volume': 'volume',
+            'bid': 'bid',
+            'bid_size': 'bidSize',
+        }
+
+        financial_data = prepare_update_with_schema(yf_obj.info, new_schema)
+        financial_data['exchange_ticker'] = full_symbol
+
+        fin = DB_TickerTimeSeries(**financial_data)
+        fin.save(validate=False)
+
+        return fin
+
+    except Exception as e:
+        print_exception(e, "CRASHED SAVING FINANCIALS ")
+        return None
 
 
 def yticker_check_tickers(relatedTickers):
@@ -122,6 +168,10 @@ def yticker_check_tickers(relatedTickers):
             info = yf_obj.info
             if not info:
                 print_r(" NO Info fould for ticker? ")
+                return
+
+            if 'symbol' not in info:
+                print_r(" No ticker? ")
                 return
 
             ticker = info['symbol']
@@ -205,6 +255,7 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
         pass
 
     info = yf_obj.info
+    ticker_save_financials(db_ticker.full_symbol(), yf_obj)
 
     new_schema = {
         'website': 'website',

@@ -268,6 +268,10 @@ def api_create_ai_summary(company, force_summary=False):
     if not force_summary and 'ai_summary' in company or 'ia_summary' in company:
         return
 
+    age_update = (datetime.now() - company.ai_upload_date).total_seconds() / 60
+    if age_update < 600:
+        return
+
     data = {
         'type': 'summary',
         'id': company['safe_name'],
@@ -278,6 +282,8 @@ def api_create_ai_summary(company, force_summary=False):
     print_b(" INDEX " + company['safe_name'])
     response = requests.post("https://lachati.com/api_v1/upload-json", json=data)
     response.raise_for_status()
+
+    company.update({'ai_upload_date': datetime.now()})
 
 
 @blueprint.route('/ai_summary', methods=['GET', 'POST'])
@@ -429,10 +435,10 @@ def api_build_company_state_query(db_company):
 
     for index, article in enumerate(news):
         unique_tickers = set(article.related_exchange_tickers) | unique_tickers
-        content += "___ Article " + str(index) + " from " + article.publisher + "___\n"
-        content += "## Title: " + article.get_title() + "\n\n"
-        content += article.get_summary() + "\n\n"
-        content += "\n\n---\n"
+        content += "| Article " + str(index) + " from " + article.publisher + "\n"
+        content += "| Title: " + article.get_title() + "\n"
+        content += article.get_summary()[:64] + "\n"
+        content += "\n---\n"
 
     #tickers = str.join(",", unique_tickers)
     #content += "## Tickers: " + tickers + "\n\n"

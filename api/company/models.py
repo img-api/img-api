@@ -59,6 +59,8 @@ class DB_Company(db.DynamicDocument):
     # Where did we fetch the information
     source = db.StringField()
 
+    ai_upload_date = db.DateTimeField()
+
     # List of exchanges in which this company trades, nasdaq, amex, etc
     exchanges = db.ListField(db.StringField(), default=list)
 

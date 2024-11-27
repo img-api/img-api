@@ -75,6 +75,7 @@ class DB_News(db.DynamicDocument):
 
     # Tickers that are
     related_exchange_tickers = db.ListField(db.StringField(), default=list)
+    named_exchange_tickers = db.DynamicDocument()
 
     # Source -  The source will define the processing backend. For example yfinance will fetch the URL
     #           and navigate until getting the full news source.
@@ -90,6 +91,55 @@ class DB_News(db.DynamicDocument):
     blocked_by = db.ListField(db.StringField(), default=list)
 
     languages = db.ListField(db.StringField(), default=list)
+
+    last_cache_date = db.DateTimeField()
+    no_comments = db.IntField()
+
+    def age_minutes(self, *args, **kwargs):
+        age = (datetime.now() - self.creation_date).total_seconds() / 60
+        return age
+
+    def age_cache_minutes(self, *args, **kwargs):
+        age = (datetime.now() - self.last_cache_date).total_seconds() / 60
+        return age
+
+    def precalculate_name_tickers(self):
+        from api.company.models import DB_Company
+        from api.ticker.tickers_helpers import standardize_ticker_format
+
+        if len(self.named_exchange_tickers) == len(self.related_exchange_tickers):
+            return None
+
+        res = {}
+        for ticker in self.related_exchange_tickers:
+            ticker_cleanup = standardize_ticker_format(ticker)
+            db_company = DB_Company.objects(exchange_tickers=ticker_cleanup).first()
+
+            if db_company:
+                res[ticker] = db_company.long_name
+
+        return res
+
+    def precalculate_cache(self):
+        from api.comments.routes import get_comments_count
+
+        if self.last_cache_date and self.age_cache_minutes() < 5:
+            return
+
+        no_comments = get_comments_count(str(self.id))
+
+        update = {}
+        if no_comments != self.no_comments:
+            update['no_comments'] = no_comments
+
+        pre_calc = self.precalculate_name_tickers()
+        if pre_calc:
+            update['named_exchange_tickers'] = pre_calc
+
+        if update:
+            update['last_cache_date'] = datetime.now()
+            self.update(**update)
+            self.reload()
 
     def __init__(self, *args, **kwargs):
         super(DB_News, self).__init__(*args, **kwargs)
@@ -181,7 +231,7 @@ class DB_News(db.DynamicDocument):
         return self.get_arguments_param("interest_score", 0)
 
     def get_paragraph(self):
-        return self.get_arguments_param("paragraph", self.ai_summary)
+        return self.get_arguments_param("paragraph", self.ai_summary[:80])
 
     def get_summary(self):
         return self.get_arguments_param("summary", self.ai_summary)

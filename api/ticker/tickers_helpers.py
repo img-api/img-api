@@ -245,6 +245,7 @@ prefix_to_exchange = {
     'OTCMKTS': 'OTC',  # OTC Markets
 }
 
+
 def extract_ticker_from_symbol(full_symbol):
     if ":" in full_symbol:
         exchange, stock = full_symbol.split(':')
@@ -255,6 +256,7 @@ def extract_ticker_from_symbol(full_symbol):
         return stock
 
     return full_symbol
+
 
 def extract_exchange_ticker_from_url(url):
     """
@@ -396,9 +398,13 @@ def standardize_exchange_format(exchange: str) -> str:
 
 def standardize_ticker_format(ticker: str) -> str:
 
+    # Remove extension to symbol like NYSE:KREF^A
+    if "^" in ticker:
+        ticker, end = ticker.split('^')
+
     # Remove extension to symbol like PBR-A or PBR-B
     if "-" in ticker:
-        full_symbol, end = ticker.split('-')
+        ticker, end = ticker.split('-')
 
     # Case 1: Handle "EXCHANGE:TICKER" format
 
@@ -424,6 +430,7 @@ def standardize_ticker_format(ticker: str) -> str:
         # Here we assume a default exchange if none is provided, let's assume NASDAQ
         return f"NASDAQ:{ticker}"
 
+
 def standardize_ticker_format_to_yfinance(ticker: str) -> str:
 
     # Case 1: Handle "EXCHANGE:TICKER" format
@@ -446,6 +453,7 @@ def standardize_ticker_format_to_yfinance(ticker: str) -> str:
     else:
         # Here we assume a default exchange if none is provided, let's assume NASDAQ
         return f"NASDAQ:{ticker}"
+
 
 # Test cases
 

@@ -2,15 +2,12 @@ import os
 import time
 from datetime import datetime, timedelta
 
-from mongoengine import *
-
-from imgapi_launcher import db
-
+from api.query_helper import get_value_type_helper
+from api.user.user_check import DB_UserCheck
 from flask import current_app
 from flask_login import current_user
-from api.user.user_check import DB_UserCheck
-
-from api.query_helper import get_value_type_helper
+from imgapi_launcher import db
+from mongoengine import *
 
 
 class DB_FinancialMetrix(db.DynamicDocument):
@@ -120,7 +117,8 @@ class DB_Ticker(db.DynamicDocument):
     def full_symbol(self):
         """ Helper to find our full_symbol, we also fix the MIC and Stock name confusion here """
 
-        from api.ticker.tickers_helpers import standardize_ticker_format, split_full_symbol
+        from api.ticker.tickers_helpers import (split_full_symbol,
+                                                standardize_ticker_format)
 
         if not self.exchange:
             return self.ticker
@@ -228,6 +226,47 @@ class DB_TickerSimple(db.DynamicDocument):
     def update(self, *args, **kwargs):
         kwargs['last_update'] = datetime.now()
         ret = super(DB_TickerSimple, self).update(*args, **kwargs)
+        return ret
+
+    def serialize(self):
+        return mongo_to_dict_helper(self)
+
+
+class DB_TickerTimeSeries(db.DynamicDocument):
+    """ Closest update in the system for 'realtime' data
+
+    """
+    meta = {
+        'strict': False,
+        "auto_create_index": True,
+        "index_background": True,
+    }
+
+    exchange_ticker = db.StringField()
+    price = db.FloatField()
+    ratio = db.FloatField()
+    day_low = db.FloatField()
+    day_high = db.FloatField()
+    current_open = db.FloatField()
+    previous_close = db.FloatField()
+    volume = db.FloatField()
+    bid = db.FloatField()
+    bid_size = db.FloatField()
+
+    creation_date = db.DateTimeField()
+
+    def age_minutes(self, *args, **kwargs):
+        age = (datetime.now() - self.creation_date).total_seconds() / 60
+        print(self.exchange_ticker + " => " + str(age))
+        return age
+
+    def save(self, *args, **kwargs):
+        self.creation_date = datetime.now()
+        return super(DB_TickerTimeSeries, self).save(*args, **kwargs)
+
+    def update(self, *args, **kwargs):
+        kwargs['creation_date'] = datetime.now()
+        ret = super(DB_TickerTimeSeries, self).update(*args, **kwargs)
         return ret
 
     def serialize(self):
