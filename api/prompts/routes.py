@@ -68,12 +68,20 @@ def api_prompt_get_query():
     """
 
     """
-    extra_args = None
+    prompts = build_query_from_request(DB_UserPrompt, global_api=False, append_public=False, extra_args=None)
+    return get_response_formatted({'prompts': prompts})
+
+
+@blueprint.route('/latest_system', methods=['GET', 'POST'])
+@api_key_or_login_required
+def api_prompt_get_system_query():
+    """
+
+    """
+    extra_args = {'username__exists': 1, 'username': current_user.username, 'order_by': '-creation_date', 'limit': 1}
 
     prompts = build_query_from_request(DB_UserPrompt, global_api=False, append_public=False, extra_args=extra_args)
-
-    ret = {'prompts': prompts}
-    return get_response_formatted(ret)
+    return get_response_formatted({'prompts': prompts})
 
 
 @blueprint.route('/get/<string:prompt_id>', methods=['GET', 'POST'])
@@ -217,12 +225,14 @@ def api_build_article_query(db_prompt):
     tkrs = None
     content = ""
 
+    extra_args = {'interest_score__gte': 7, 'order_by': '-creation_date', 'reversed': 1}
+
     if 'PORTFOLIO' in db_prompt.selection:
-        news, tkrs = get_portfolio_query()
+        news, tkrs = get_portfolio_query(my_args=extra_args)
         if not news:
             news, tkrs = get_portfolio_query(tickers_list=["NASDAQ:INTC", "NASDAQ:NVDA", "NASDAQ:AAPL"])
     else:
-        news, tkrs = get_portfolio_query(tickers_list=db_prompt.selection)
+        news, tkrs = get_portfolio_query(tickers_list=db_prompt.selection, my_args=extra_args)
 
     #if tkrs:
     #    content += "# Selected news from " + tkrs + "\n\n"
@@ -230,16 +240,29 @@ def api_build_article_query(db_prompt):
     if news:
         unique_tickers = set()
 
+        date = str(datetime.now().strftime("%Y/%m/%d"))
         for index, article in enumerate(news):
-            unique_tickers = set(article.related_exchange_tickers) | unique_tickers
-            content += "| Article " + str(index) + " from " + article.publisher + "\n"
-            content += "| Date " + str(article.creation_date.strftime("%Y/%m/%d")) + "\n"
 
-            if article.stock_price:
-                content += "| Stock Price " + str(article.stock_price) + "\n"
+            try:
+                article_date = str(article.creation_date.strftime("%Y/%m/%d"))
+                print_g(article_date + " >> " + article.get_title())
 
-            content += article.get_title() + "\n"
-            content += article.get_paragraph()[:200] + "\n\n"
+                if date != article_date:
+                    content += "| Date " + article_date + "\n"
+                    date = article_date
+
+                unique_tickers = set(article.related_exchange_tickers) | unique_tickers
+                content += "| " + str(index) + " from " + article.publisher + "\n"
+
+                if article.stock_price and len(article.related_exchange_tickers) == 1:
+                    content += "| Stock Price " + str(article.related_exchange_tickers[0]) + ":" + str(
+                        article.stock_price) + "\n"
+
+                content += article.get_title() + "\n"
+                content += article.get_paragraph()[:200] + "\n\n"
+
+            except Exception as e:
+                print_exception(e, "CRASHED ARTICLES ")
 
         tickers = str.join(",", unique_tickers)
         #content += "## Tickers: " + tickers + "\n\n"
@@ -266,16 +289,23 @@ def api_create_prompt_ai_summary(db_prompt, priority=False, force_summary=False)
     chat_content = api_build_chats_query(db_prompt)
     data = {
         'type': 'user_prompt',
-        'id': str(db_prompt.id),
-        'prefix': "PROMPT_" + db_prompt.username,
         'prompt': prompt,
         'system': system,
         'assistant': cut_string(articles_content, 4096) + cut_string(chat_content, 2048),
-        'callback_url': "https://tothemoon.life/api/prompts/ai_callback"
     }
+
+    db_prompt.update(**{
+        'prompt': prompt,
+        'system': system,
+    })
+
+    data['id'] = str(db_prompt.id)
+    data['prefix'] = "PROMPT_" + db_prompt.username
 
     if os.environ.get('FLASK_ENV', None) == "development":
         data['callback_url'] = "http://dev.tothemoon.life/api/prompts/ai_callback"
+    else:
+        data['callback_url'] = "https://tothemoon.life/api/prompts/ai_callback"
 
     if db_prompt.use_markdown:
         data['use_markdown'] = True

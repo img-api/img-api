@@ -39,12 +39,12 @@ class DB_UserPrompt(DB_UserCheck, db.DynamicDocument):
     ai_upload_date = db.DateTimeField()
 
     prompt = db.StringField()
+    assistant = db.StringField()
+    system = db.StringField()
+    system_name = db.StringField()
 
     type = db.StringField(default="user_prompt")
-
     selection = db.ListField(db.StringField(), default=list)
-
-    system_name = db.StringField()
 
     force_reindex = db.BooleanField(default=False)
 

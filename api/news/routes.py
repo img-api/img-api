@@ -467,7 +467,7 @@ def api_news_callback_ai_summary():
     return get_response_formatted(ret)
 
 
-def get_portfolio_query(name_list="default", tickers_list=None, limit=20):
+def get_portfolio_query(name_list="default", tickers_list=None, limit=20, my_args=None):
     from api.ticker.routes import get_watchlist_or_create
 
     if tickers_list:
@@ -477,6 +477,10 @@ def get_portfolio_query(name_list="default", tickers_list=None, limit=20):
         ls = str.join(",", watchlist.exchange_tickers)
 
     extra_args = {'related_exchange_tickers__in': ls, "limit": limit}
+
+    if my_args:
+        extra_args.update(my_args)
+
     news = build_query_from_request(DB_News, global_api=True, extra_args=extra_args)
     return news, ls
 

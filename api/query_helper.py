@@ -18,6 +18,7 @@ def is_mongo_id(string):
     # Check if the string is exactly 24 characters long and contains only hexadecimal digits
     return bool(re.fullmatch(r'[0-9a-f]{24}', string))
 
+
 def get_adaptive_value(key, value):
     # Just check if true or false and change accordingly
     if key.find("date") != -1:
@@ -524,6 +525,7 @@ def mongo_to_dict_helper(obj, filter_out=None, add_empty_lists=True):
 
 
 def query_clean_reserved(args):
+    args.pop('reversed', None)
     args.pop('fields', None)
     args.pop('cleanup', None)
     args.pop('key', None)
@@ -572,31 +574,23 @@ def build_query_from_request(MyClass, args=None, get_all=False, global_api=False
     order_by = None
 
     if not args:
-        fields = request.args.get("fields", None)
-        get_all = request.args.get("get_all")
-        order_by = request.args.get("order_by")
+        args = request.args.to_dict()
 
-        limit = request.args.get("limit", 25)
-        skip = request.args.get("skip")
-        only = request.args.get("only")
-        exclude = request.args.get("exclude")
+    fields = args.get("fields", None)
+    get_all = args.get("get_all")
+    order_by = args.get("order_by")
+    reversed = args.get("reversed")
 
-        args = query_clean_reserved(request.args.to_dict())
-    else:
-        fields = args.get("fields", None)
-        get_all = args.get("get_all")
-        order_by = args.get("order_by")
+    limit = args.get("limit", 25)
+    skip = args.get("skip")
 
-        limit = args.get("limit", 25)
-        skip = args.get("skip")
-
-        only = args.get("only")
-        exclude = args.get("exclude")
-
-        args = query_clean_reserved(args)
+    only = args.get("only")
+    exclude = args.get("exclude")
 
     if extra_args:
         args.update(extra_args)
+
+    args = query_clean_reserved(args)
 
     query_set = QuerySet(MyClass, MyClass()._get_collection())
 
@@ -650,6 +644,9 @@ def build_query_from_request(MyClass, args=None, get_all=False, global_api=False
 
     if not data:
         print_r("Data not found")
+
+    if reversed:
+        return list(data)[::-1]
 
     return data
 
@@ -748,8 +745,10 @@ def build_query_from_url(args=None):
 
     return query
 
+
 def mongo_prevalidate_fields(object, values):
     return object
+
 
 def mongo_to_dict_result(objects, filter_out=None, add_empty_lists=True):
     """ Converts a list of mongo objects and creates a valid dictionary,
