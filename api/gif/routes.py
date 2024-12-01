@@ -29,6 +29,16 @@ from mongoengine.queryset import QuerySet
 from mongoengine.queryset.visitor import Q
 
 
+@blueprint.route('/query', methods=['GET', 'POST'])
+def api_gif_get_query():
+    extra_args = {'username': "GIF"}
+
+    gifs = build_query_from_request(File_Tracking, global_api=True, extra_args=extra_args)
+
+    ret = {'gifs': gifs}
+    return get_response_formatted(ret)
+
+
 def api_internal_gif_upload(f_request, media_info, file_name, file_extension, file_type="video", gif_username="GIF"):
     media_path = File_Tracking.get_media_path()
 
