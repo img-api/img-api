@@ -2,15 +2,12 @@ import os
 import time
 from datetime import datetime
 
-from mongoengine import *
-
-from imgapi_launcher import db
-
-from flask import current_app
-from flask_login import current_user
-
 from api.query_helper import get_value_type_helper
 from api.user.user_check import DB_UserCheck
+from flask import current_app
+from flask_login import current_user
+from imgapi_launcher import db
+from mongoengine import *
 
 
 class File_Tracking(DB_UserCheck, db.DynamicDocument):
@@ -113,7 +110,7 @@ class File_Tracking(DB_UserCheck, db.DynamicDocument):
     def exists(self):
         abs_path = self.get_media_path() + self.file_path
         if not os.path.exists(abs_path):
-            print(" FILE NOT FOUND - DELETE DATABASE ENTRY ")
+            print(" FILE NOT FOUND " + abs_path + " - DELETE DATABASE ENTRY ")
             #self.delete()
             return False
 

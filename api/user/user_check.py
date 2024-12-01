@@ -38,7 +38,7 @@ class DB_UserCheck():
 
     def check_parms(self, *args, **kwargs):
         """ Checks and validates critical parameters so we don't get an user to change its username and replace another """
-        if len(self.username) <= 3:
+        if self.username and len(self.username) <= 3:
             print(" SYSTEM USER " + self.username)
             return True
 

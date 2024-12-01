@@ -90,7 +90,7 @@ def api_internal_gif_upload(f_request, media_info, file_name, file_extension, fi
 
     except Exception as e:
         print(" CRASH on loading image " + str(e))
-        os.remove(final_absolute_path)
+        #os.remove(final_absolute_path)
         return False
 
     file_metadata = {
@@ -114,7 +114,7 @@ def api_internal_gif_upload(f_request, media_info, file_name, file_extension, fi
         my_file = File_Tracking(**file_metadata)
         my_file.save()
 
-    return True
+    return file_metadata
 
 
 def api_capture_tenor_data(raw_data):
