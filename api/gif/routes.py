@@ -145,40 +145,45 @@ def api_capture_tenor_data(raw_data):
 def api_gif_process_queue():
 
     try:
-        tenor = DB_TenorGif.objects(status="WAITING_INDEX").first()
+        tenor_process = DB_TenorGif.objects(status="WAITING_INDEX").limit(100)
 
-        raw = tenor['raw']
-        mp4_url = raw['media_formats']['mp4']['url']
+        media_list = []
+        for tenor in tenor_process:
 
-        response = requests.get(mp4_url)
-        if response.status_code != 200:
-            tenor.update(**{'status': 'FAILED FETCHING' + str(response.status_code)})
-            return
+            raw = tenor['raw']
+            mp4_url = raw['media_formats']['mp4']['url']
 
-        parsed_url = urlparse(mp4_url)
+            response = requests.get(mp4_url)
+            if response.status_code != 200:
+                tenor.update(**{'status': 'FAILED FETCHING' + str(response.status_code)})
+                return
 
-        # Extract the file name and extension
-        file_name_with_ext = os.path.basename(parsed_url.path)
-        file_name, file_extension = os.path.splitext(file_name_with_ext)
+            parsed_url = urlparse(mp4_url)
 
-        # Create a temporary file to store the gif data
-        gif_data = BytesIO(response.content)
+            # Extract the file name and extension
+            file_name_with_ext = os.path.basename(parsed_url.path)
+            file_name, file_extension = os.path.splitext(file_name_with_ext)
 
-        media_info = {
-            'my_title': raw['title'],
-            'my_description': raw['content_description'],
-            'external_uuid': raw['id'],
-            'tags': tenor.tags,
-        }
+            # Create a temporary file to store the gif data
+            gif_data = BytesIO(response.content)
 
-        gif_obj = api_internal_gif_upload(gif_data, media_info, file_name, file_extension)
+            media_info = {
+                'my_title': raw['title'],
+                'my_description': raw['content_description'],
+                'external_uuid': raw['id'],
+                'tags': tenor.tags,
+            }
 
-        if not gif_obj:
-            tenor.update(**{'status': 'FAILED_PROCESSING'})
-        else:
-            tenor.update(**{'status': 'INDEXED'})
+            media_list.append(media_info)
 
-        return get_response_formatted({'media': gif_obj})
+            gif_obj = api_internal_gif_upload(gif_data, media_info, file_name, file_extension)
+
+            if not gif_obj:
+                tenor.update(**{'status': 'FAILED_PROCESSING'})
+            else:
+                tenor.update(**{'status': 'INDEXED'})
+
+        return get_response_formatted({'media': [media_list]})
 
     except Exception as e:
         print_exception(e, " CAPTURE TENOR ")
