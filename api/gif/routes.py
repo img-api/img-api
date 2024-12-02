@@ -31,12 +31,61 @@ from mongoengine.queryset.visitor import Q
 
 @blueprint.route('/query', methods=['GET', 'POST'])
 def api_gif_get_query():
+    """
+    Example:
+        http://dev.tothemoon.life/api/gif/query?tags__in=shocked,sadness
+    """
     extra_args = {'username': "GIF"}
 
     gifs = build_query_from_request(File_Tracking, global_api=True, extra_args=extra_args)
 
     ret = {'gifs': gifs}
     return get_response_formatted(ret)
+
+
+@blueprint.route('/match', methods=['GET', 'POST'])
+def api_gif_get_query_match_best():
+    keywords = request.args.get("keywords", "sad")
+    keywords = keywords.replace(" ", ",")
+    tags_to_match = keywords.split(",")
+
+    pipeline = [{
+        "$match": {
+            "tags": {
+                "$in": tags_to_match
+            }
+        }
+    }, {
+        "$project": {
+            "_id": 1,
+            "external_uuid": 1,
+            "tags": 1,
+            "match_count": {
+                "$size": {
+                    "$filter": {
+                        "input": "$tags",
+                        "as": "tag",
+                        "cond": {
+                            "$in": ["$$tag", tags_to_match]
+                        }
+                    }
+                }
+            }
+        }
+    }, {
+        "$sort": {
+            "match_count": -1
+        }
+    }]
+
+    result = []
+    res = File_Tracking.objects.aggregate(pipeline)
+    for r in res:
+        result.append({'id': str(r['_id']), 'tags': list(r['tags']), 'match_count': r['match_count']})
+
+    # Return Redirect to URL -  http://dev.tothemoon.life/api/media/get/674cbbd8b5301d1a588aaceb
+
+    return get_response_formatted({'gifs': [result]})
 
 
 def api_internal_gif_upload(f_request, media_info, file_name, file_extension, file_type="video", gif_username="GIF"):

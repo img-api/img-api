@@ -512,7 +512,7 @@ def api_user_watchlist_operation(operation, name, exchange_ticker):
 
     watchlist = get_watchlist_or_create(name)
 
-    if operation == "remove_ticker":
+    if operation == "remove_ticker" or operation == "remove":
         if exchange_ticker in watchlist.exchange_tickers:
             watchlist.exchange_tickers.remove(exchange_ticker)
     else:
