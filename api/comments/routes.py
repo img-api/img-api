@@ -156,7 +156,7 @@ def api_delete_comments_get_query():
 @blueprint.route('/query', methods=['GET', 'POST'])
 def api_comments_get_query():
     """
-    Example of queries: https://tothemoon.life/api/comments/query?title=NULL
+    Example of queries: https://domain/api/comments/query?title=NULL
     """
 
     comments = build_query_from_request(DB_Comments, global_api=True)
@@ -179,7 +179,7 @@ def api_comments_get_query():
 @blueprint.route('/info', methods=['GET', 'POST'])
 def api_comments_get_info():
     """
-    https://tothemoon.life/api/comments/info
+    https://domain/api/comments/info
     """
 
     id = request.args.get("id")

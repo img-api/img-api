@@ -21,6 +21,9 @@ class DB_UserPrompt(DB_UserCheck, db.DynamicDocument):
     }
 
     username = db.StringField()
+
+    # CHAT, PORTFOLIO, COMPANY, BOT...
+    type = db.StringField()
     is_public = db.BooleanField(default=True)
 
     use_markdown = db.BooleanField(default=True)

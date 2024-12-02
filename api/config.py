@@ -46,3 +46,44 @@ def get_host_name():
         return "tothemoon.life"
 
     return socket.gethostname()
+
+
+def get_api_entry():
+    """
+        Returns different from production or development
+        If the user defines FLASK_API_DEV in the environment they will get that in development
+        Otherwise it will return the FLASK_API_PROD or default
+    """
+    try:
+        if os.environ.get('FLASK_ENV', None) == "development":
+            return os.environ.get('FLASK_API_DEV', "http://dev.tothemoon.life/api")
+
+        return os.environ.get('FLASK_API_PROD', "https://headingtomars.com/api")
+
+    except Exception as err:
+        print("! TODO: Find why this application can read the host " + str(err))
+
+    return "https://tothemoon.life/api"
+
+
+def get_api_AI_default_service():
+    return "https://lachati.com/api_v1"
+
+
+def get_api_AI_service():
+    """
+        If the user defines FLASK_API_AI_DEV
+    """
+    default_service = get_api_AI_default_service() + "/upload-json"
+    try:
+        if os.environ.get('FLASK_ENV', None) == "development":
+            if os.environ.get('FLASK_API_AI_DEV'):
+                return os.environ.get('FLASK_API_AI_DEV')
+
+        if os.environ.get('FLASK_API_AI_PROD'):
+            return os.environ.get('FLASK_API_AI_PROD')
+
+    except Exception as err:
+        print("! TODO: Find why this application can read the host " + str(err))
+
+    return default_service

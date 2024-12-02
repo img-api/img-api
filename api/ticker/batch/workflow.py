@@ -27,13 +27,13 @@ from .yfinance.ytickers_pipeline import (yticker_check_tickers,
 ####################################
 
 # GET TICKERS THAT HAVE NOT BEING PROCESSED
-# https://tothemoon.life/api/ticker/index/batch/get_tickers?lte=1%20hour&limit=1
+# https://domain/api/ticker/index/batch/get_tickers?lte=1%20hour&limit=1
 
 # FIND NEWS THAT HAVE NOT BEING PROCESSED:
-# https://tothemoon.life/api/news/query?status=WAITING_INDEX&limit=1
+# https://domain/api/news/query?status=WAITING_INDEX&limit=1
 
 # UPDATE NEWS [WIP]
-#  https://tothemoon.life/api/news/update [POST]
+#  https://domain/api/news/update [POST]
 
 # RAW basic implementation before going for a future implmentation using
 # Something like temporal.io

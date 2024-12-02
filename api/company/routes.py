@@ -13,6 +13,7 @@ from api import (api_key_login_or_anonymous, api_key_or_login_required, cache,
                  get_response_error_formatted, get_response_formatted)
 from api.company import blueprint
 from api.company.models import DB_Company, DB_CompanyPrompt
+from api.config import get_api_AI_service, get_api_entry
 from api.print_helper import *
 from api.query_helper import (build_query_from_request, get_timestamp_verbose,
                               is_mongo_id, mongo_to_dict_helper)
@@ -276,11 +277,11 @@ def api_create_ai_summary(company, force_summary=False):
         'type': 'summary',
         'id': company['safe_name'],
         'message': prompt + company['long_business_summary'],
-        'callback_url': "https://tothemoon.life/api/company/ai_callback"
+        'callback_url': get_api_entry() + "/company/ai_callback"
     }
 
     print_b(" INDEX " + company['safe_name'])
-    response = requests.post("https://lachati.com/api_v1/upload-json", json=data)
+    response = requests.post(get_api_AI_service(), json=data)
     response.raise_for_status()
 
     company.update({'ai_upload_date': datetime.now()})
@@ -484,13 +485,10 @@ def api_build_company_state_query(db_company):
         'company': db_company.safe_name,
         'prefix': "9_" + db_company.safe_name,
         'id': str(db_prompt.id),
-        'callback_url': "https://tothemoon.life/api/company/ai_prompt"
+        'callback_url': get_api_entry() + "/company/ai_prompt"
     }
 
-    if os.environ.get('FLASK_ENV', None) == "development":
-        data['callback_url'] = "http://dev.tothemoon.life/api/company/ai_prompt"
-
-    response = requests.post("https://lachati.com/api_v1/upload-json", json=data)
+    response = requests.post(get_api_AI_service(), json=data)
     response.raise_for_status()
 
     try:
@@ -507,7 +505,7 @@ def api_build_company_state_query(db_company):
 @blueprint.route('/prompt/<string:ticker>', methods=['GET', 'POST'])
 def api_get_company_prompt(ticker):
     """ Example of creating a prompt:
-        https://dev.tothemoon.life/api/company/prompt/NASDAQ:INTC
+        https://domain/api/company/prompt/NASDAQ:INTC
     """
     db_company = DB_Company.objects(exchange_tickers=ticker).first()
     if not db_company:

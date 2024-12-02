@@ -33,7 +33,7 @@ from mongoengine.queryset.visitor import Q
 def api_gif_get_query():
     """
     Example:
-        http://dev.tothemoon.life/api/gif/query?tags__in=shocked,sadness
+        http://domain/api/gif/query?tags__in=shocked,sadness
     """
     extra_args = {'username': "GIF"}
 
@@ -83,7 +83,7 @@ def api_gif_get_query_match_best():
     for r in res:
         result.append({'id': str(r['_id']), 'tags': list(r['tags']), 'match_count': r['match_count']})
 
-    # Return Redirect to URL -  http://dev.tothemoon.life/api/media/get/674cbbd8b5301d1a588aaceb
+    # Return Redirect to URL -  http://domain/api/media/get/674cbbd8b5301d1a588aaceb
 
     return get_response_formatted({'gifs': [result]})
 

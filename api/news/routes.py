@@ -13,6 +13,7 @@ import validators
 from api import (admin_login_required, api_key_login_or_anonymous,
                  api_key_or_login_required, cache,
                  get_response_error_formatted, get_response_formatted)
+from api.config import get_api_AI_service, get_api_entry
 from api.news import blueprint
 from api.news.models import DB_News
 from api.print_helper import *
@@ -221,11 +222,8 @@ def api_create_article_ai_summary(article, priority=False, force_summary=False):
         'id': str(article['id']),
         'prompt': prompt,
         'article': articles[:4096],
-        'callback_url': "https://tothemoon.life/api/news/ai_callback"
+        'callback_url': get_api_entry() + "/news/ai_callback"
     }
-
-    if os.environ.get('FLASK_ENV', None) == "development":
-        data['callback_url'] = "http://dev.tothemoon.life/api/news/ai_callback"
 
     if priority:
         data['priority'] = 1
@@ -238,7 +236,7 @@ def api_create_article_ai_summary(article, priority=False, force_summary=False):
     if 'source' in article:
         data['source'] = article['source']
 
-    response = requests.post("https://lachati.com/api_v1/upload-json", json=data)
+    response = requests.post(get_api_AI_service(), json=data)
     response.raise_for_status()
 
     try:
@@ -265,10 +263,10 @@ def api_create_news_translation(id, text, field, language):
         'language': language,
         'prefix': "TRANSLATION_" + language + "_" + field + "_",
         'article': content,
-        'callback_url': "http://dev.tothemoon.life/api/news/ai_callback_translation"
+        'callback_url': get_api_entry() + "/news/ai_callback_translation"
     }
 
-    response = requests.post("https://lachati.com/api_v1/upload-json", json=data)
+    response = requests.post(get_api_AI_service(), json=data)
     response.raise_for_status()
 
     try:

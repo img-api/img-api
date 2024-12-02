@@ -9,6 +9,8 @@ import requests
 from api import (admin_login_required, api_key_login_or_anonymous,
                  api_key_or_login_required, cache,
                  get_response_error_formatted, get_response_formatted)
+from api.config import (get_api_AI_default_service, get_api_AI_service,
+                        get_api_entry)
 from api.print_helper import *
 from api.prompts import blueprint
 from api.prompts.models import DB_UserPrompt
@@ -106,14 +108,20 @@ def api_remove_a_prompt_by_id(prompt_id):
     ---
     """
 
+    prompt_type = request.args.get("type", None)
+
     # CHECK API ONLY ADMIN
     if prompt_id == "ALL":
-        res = DB_UserPrompt.objects(username=current_user.username)
+        if not prompt_type:
+            res = DB_UserPrompt.objects(username=current_user.username)
+        else:
+            res = DB_UserPrompt.objects(username=current_user.username, type=prompt_type)
+
         ret = {'status': "deleted", 'prompts': res}
         res.delete()
         return get_response_formatted(ret)
 
-    prompts = DB_UserPrompt.objects(id=prompt_id).first()
+    prompts = DB_UserPrompt.objects(id=prompt_id, username=current_user.username).first()
 
     if not prompts:
         return get_response_error_formatted(404, {'error_msg': "The prompt was not found for the current user"})
@@ -301,11 +309,7 @@ def api_create_prompt_ai_summary(db_prompt, priority=False, force_summary=False)
 
     data['id'] = str(db_prompt.id)
     data['prefix'] = "PROMPT_" + db_prompt.username
-
-    if os.environ.get('FLASK_ENV', None) == "development":
-        data['callback_url'] = "http://dev.tothemoon.life/api/prompts/ai_callback"
-    else:
-        data['callback_url'] = "https://tothemoon.life/api/prompts/ai_callback"
+    data['callback_url'] = get_api_entry() + "/prompts/ai_callback"
 
     if db_prompt.use_markdown:
         data['use_markdown'] = True
@@ -313,7 +317,7 @@ def api_create_prompt_ai_summary(db_prompt, priority=False, force_summary=False)
     if priority:
         data['priority'] = priority
 
-    response = requests.post("https://lachati.com/api_v1/upload-json", json=data)
+    response = requests.post(get_api_AI_service(), json=data)
     response.raise_for_status()
 
     try:
@@ -337,7 +341,7 @@ def api_create_prompt_ai_summary(db_prompt, priority=False, force_summary=False)
 @api_key_or_login_required
 @admin_login_required
 def api_llama_get_state():
-    response = requests.get("https://lachati.com/api_v1/")
+    response = requests.get(get_api_AI_default_service())
     response.raise_for_status()
 
     try:
