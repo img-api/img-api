@@ -23,6 +23,15 @@ export FLASK_PORT=5111
 
 pip3 install yfinance --upgrade
 
+# Load environment variables from .env file if it exists
+if [ -f .env ]; then
+    echo "Loading environment variables from .env file"
+    export $(cat .env | grep -v '^#' | xargs)
+else
+    echo "No .env file found"
+fi
+
+
 while true; do
     echo " "
     echo "------------------------------"

@@ -25,6 +25,12 @@ from mongoengine.queryset import QuerySet
 from mongoengine.queryset.visitor import Q
 
 
+try:
+    API_URL = os.environment["API_URL"]
+except KeyError:
+    raise KeyError("An API_URL environment variable should be provided")
+
+
 @blueprint.route('/create', methods=['GET', 'POST'])
 @api_key_or_login_required
 @admin_login_required
@@ -221,11 +227,8 @@ def api_create_article_ai_summary(article, priority=False, force_summary=False):
         'id': str(article['id']),
         'prompt': prompt,
         'article': articles[:4096],
-        'callback_url': "https://tothemoon.life/api/news/ai_callback"
+        'callback_url': f"{API_URL}/api/news/ai_callback"
     }
-
-    if os.environ.get('FLASK_ENV', None) == "development":
-        data['callback_url'] = "http://dev.tothemoon.life/api/news/ai_callback"
 
     if priority:
         data['priority'] = 1
@@ -265,7 +268,7 @@ def api_create_news_translation(id, text, field, language):
         'language': language,
         'prefix': "TRANSLATION_" + language + "_" + field + "_",
         'article': content,
-        'callback_url': "http://dev.tothemoon.life/api/news/ai_callback_translation"
+        'callback_url': f"{API_URL}/api/news/ai_callback_translation"
     }
 
     response = requests.post("https://lachati.com/api_v1/upload-json", json=data)

@@ -21,6 +21,12 @@ from mongoengine.queryset import QuerySet
 from mongoengine.queryset.visitor import Q
 
 
+try:
+    API_URL = os.environment["API_URL"]
+except KeyError:
+    raise KeyError("An API_URL environment variable should be provided")
+
+
 @blueprint.route('/create', methods=['GET', 'POST'])
 @api_key_or_login_required
 def api_create_prompt_local():
@@ -267,11 +273,8 @@ def api_create_prompt_ai_summary(db_prompt, priority=False, force_summary=False)
         'prompt': prompt,
         'system': system,
         'assistant': chat_content + articles_content[:2048],
-        'callback_url': "https://tothemoon.life/api/prompts/ai_callback"
+        'callback_url': f"{API_URL}/api/prompts/ai_callback"
     }
-
-    if os.environ.get('FLASK_ENV', None) == "development":
-        data['callback_url'] = "http://dev.tothemoon.life/api/prompts/ai_callback"
 
     if db_prompt.use_markdown:
         data['use_markdown'] = True
