@@ -1,7 +1,7 @@
 import os
-import redis
 from datetime import datetime
 
+import redis
 from rq import Queue
 from rq.job import Job
 

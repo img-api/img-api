@@ -1,33 +1,19 @@
-import io
-import os
-import time
-import ffmpeg
-import validators
 
-from datetime import datetime
 
+from api import (api_key_or_login_required, get_response_error_formatted,
+                 get_response_formatted)
 from api.events import blueprint
-from api.api_redis import api_rq
-
-from api import get_response_formatted, get_response_error_formatted, api_key_or_login_required, api_key_login_or_anonymous, cache
-from flask import jsonify, request, send_file, redirect
-
-from flask import current_app, url_for, abort
 from api.print_helper import *
-
-from api.tools import generate_file_md5, ensure_dir, is_api_call
-from api.user.routes import generate_random_user
-from .models import DB_Event
-
-from mongoengine.queryset import QuerySet
+from api.query_helper import build_query_from_request, mongo_to_dict_helper
+from flask import request
 from mongoengine.queryset.visitor import Q
-from api.query_helper import mongo_to_dict_helper, build_query_from_request
+
+from .models import DB_Event
 
 
 @blueprint.route('/query', methods=['GET', 'POST'])
 @api_key_or_login_required
 def api_get_query():
-    from flask_login import current_user
     """
     """
 
@@ -63,7 +49,8 @@ def api_get_event(event_id):
 @blueprint.route('/<string:event_id>/set/<string:my_key>', methods=['GET', 'POST'])
 @api_key_or_login_required
 def api_set_event_key(event_id, my_key):
-    from flask_login import current_user  # Required by pytest, otherwise client crashes on CI
+    from flask_login import \
+        current_user  # Required by pytest, otherwise client crashes on CI
 
     event = DB_Event.objects(id=event_id).first()
 
@@ -116,7 +103,7 @@ def api_remove_event(event_id):
 @blueprint.route('/create', methods=['POST'])
 @api_key_or_login_required
 def api_create_event():
-    from flask_login import current_user
+    pass
 
     if (ctype := request.headers.get('Content-Type')) != 'application/json':
         return get_response_error_formatted(400, {'error_msg': "Wrong call."})

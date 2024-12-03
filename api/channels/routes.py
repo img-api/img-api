@@ -1,23 +1,10 @@
-import binascii
-import io
-import random
-import re
-import time
-from datetime import datetime
 
-import requests
-import validators
-from api import (api_key_login_or_anonymous, api_key_or_login_required, cache,
-                 get_response_error_formatted, get_response_formatted)
+from api import get_response_error_formatted, get_response_formatted
 from api.channels import blueprint
 from api.channels.models import DB_Channel
-from api.print_helper import *
-from api.query_helper import (build_query_from_request, get_timestamp_verbose,
-                              is_mongo_id, mongo_to_dict_helper)
-from flask import Response, abort, jsonify, redirect, request, send_file
+from api.query_helper import build_query_from_request
+from flask import request
 from flask_login import current_user
-from mongoengine.queryset import QuerySet
-from mongoengine.queryset.visitor import Q
 
 
 @blueprint.route('/query', methods=['GET', 'POST'])

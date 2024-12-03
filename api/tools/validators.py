@@ -1,5 +1,7 @@
 import re
+
 import validators
+
 
 def is_valid_username(username):
     """ User name cannot have double underscores, double dashes, nor double dots.  The @ symbol is allowed. """
@@ -25,10 +27,10 @@ def sanitize_address(addr, encoding):
     """
     Format a pair of (name, address) or an email address string.
     """
-    from email.utils import parseaddr
     from email.errors import InvalidHeaderDefect, NonASCIILocalPartDefect
     from email.header import Header
     from email.headerregistry import Address
+    from email.utils import parseaddr
 
     if not isinstance(addr, tuple):
         addr = parseaddr(addr)

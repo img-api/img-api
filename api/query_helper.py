@@ -9,7 +9,6 @@ from flask_login import current_user
 from imgapi_launcher import db
 from mongoengine.queryset import QuerySet
 from mongoengine.queryset.visitor import Q
-from werkzeug.exceptions import BadRequest
 
 from api.print_helper import *
 
@@ -366,7 +365,6 @@ def mongo_get_value(return_data, field, field_name, data, filter_out, add_empty_
         except Exception as e:
             return_data[field_name] = 0
             print_r(field_name + "= Failed field")
-            pass
 
     elif isinstance(field, db.ListField):
         if not add_empty_lists and len(data) == 0:

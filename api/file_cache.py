@@ -4,27 +4,18 @@
 """
 
 import hashlib
-from functools import wraps
-import io
-import os
-import sys
 import pathlib
-
-import traceback
-
-import threading
-import time
-
 from datetime import datetime
-import logging
-import re
+from functools import wraps
+
+from flask import json, request
+from flask_login import current_user
 
 from api import get_response_formatted
-
-from flask_login import current_user
 from api.tools import ensure_dir
-from flask import json, request
+
 from .print_helper import *
+
 
 def api_file_cache(func):
     """
@@ -100,7 +91,6 @@ def api_file_cache(func):
 
         except Exception as e:
             print_r("FAILED " + key + " " + str(e))
-            pass
 
         return None
 

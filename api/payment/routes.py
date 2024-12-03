@@ -1,12 +1,10 @@
 import stripe
-import validators
-from api import (admin_login_required, api_key_login_or_anonymous,
-                 api_key_or_login_required, get_response_error_formatted,
+from api import (api_key_or_login_required, get_response_error_formatted,
                  get_response_formatted)
 from api.config import get_host_name
 from api.payment import blueprint
 from api.print_helper import *
-from flask import abort, current_app, jsonify, redirect, request, send_file
+from flask import current_app, jsonify, redirect, request
 from flask_login import current_user
 
 

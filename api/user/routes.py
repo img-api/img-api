@@ -1,25 +1,22 @@
 import binascii
 import random
-import re
-import time
 from datetime import datetime
 
 import bcrypt
 import validators
 from api import (admin_login_required, api_key_login_or_anonymous,
-                 api_key_or_login_required, cache,
-                 get_response_error_formatted, get_response_formatted, mail)
+                 api_key_or_login_required, get_response_error_formatted,
+                 get_response_formatted, mail)
 from api.galleries.models import DB_MediaList
 from api.print_helper import *
 from api.query_helper import build_query_from_request, mongo_to_dict_helper
-from api.tools import ensure_dir, generate_file_md5, is_api_call
+from api.tools import is_api_call
 from api.tools.validators import is_valid_username
 from api.user import blueprint
 from api.user.models import User
-from flask import Response, abort, jsonify, redirect, request
+from flask import Response, abort, redirect, request
 from flask_login import current_user, login_user, logout_user
-from flask_mail import Mail, Message
-from mongoengine.queryset import QuerySet
+from flask_mail import Message
 from mongoengine.queryset.visitor import Q
 from services.dictionary.my_dictionary import words
 
@@ -359,7 +356,7 @@ def api_user_recovery():
 def password_recovery_user_email(username, email, token):
     import socket
 
-    from api.config import get_config_value, get_host_name, get_port
+    from api.config import get_config_value, get_host_name
 
     ####################### Report ADMIN ############################
     try:

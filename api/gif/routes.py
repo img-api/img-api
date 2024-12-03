@@ -1,32 +1,16 @@
-import binascii
-import io
-import random
-import re
-import time
-from datetime import datetime
 from io import BytesIO
 from urllib.parse import urlparse
 
-import bcrypt
 import ffmpeg
-import qrcode
 import requests
-import validators
-from api import (admin_login_required, api_key_login_or_anonymous,
-                 api_key_or_login_required, cache,
-                 get_response_error_formatted, get_response_formatted)
+from api import get_response_formatted
 from api.gif import blueprint
 from api.gif.models import DB_TenorGif
 from api.media.models import File_Tracking
 from api.print_helper import *
-from api.query_helper import (build_query_from_request, mongo_to_dict_helper,
-                              validate_and_convert_dates)
-from api.tools import ensure_dir, generate_file_md5, is_api_call, to_bytes
-from api.tools.validators import get_validated_email
-from flask import Response, abort, jsonify, redirect, request, send_file
-from flask_login import current_user
-from mongoengine.queryset import QuerySet
-from mongoengine.queryset.visitor import Q
+from api.query_helper import build_query_from_request
+from api.tools import ensure_dir, generate_file_md5
+from flask import request, send_file
 
 
 @blueprint.route('/query', methods=['GET', 'POST'])

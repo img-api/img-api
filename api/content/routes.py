@@ -1,25 +1,13 @@
-import time
-import random
-import bcrypt
-import binascii
 
-import validators
-
+from api import (api_key_or_login_required, get_response_error_formatted,
+                 get_response_formatted)
 from api.content import blueprint
 from api.print_helper import *
-
-from api import get_response_formatted, get_response_error_formatted, api_key_or_login_required, api_key_login_or_anonymous, cache
-
-from flask import jsonify, request, Response, redirect, abort
-from api.tools import generate_file_md5, ensure_dir, is_api_call
-from api.query_helper import mongo_to_dict_helper
-
-from .models import DB_UserContent
-
-from mongoengine.queryset import QuerySet
+from flask import request
+from flask_login import current_user
 from mongoengine.queryset.visitor import Q
 
-from flask_login import current_user, login_user, logout_user
+from .models import DB_UserContent
 
 
 @blueprint.route('/<string:my_section>/set/<string:my_key>', methods=['GET', 'POST'])

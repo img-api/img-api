@@ -4,20 +4,17 @@
 """
 
 import io
+import logging
 import os
+import re
 import sys
-
-import traceback
-
 import threading
 import time
-
-import logging
-import re
+import traceback
 
 import bleach
+from prompt_toolkit import ANSI, print_formatted_text
 
-from prompt_toolkit import print_formatted_text, ANSI
 """ Pretty colours library by Sergio """
 
 

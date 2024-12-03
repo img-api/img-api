@@ -1,26 +1,18 @@
-import io
 import os
-import random
-import re
-import time
 from datetime import datetime
 
 import requests
-from api import (admin_login_required, api_key_login_or_anonymous,
-                 api_key_or_login_required, cache,
+from api import (admin_login_required, api_key_or_login_required,
                  get_response_error_formatted, get_response_formatted)
 from api.config import (get_api_AI_default_service, get_api_AI_service,
                         get_api_entry)
 from api.print_helper import *
 from api.prompts import blueprint
 from api.prompts.models import DB_UserPrompt
-from api.query_helper import (build_query_from_request, get_timestamp_verbose,
-                              mongo_to_dict_helper, validate_and_convert_dates)
+from api.query_helper import build_query_from_request
 from api.tools.markdownify import markdownify
-from flask import Response, abort, jsonify, redirect, request, send_file
+from flask import request
 from flask_login import current_user
-from mongoengine.queryset import QuerySet
-from mongoengine.queryset.visitor import Q
 
 
 @blueprint.route('/create', methods=['GET', 'POST'])

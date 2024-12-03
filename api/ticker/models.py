@@ -1,11 +1,5 @@
-import os
-import time
 from datetime import datetime, timedelta
 
-from api.query_helper import get_value_type_helper
-from api.user.user_check import DB_UserCheck
-from flask import current_app
-from flask_login import current_user
 from imgapi_launcher import db
 from mongoengine import *
 
@@ -117,8 +111,7 @@ class DB_Ticker(db.DynamicDocument):
     def full_symbol(self):
         """ Helper to find our full_symbol, we also fix the MIC and Stock name confusion here """
 
-        from api.ticker.tickers_helpers import (split_full_symbol,
-                                                standardize_ticker_format)
+        from api.ticker.tickers_helpers import standardize_ticker_format
 
         if not self.exchange:
             return self.ticker

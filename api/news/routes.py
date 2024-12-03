@@ -1,29 +1,17 @@
-import binascii
 import copy
-import io
-import random
-import re
-import time
 from datetime import datetime
 
-import bcrypt
-import qrcode
 import requests
-import validators
-from api import (admin_login_required, api_key_login_or_anonymous,
-                 api_key_or_login_required, cache,
+from api import (admin_login_required, api_key_or_login_required,
                  get_response_error_formatted, get_response_formatted)
 from api.config import get_api_AI_service, get_api_entry
 from api.news import blueprint
 from api.news.models import DB_News
 from api.print_helper import *
-from api.query_helper import (build_query_from_request, get_timestamp_verbose,
-                              mongo_to_dict_helper, validate_and_convert_dates)
-from api.tools.validators import get_validated_email
-from flask import Response, abort, jsonify, redirect, request, send_file
+from api.query_helper import (build_query_from_request,
+                              validate_and_convert_dates)
+from flask import request
 from flask_login import current_user
-from mongoengine.queryset import QuerySet
-from mongoengine.queryset.visitor import Q
 
 
 @blueprint.route('/create', methods=['GET', 'POST'])
@@ -72,8 +60,6 @@ def api_news_get_query():
     """
     Example of queries: https://dev.gputop.com/api/news/query?related_exchange_tickers=NASDAQ:NVO
     """
-    from api.comments.routes import get_comments_count
-    from api.gif.sentiment import parse_sentiment
 
     extra_args = None
 
@@ -315,7 +301,6 @@ def api_get_news_translate(news_id, language):
 #@admin_login_required
 def api_news_callback_ai_translation():
     """ """
-    from api.gif.sentiment import parse_sentiment
 
     json_data = request.json
 
@@ -393,7 +378,6 @@ def api_news_get_gif():
 #@admin_login_required
 def api_news_callback_ai_summary():
     """ """
-    from api.gif.sentiment import parse_sentiment
 
     json = request.json
 

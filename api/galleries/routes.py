@@ -1,29 +1,11 @@
-import io
-import os
-import time
-import json
-import ffmpeg
 
-import validators
-
+from api import api_key_login_or_anonymous, get_response_formatted
 from api.galleries import blueprint
-from api.api_redis import api_rq
-
-from api import get_response_formatted, get_response_error_formatted, api_key_or_login_required, api_key_login_or_anonymous, cache
-from flask import jsonify, request, send_file, redirect
-
-from flask import current_app, url_for, abort
-from api.print_helper import *
-
-from api.tools import generate_file_md5, ensure_dir, is_api_call, to_bytes
-from api.user.routes import generate_random_user
-
-from mongoengine.queryset import QuerySet
-from mongoengine.queryset.visitor import Q
-
-from flask_cachecontrol import (cache, cache_for, dont_cache, Always, ResponseIsSuccessfulOrRedirect)
 from api.galleries.models import DB_MediaList
-from api.query_helper import mongo_to_dict_helper, mongo_to_dict_result
+from api.print_helper import *
+from api.query_helper import mongo_to_dict_result
+from flask import abort, request
+from mongoengine.queryset.visitor import Q
 
 
 @blueprint.route('<string:gallery_type>/get', methods=['GET'])
@@ -97,8 +79,9 @@ def api_fetch_gallery_with_media_category(media_category):
         description: Category doesn't exist anymore on the system
 
     """
-    from flask_login import current_user  # Required by pytest, otherwise client crashes on CI
     from api.media.models import File_Tracking
+    from flask_login import \
+        current_user  # Required by pytest, otherwise client crashes on CI
 
     DEFAULT_PAGE_CONTINUE = 3
 

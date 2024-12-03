@@ -3,8 +3,7 @@ from datetime import datetime
 
 import bcrypt
 import ffmpeg
-from api import (admin_login_required, api_key_login_or_anonymous,
-                 api_key_or_login_required, cache,
+from api import (admin_login_required, api_key_or_login_required,
                  get_response_error_formatted, get_response_formatted)
 from api.admin import blueprint
 from api.media.models import File_Tracking

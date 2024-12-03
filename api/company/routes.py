@@ -1,26 +1,16 @@
-import binascii
 import io
-import random
-import re
-import time
 from datetime import datetime
 
-import bcrypt
 import qrcode
 import requests
-import validators
-from api import (api_key_login_or_anonymous, api_key_or_login_required, cache,
-                 get_response_error_formatted, get_response_formatted)
+from api import (get_response_error_formatted, get_response_formatted)
 from api.company import blueprint
 from api.company.models import DB_Company, DB_CompanyPrompt
 from api.config import get_api_AI_service, get_api_entry
 from api.print_helper import *
 from api.query_helper import (build_query_from_request, get_timestamp_verbose,
-                              is_mongo_id, mongo_to_dict_helper)
-from api.tools.validators import get_validated_email
-from flask import Response, abort, jsonify, redirect, request, send_file
-from flask_login import current_user
-from mongoengine.queryset import QuerySet
+                              is_mongo_id)
+from flask import request, send_file
 from mongoengine.queryset.visitor import Q
 
 
@@ -166,7 +156,6 @@ def api_get_new_stamp(biz_name):
     ---
     """
 
-    from cryptography.fernet import Fernet
 
     business = DB_Company.objects(safe_name=biz_name).first()
 
@@ -411,7 +400,6 @@ def api_update_company(company_id):
     """ We refetch a company
     """
     from api.ticker.batch.workflow import ticker_process_invalidate_full_symbol
-    from api.ticker.tickers_fetches import create_or_update_ticker
 
     db_company = DB_Company.objects(id=company_id).first()
     if not db_company or not db_company.exchange_tickers:

@@ -1,21 +1,11 @@
-import binascii
-import io
-import random
-import re
-import time
 
-import requests
-from api import (api_key_login_or_anonymous, api_key_or_login_required, cache, get_response_error_formatted,
-                 get_response_formatted)
+from api import api_key_or_login_required, get_response_formatted
 from api.ai import blueprint
 from api.ai.models import DB_AI_Process
 from api.company.models import DB_Company
 from api.print_helper import *
 from api.query_helper import build_query_from_request
-from flask import Response, abort, jsonify, redirect, request, send_file
-from flask_login import current_user
-from mongoengine.queryset import QuerySet
-from mongoengine.queryset.visitor import Q
+from flask import request
 
 
 @blueprint.route('/query', methods=['GET', 'POST'])

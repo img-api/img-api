@@ -1,23 +1,14 @@
-import re
-import os
-import time
 import random
-import shutil
 from datetime import datetime
 
-from mongoengine import *
 from api.print_helper import *
 from api.query_helper import *
-
-from flask import current_app, abort
-from flask_login import UserMixin, current_user
-
-from imgapi_launcher import db, login_manager
-from api.query_helper import mongo_to_dict_helper
+from api.query_helper import get_value_type_helper, mongo_to_dict_helper
 from api.user.user_check import DB_UserCheck
-from api.query_helper import get_value_type_helper
-
-from api.tools.signature_serializer import TimedJSONWebSignatureSerializer as Serializer, BadSignature, SignatureExpired
+from flask import abort
+from flask_login import current_user
+from imgapi_launcher import db
+from mongoengine import *
 
 
 class DB_ItemMedia(db.DynamicEmbeddedDocument):
@@ -88,7 +79,6 @@ class DB_MediaList(db.DynamicDocument, DB_UserCheck):
             for mid in remove_cleanup:
                 print_r(" Media was deleted , we have to remove it from this list ")
                 self.remove_from_list(mid)
-            pass
 
     def get_position(self, media_id, position):
         for idx, item in enumerate(self.media_list):
@@ -159,7 +149,7 @@ class DB_MediaList(db.DynamicDocument, DB_UserCheck):
         return True
 
     def check_permissions(self):
-        from flask_login import current_user
+        pass
 
         if self.allow_public_upload:
             return True

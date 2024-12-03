@@ -4,23 +4,19 @@ import random
 import re
 import time
 import urllib
-from datetime import datetime, timedelta
-from urllib.request import Request, urlopen
+from datetime import datetime
 
 import pandas as pd
 import requests
 import requests_cache
-import selenium
 import yfinance as yf
 from api.company.models import DB_Company
 from api.news.models import DB_News
 from api.print_helper import *
 # Perform complex queries to mongo
-from mongoengine.queryset import QuerySet
 from mongoengine.queryset.visitor import Q
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.firefox.options import Options
 
 from .models import DB_Ticker
@@ -389,7 +385,6 @@ def get_IBD_articles(url, driver):
         except Exception as e:
             print_exception(e, "CRASH")
             print(" Failed pressing button continue ")
-            pass
 
         print(" LINK PRESSED ")
         paragraphs = driver.find_elements(By.TAG_NAME, "p")

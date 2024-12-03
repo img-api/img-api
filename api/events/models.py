@@ -1,16 +1,10 @@
-import os
-import time
 from datetime import datetime
 
+from api.query_helper import DB_DateTimeFieldTimestamp
+from api.user.user_check import DB_UserCheck
+from imgapi_launcher import db
 from mongoengine import *
 
-from imgapi_launcher import db
-
-from flask import current_app
-from flask_login import current_user
-from api.user.user_check import DB_UserCheck
-
-from api.query_helper import get_value_type_helper, DB_DateTimeFieldTimestamp
 
 class DB_Event(DB_UserCheck, db.DynamicDocument):
     """ Class to create an event

@@ -22,7 +22,8 @@
     "python.pythonPath": ".venv/bin/python",
     "[python]": {
         "editor.codeActionsOnSave": {
-            "source.organizeImports": "never"
+            "source.organizeImports": "explicit",
+            "source.unusedImports": "explicit",
         }
     },
 

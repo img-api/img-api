@@ -1,5 +1,6 @@
 from imgapi_launcher import db
 
+
 class DB_Tags(db.DynamicDocument):
     meta = {
         'strict': False,

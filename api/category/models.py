@@ -1,11 +1,8 @@
-import os
 from datetime import datetime
 
+from imgapi_launcher import db
 from mongoengine import *
 
-from imgapi_launcher import db
-
-from flask import current_app
 
 class DB_Category(db.DynamicDocument):
     meta = {

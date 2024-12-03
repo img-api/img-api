@@ -1,30 +1,22 @@
 import io
-import os
-import time
 import json
+import os
+
 import ffmpeg
-
 import validators
-
-from api.media import blueprint
+from api import (api_key_login_or_anonymous, api_key_or_login_required,
+                 get_response_error_formatted, get_response_formatted)
 from api.api_redis import api_rq
-
-from api import get_response_formatted, get_response_error_formatted, api_key_or_login_required, api_key_login_or_anonymous, cache
-from flask import jsonify, request, send_file, redirect
-
-from flask import current_app, url_for, abort
+from api.media import blueprint
 from api.print_helper import *
-
-from api.tools import generate_file_md5, ensure_dir, is_api_call
+from api.tools import ensure_dir, generate_file_md5, is_api_call
 from api.user.routes import generate_random_user
-from .models import File_Tracking
-
-from mongoengine.queryset import QuerySet
+from flask import abort, redirect, request, send_file
+from flask_cachecontrol import ResponseIsSuccessfulOrRedirect, cache_for
 from mongoengine.queryset.visitor import Q
-
 from wand.image import Image
 
-from flask_cachecontrol import (cache, cache_for, dont_cache, Always, ResponseIsSuccessfulOrRedirect)
+from .models import File_Tracking
 
 
 def get_media_valid_extension(file_name):
@@ -68,8 +60,8 @@ def api_internal_add_to_media_list(media_list, my_file):
 
 
 def api_internal_upload_media():
-    from flask_login import current_user  # Required by pytest, otherwise client crashes on CI
-    from api.user.routes import api_actions_on_list
+    from flask_login import \
+        current_user  # Required by pytest, otherwise client crashes on CI
 
     if request.method != "POST":
         return get_response_error_formatted(404, {"error_msg": "No files to upload!"})
@@ -266,8 +258,9 @@ def api_update_a_media():
       401:
         description: User cannot update this media
     """
-    from flask_login import current_user  # Required by pytest, otherwise client crashes on CI
     from api.media.models import File_Tracking
+    from flask_login import \
+        current_user  # Required by pytest, otherwise client crashes on CI
 
     json = request.json
     if not current_user.is_authenticated:
@@ -493,7 +486,8 @@ def api_get_media(media_id, image_only=False):
         description: File doesn't exist anymore on the system
 
     """
-    from flask_login import current_user  # Required by pytest, otherwise client crashes on CI
+    from flask_login import \
+        current_user  # Required by pytest, otherwise client crashes on CI
 
     username = None
     if current_user.is_authenticated:
@@ -602,7 +596,8 @@ def api_get_user_photostream(user_id):
                   is_public:
                       type: boolean
     """
-    from flask_login import current_user  # Required by pytest, otherwise client crashes on CI
+    from flask_login import \
+        current_user  # Required by pytest, otherwise client crashes on CI
 
     username = None
     if current_user.is_authenticated:
@@ -728,7 +723,8 @@ def api_fetch_from_url():
             job_id:
               type: string
     """
-    from flask_login import current_user  # Required by pytest, otherwise client crashes on CI
+    from flask_login import \
+        current_user  # Required by pytest, otherwise client crashes on CI
 
     if request.method == 'POST':
         request_url = request.json['request_url']
@@ -824,7 +820,8 @@ def api_get_media_post(media_id):
         description: File Media is missing
 
     """
-    from flask_login import current_user  # Required by pytest, otherwise client crashes on CI
+    from flask_login import \
+        current_user  # Required by pytest, otherwise client crashes on CI
 
     ret = {'status': 'success', 'media_id': media_id}
 
@@ -898,7 +895,8 @@ def api_set_media_private_posts_json(media_id, privacy_mode):
         description: File is missing
 
     """
-    from flask_login import current_user  # Required by pytest, otherwise client crashes on CI
+    from flask_login import \
+        current_user  # Required by pytest, otherwise client crashes on CI
 
     if not current_user.is_authenticated:
         return get_response_error_formatted(403, {'error_msg': "Anonymous users are not allowed."})
@@ -936,7 +934,8 @@ def api_set_media_private_posts_json(media_id, privacy_mode):
 @blueprint.route('/<string:media_id>/set/<string:my_key>', methods=['GET', 'POST'])
 @api_key_or_login_required
 def api_set_media_key(media_id, my_key):
-    from flask_login import current_user  # Required by pytest, otherwise client crashes on CI
+    from flask_login import \
+        current_user  # Required by pytest, otherwise client crashes on CI
 
     if my_key in ["private", "public"]:
         return api_set_media_private_posts_json(media_id, my_key)
@@ -989,7 +988,8 @@ def api_remove_self_media(media_id):
         description: File is missing
 
     """
-    from flask_login import current_user  # Required by pytest, otherwise client crashes on CI
+    from flask_login import \
+        current_user  # Required by pytest, otherwise client crashes on CI
 
     if not current_user.is_authenticated:
         return get_response_error_formatted(403, {'error_msg': "Anonymous users are not allowed."})

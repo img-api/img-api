@@ -1,6 +1,5 @@
-from api.hello_world import blueprint
 from api import get_response_formatted
-from flask import jsonify
+from api.hello_world import blueprint
 
 
 @blueprint.route('/', methods=['GET'])
