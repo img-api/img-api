@@ -56,15 +56,18 @@ def fetch_historical_data(full_symbol, start_date=None, end_date=None, interval=
 
     return historical_data
 
-
-def ticker_update_financials(full_symbol, max_age_minutes=2):
+def ticker_update_financials(full_symbol, max_age_minutes=15):
     """ This is a very slow ticker fetch system, we use yfinance here
         But we could call any of the other APIs
+
+        Our ticker time will be delayed 15 minutes + whatever yahoo wants to give us.
+        We don't want to hammer the service
     """
 
     fin = DB_TickerSimple.objects(exchange_ticker=full_symbol).first()
 
     if fin and fin.age_minutes() < max_age_minutes:
+        fin['age_min'] = fin.age_minutes()
         return fin
 
     yticker = standardize_ticker_format_to_yfinance(full_symbol)

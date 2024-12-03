@@ -132,11 +132,17 @@ def api_batch_news_process():
 
 
 @blueprint.route('/invalidate/<string:full_symbol>', methods=['GET', 'POST'])
-#@api_key_or_login_required
+@api_key_or_login_required
 def api_update_ticker(full_symbol):
     """ We invalidate a ticker so we load everything.
     """
+    from flask_login import current_user
+
     from .tickers_helpers import extract_ticker_from_symbol
+
+    if current_user.subscription.status != "active":
+        return get_response_formatted({'processed': processed})
+
     ticker = extract_ticker_from_symbol(full_symbol)
 
     processed = ticker_process_invalidate(ticker)

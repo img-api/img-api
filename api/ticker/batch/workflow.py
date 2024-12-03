@@ -19,8 +19,7 @@ import yfinance as yf
 
 from .tickers_pipeline import ticker_pipeline_process
 from .yfinance.yfinance_news import yfetch_process_news
-from .yfinance.ytickers_pipeline import (yticker_check_tickers,
-                                         yticker_pipeline_process)
+from .yfinance.ytickers_pipeline import (yticker_check_tickers, yticker_pipeline_process)
 
 ####################################
 # PROCESS TO MICROSERVICE PLAN
@@ -176,12 +175,15 @@ def ticker_process_invalidate_full_symbol(full_symbol):
     return tickers
 
 
-def ticker_process_invalidate(ticker):
+def ticker_process_invalidate(ticker, max_age_minutes=5):
 
     query = Q(ticker=ticker)
     tickers = DB_Ticker.objects(query)
     for db_ticker in tickers:
         db_ticker.set_state("PIPELINE_START")
+
+        if db_ticker.age_minutes() < max_age_minutes:
+            continue
 
         try:
             yticker_pipeline_process(db_ticker)

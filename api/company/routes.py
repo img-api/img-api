@@ -3,13 +3,15 @@ from datetime import datetime
 
 import qrcode
 import requests
-from api import (get_response_error_formatted, get_response_formatted)
+from api import get_response_error_formatted, get_response_formatted
 from api.company import blueprint
 from api.company.models import DB_Company, DB_CompanyPrompt
 from api.config import get_api_AI_service, get_api_entry
 from api.print_helper import *
 from api.query_helper import (build_query_from_request, get_timestamp_verbose,
                               is_mongo_id)
+from api.ticker.batch.yfinance.ytickers_pipeline import \
+    ticker_update_financials
 from flask import request, send_file
 from mongoengine.queryset.visitor import Q
 
@@ -155,7 +157,6 @@ def api_get_new_stamp(biz_name):
     """ Business get new stamp
     ---
     """
-
 
     business = DB_Company.objects(safe_name=biz_name).first()
 
@@ -541,3 +542,26 @@ def api_company_get_query_prompts():
         prompts.delete()
 
     return get_response_formatted(ret)
+
+
+@blueprint.route('/financials/get/<string:ticker_id>', methods=['GET', 'POST'])
+def api_get_ticker_financials(ticker_id):
+    """
+        Returns a list of tickers that the user is watching.
+    """
+    db_company = DB_Company.objects(exchange_tickers=ticker_id).first()
+
+    fin = {}
+    if not db_company or 'exchange_tickers' not in db_company:
+        return get_response_formatted(fin)
+
+    for full_symbol in db_company['exchange_tickers']:
+        try:
+            if len(db_company['exchange_tickers']) > 1 and 'NMS' in full_symbol:
+                continue
+
+            fin[full_symbol] = ticker_update_financials(full_symbol)
+        except Exception as e:
+            print_exception(e, "CRASHED FINANCIAL UPDATES")
+
+    return get_response_formatted({'exchange_tickers': db_company['exchange_tickers'], 'financials': fin})

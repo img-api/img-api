@@ -391,7 +391,7 @@ def api_news_callback_ai_summary():
         return get_response_formatted({})
 
     if 'type' in json:
-        print_b(" NEWS AI_CALLBACK " + json['id'] + " " + str(news.title))
+        print_b(" NEWS AI_CALLBACK " + json['id'] + " " + str(news.source_title))
 
         t = json['type']
         update = {}

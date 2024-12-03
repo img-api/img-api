@@ -80,6 +80,11 @@ class DB_Ticker(db.DynamicDocument):
         if not self.last_processed_date or self.last_processed_date >= threshold_date:
             self.update(**{'force_reindex': True})
 
+    def age_minutes(self, *args, **kwargs):
+        age = (datetime.now() - self.last_processed_date).total_seconds() / 60
+        print(self.ticker + " => " + str(age))
+        return age
+
     def serialize(self):
         return mongo_to_dict_helper(self)
 
