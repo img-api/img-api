@@ -26,7 +26,7 @@ from mongoengine.queryset.visitor import Q
 
 
 try:
-    API_URL = os.environment["API_URL"]
+    API_URL = os.environ["API_URL"]
 except KeyError:
     raise KeyError("An API_URL environment variable should be provided")
 
