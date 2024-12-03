@@ -410,6 +410,7 @@ def register_api_blueprints(app):
             'company',
             'prompts',
             'payment',
+            'channels',
             'comments',
             'galleries',
             'hello_world',

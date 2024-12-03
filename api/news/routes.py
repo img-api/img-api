@@ -419,7 +419,13 @@ def api_news_callback_ai_summary():
             tools = json['dict']
 
             try:
-                args = tools[0]['function']['arguments']
+                args = {
+                    'tools': []
+                }
+                for f in tools:
+                    # We flat the functions. For us they are mainly data in a DB
+                    args.update(f["function"]["arguments"])
+                    args['tools'].append(f["function"]["name"])
 
                 # Sometimes llama writes the arguments wrong :(
                 args = {key.lower(): value for key, value in args.items()}

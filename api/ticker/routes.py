@@ -222,6 +222,7 @@ def api_get_query():
 @blueprint.route('/ts/query', methods=['GET', 'POST'])
 @api_key_or_login_required
 def api_get_financial_query():
+    """ https://domain/api/ticker/ts/query?id__exists=1&order_by=-creation_date """
     time_series = build_query_from_request(DB_TickerTimeSeries, global_api=True)
 
     ret = {'ts': time_series}
