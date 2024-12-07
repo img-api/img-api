@@ -310,14 +310,14 @@ def api_news_callback_ai_translation():
     article = DB_News.objects(id=json_data['id']).first()
 
     if not article:
-        print_r(" FAILED UPDATING AI " + json_data['id'])
+        print_r("TRANSLATION FAILED UPDATING AI " + json_data['id'])
         return get_response_formatted({})
 
     if 'type' in json_data:
         lang = json_data['language']
         field = json_data['field']
         if 'dict' not in json_data:
-            print_r(" FAILED UPDATING AI " + json_data['id'])
+            print_r("TRANSLATION 2 FAILED UPDATING AI " + json_data['id'])
             return get_response_formatted({})
 
         result = json_data['dict']
@@ -387,7 +387,7 @@ def api_news_callback_ai_summary():
     news = DB_News.objects(id=json['id']).first()
 
     if not news:
-        print_r(" FAILED UPDATING AI " + json['id'])
+        print_r("NEWS FAILED UPDATING AI " + json['id'])
         return get_response_formatted({})
 
     if 'type' in json:

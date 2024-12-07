@@ -630,7 +630,7 @@ def api_prompt_callback_company():
     db_prompt = DB_CompanyPrompt.objects(id=json['id']).first()
 
     if not db_prompt:
-        print_r(" FAILED UPDATING AI " + json['id'])
+        print_r("COMPANY FAILED UPDATING AI " + json['id'])
         return get_response_formatted({})
 
     update = {}

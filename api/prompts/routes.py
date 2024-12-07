@@ -143,7 +143,7 @@ def api_prompt_callback_ai_summary():
     db_prompt = DB_UserPrompt.objects(id=json['id']).first()
 
     if not db_prompt:
-        print_r(" FAILED UPDATING AI " + json['id'])
+        print_r("PROMPT FAILED UPDATING AI " + json['id'])
         return get_response_formatted({})
 
     if 'type' in json:
@@ -444,7 +444,7 @@ def api_prompt_ai_callback_function_call():
     db_prompt = DB_UserPrompt.objects(id=json['id']).first()
 
     if not db_prompt:
-        print_r(" FAILED UPDATING AI " + json['id'])
+        print_r("FUNCTION PROMPT FAILED UPDATING AI " + json['id'])
         return get_response_formatted({})
 
     if 'type' in json:
