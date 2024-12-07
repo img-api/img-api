@@ -126,7 +126,7 @@ def ticker_save_history(full_symbol, yf_obj, ts_interval="1wk"):
 
     fin = DB_TickerHistoryTS.objects(exchange_ticker=full_symbol).order_by('-creation_date').limit(1).first()
     if fin and fin.age_month() < 1:
-        print_r(" We already have data for this ticker, force reindex? ")
+        print_r(full_symbol + " We already have data for this ticker, force reindex? ")
         return
 
     if fin:
