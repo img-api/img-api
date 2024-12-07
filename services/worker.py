@@ -1,13 +1,13 @@
 import os
-import redis
-import ffmpeg
-import requests
 
+import ffmpeg
+import redis
+import requests
+from rq import Connection, Queue, Worker
 from wand.image import Image
 
 # https://www.pythonpool.com/imagemagick-python/
 
-from rq import Worker, Queue, Connection
 
 listen = ['default']
 

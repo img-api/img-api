@@ -111,14 +111,14 @@ def ticker_update_financials(full_symbol, max_age_minutes=15, force=False):
     return fin
 
 
-def ticker_save_history(full_symbol, yf_obj, ts_interval="1mo"):
+def ticker_save_history(full_symbol, yf_obj, ts_interval="1wk"):
     """ Test to capture 1 year of this ticker in intervals of 1 month for our basic graphs
 
     period: data period to download (either use period parameter or use start and end) Valid periods are:
-“1d”, “5d”, “1mo”, “3mo”, “6mo”, “1y”, “2y”, “5y”, “10y”, “ytd”, “max”
+        “1d”, “5d”, “1mo”, “3mo”, “6mo”, “1y”, “2y”, “5y”, “10y”, “ytd”, “max”
 
     interval: data interval (1m data is only for available for last 7 days, and data interval <1d for the last 60 days) Valid intervals are:
-“1m”, “2m”, “5m”, “15m”, “30m”, “60m”, “90m”, “1h”, “1d”, “5d”, “1wk”, “1mo”, “3mo”
+        “1m”, “2m”, “5m”, “15m”, “30m”, “60m”, “90m”, “1h”, “1d”, “5d”, “1wk”, “1mo”, “3mo”
 
     """
 
@@ -131,7 +131,7 @@ def ticker_save_history(full_symbol, yf_obj, ts_interval="1mo"):
         return
 
     if fin:
-        start = today - relativedelta(months=1)
+        start = today - relativedelta(weeks=1)
     else:
         old_data_date = today - relativedelta(years=10)
         start = old_data_date.strftime("%Y-%m-%d")
@@ -142,9 +142,9 @@ def ticker_save_history(full_symbol, yf_obj, ts_interval="1mo"):
         #print(historical_data)
 
         for index, row in historical_data.iterrows():
-            print(
-                f"Date: {index} - Open: {row['Open']}, High: {row['High']}, Low: {row['Low']}, Close: {row['Close']}, Volume: {row['Volume']}"
-            )
+            #print(
+            #    f"Date: {index} - Open: {row['Open']}, High: {row['High']}, Low: {row['Low']}, Close: {row['Close']}, Volume: {row['Volume']}"
+            #)
 
             historical_ts = {
                 'open': 'Open',
@@ -300,7 +300,7 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
     from api.news.routes import api_create_article_ai_summary
     from api.ticker.routes import get_full_symbol
 
-    print_b("PROCESSING: " + db_ticker.full_symbol())
+    #print_b("PROCESSING: " + db_ticker.full_symbol())
 
     yticker = standardize_ticker_format_to_yfinance(db_ticker.full_symbol())
 

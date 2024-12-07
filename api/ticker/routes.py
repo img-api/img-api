@@ -1,8 +1,8 @@
 from datetime import datetime
 
 import pandas as pd
-from api import (api_key_or_login_required, get_response_error_formatted,
-                 get_response_formatted)
+from api import (admin_login_required, api_key_or_login_required,
+                 get_response_error_formatted, get_response_formatted)
 from api.print_helper import *
 from api.query_helper import (build_query_from_request, get_timestamp_verbose,
                               mongo_to_dict_helper)
@@ -626,3 +626,11 @@ def api_find_full_symbol_historical_data(full_symbol):
         results = res
 
     return get_response_formatted({'exchange_ticker': full_symbol, 'results': results})
+
+
+@blueprint.route('/history/empty', methods=['GET', 'POST'])
+@api_key_or_login_required
+@admin_login_required
+def api_delete_allhistory():
+    DB_TickerHistoryTS.objects().delete()
+    return get_response_formatted({'status': 'deleted'})

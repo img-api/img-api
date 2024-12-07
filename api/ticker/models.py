@@ -83,7 +83,7 @@ class DB_Ticker(db.DynamicDocument):
 
     def age_minutes(self, *args, **kwargs):
         age = (datetime.now() - self.last_processed_date).total_seconds() / 60
-        print(self.ticker + " => " + str(age))
+        #print(self.ticker + " => " + str(age))
         return age
 
     def serialize(self):
@@ -212,10 +212,8 @@ class DB_TickerSimple(db.DynamicDocument):
     bid_size = db.FloatField()
 
     def age_minutes(self, *args, **kwargs):
-
         age = (datetime.now() - self.last_update).total_seconds() / 60
-        print(self.exchange_ticker + " => " + str(age))
-
+        #print(self.exchange_ticker + " => " + str(age))
         return age
 
     def save(self, *args, **kwargs):
@@ -265,7 +263,7 @@ class DB_TickerHistoryTS(db.DynamicDocument):
 
         delta = relativedelta(datetime.now(), self.creation_date)
         age_in_months = delta.years * 12 + delta.months + (delta.days / 30.0)  # Add fractional month
-        print(self.exchange_ticker + " => " + str(age_in_months) + " months ")
+        #print(self.exchange_ticker + " => " + str(age_in_months) + " months ")
         return age_in_months
 
 
@@ -296,7 +294,7 @@ class DB_TickerTimeSeries(db.DynamicDocument):
 
     def age_minutes(self, *args, **kwargs):
         age = (datetime.now() - self.creation_date).total_seconds() / 60
-        print(self.exchange_ticker + " => " + str(age))
+        #print(self.exchange_ticker + " => " + str(age))
         return age
 
     def save(self, *args, **kwargs):
