@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 
+from api.query_helper import mongo_to_dict_helper
 from imgapi_launcher import db
 from mongoengine import *
 
@@ -230,6 +231,44 @@ class DB_TickerSimple(db.DynamicDocument):
         return mongo_to_dict_helper(self)
 
 
+class DB_TickerHistoryTS(db.DynamicDocument):
+    """ Closest update in the system for 'realtime' data
+
+    """
+    meta = {
+        'strict': False,
+        "auto_create_index": True,
+        "index_background": True,
+    }
+
+    source = db.StringField()
+    exchange_ticker = db.StringField()
+    low = db.FloatField()
+    high = db.FloatField()
+    volume = db.FloatField()
+    open = db.FloatField()
+    close = db.FloatField()
+    dividends = db.FloatField()
+    stock_splits = db.FloatField()
+
+    creation_date = db.DateTimeField()
+
+    def save(self, *args, **kwargs):
+        return super(DB_TickerHistoryTS, self).save(*args, **kwargs)
+
+    def serialize(self):
+        return mongo_to_dict_helper(self)
+
+    def age_month(self, *args, **kwargs):
+        # Calculate the difference in months using relativedelta
+        from dateutil.relativedelta import relativedelta
+
+        delta = relativedelta(datetime.now(), self.creation_date)
+        age_in_months = delta.years * 12 + delta.months + (delta.days / 30.0)  # Add fractional month
+        print(self.exchange_ticker + " => " + str(age_in_months) + " months ")
+        return age_in_months
+
+
 class DB_TickerTimeSeries(db.DynamicDocument):
     """ Closest update in the system for 'realtime' data
 
@@ -240,6 +279,7 @@ class DB_TickerTimeSeries(db.DynamicDocument):
         "index_background": True,
     }
 
+    source = db.StringField()
     exchange_ticker = db.StringField()
     price = db.FloatField()
     ratio = db.FloatField()
@@ -250,6 +290,7 @@ class DB_TickerTimeSeries(db.DynamicDocument):
     volume = db.FloatField()
     bid = db.FloatField()
     bid_size = db.FloatField()
+    dividends = db.FloatField()
 
     creation_date = db.DateTimeField()
 
@@ -259,11 +300,15 @@ class DB_TickerTimeSeries(db.DynamicDocument):
         return age
 
     def save(self, *args, **kwargs):
-        self.creation_date = datetime.now()
+        if not self.creation_date:
+            self.creation_date = datetime.now()
+
         return super(DB_TickerTimeSeries, self).save(*args, **kwargs)
 
     def update(self, *args, **kwargs):
-        kwargs['creation_date'] = datetime.now()
+        if 'creation_date' not in kwargs:
+            kwargs['creation_date'] = datetime.now()
+
         ret = super(DB_TickerTimeSeries, self).update(*args, **kwargs)
         return ret
 

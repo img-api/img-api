@@ -161,7 +161,7 @@ def api_internal_gif_upload(f_request, media_info, file_name, file_extension, fi
 
 
 def api_capture_tenor_data(raw_data):
-    if not 'results' in raw_data:
+    if not raw_data or not 'results' in raw_data:
         return
 
     results = raw_data['results']

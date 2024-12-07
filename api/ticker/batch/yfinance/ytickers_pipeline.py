@@ -13,7 +13,8 @@ from api.query_helper import *
 from api.query_helper import copy_replace_schema
 from api.ticker.batch.yfinance.yfinance_news import yfetch_process_news
 from api.ticker.connector_yfinance import fetch_tickers_info
-from api.ticker.models import DB_Ticker, DB_TickerSimple, DB_TickerTimeSeries
+from api.ticker.models import (DB_Ticker, DB_TickerHistoryTS, DB_TickerSimple,
+                               DB_TickerTimeSeries)
 from api.ticker.tickers_helpers import (extract_ticker_from_symbol,
                                         standardize_ticker_format,
                                         standardize_ticker_format_to_yfinance)
@@ -56,17 +57,17 @@ def fetch_historical_data(full_symbol, start_date=None, end_date=None, interval=
 
     return historical_data
 
-def ticker_update_financials(full_symbol, max_age_minutes=15):
+
+def ticker_update_financials(full_symbol, max_age_minutes=15, force=False):
     """ This is a very slow ticker fetch system, we use yfinance here
         But we could call any of the other APIs
 
         Our ticker time will be delayed 15 minutes + whatever yahoo wants to give us.
         We don't want to hammer the service
     """
-
     fin = DB_TickerSimple.objects(exchange_ticker=full_symbol).first()
 
-    if fin and fin.age_minutes() < max_age_minutes:
+    if not force and fin and fin.age_minutes() < max_age_minutes:
         fin['age_min'] = fin.age_minutes()
         return fin
 
@@ -92,8 +93,11 @@ def ticker_update_financials(full_symbol, max_age_minutes=15):
     try:
         financial_data = prepare_update_with_schema(yf_obj.info, new_schema)
         ticker_save_financials(full_symbol, yf_obj)
+
+        ticker_save_history(full_symbol, yf_obj)
+
     except Exception as e:
-        #print_exception(e, "CRASH")
+        print_exception(e, "CRASH")
         return fin
 
     financial_data['exchange_ticker'] = full_symbol
@@ -107,11 +111,84 @@ def ticker_update_financials(full_symbol, max_age_minutes=15):
     return fin
 
 
+def ticker_save_history(full_symbol, yf_obj, ts_interval="1mo"):
+    """ Test to capture 1 year of this ticker in intervals of 1 month for our basic graphs
+
+    period: data period to download (either use period parameter or use start and end) Valid periods are:
+“1d”, “5d”, “1mo”, “3mo”, “6mo”, “1y”, “2y”, “5y”, “10y”, “ytd”, “max”
+
+    interval: data interval (1m data is only for available for last 7 days, and data interval <1d for the last 60 days) Valid intervals are:
+“1m”, “2m”, “5m”, “15m”, “30m”, “60m”, “90m”, “1h”, “1d”, “5d”, “1wk”, “1mo”, “3mo”
+
+    """
+
+    from dateutil.relativedelta import relativedelta
+    today = datetime.now()
+
+    fin = DB_TickerHistoryTS.objects(exchange_ticker=full_symbol).order_by('-creation_date').limit(1).first()
+    if fin and fin.age_month() < 1:
+        print_r(" We already have data for this ticker, force reindex? ")
+        return
+
+    if fin:
+        start = today - relativedelta(months=1)
+    else:
+        old_data_date = today - relativedelta(years=10)
+        start = old_data_date.strftime("%Y-%m-%d")
+
+    end = today.strftime("%Y-%m-%d")
+    try:
+        historical_data = yf_obj.history(start=start, end=end, interval=ts_interval)
+        #print(historical_data)
+
+        for index, row in historical_data.iterrows():
+            print(
+                f"Date: {index} - Open: {row['Open']}, High: {row['High']}, Low: {row['Low']}, Close: {row['Close']}, Volume: {row['Volume']}"
+            )
+
+            historical_ts = {
+                'open': 'Open',
+                'close': 'Close',
+                'low': 'Low',
+                'high': 'High',
+                'volume': 'Volume',
+                'stock_splits': 'Stock Splits',
+                'dividends': 'Dividends',
+            }
+
+            hdata = prepare_update_with_schema(row, historical_ts)
+            hdata['exchange_ticker'] = full_symbol
+            hdata['creation_date'] = index
+
+            # Historical yahoo finance and not current data
+            hdata['source'] = 'HYF'
+
+            fin = DB_TickerHistoryTS(**hdata)
+            fin.save(validate=False)
+
+    except Exception as e:
+        print_exception(e, "CRASHED SAVING FINANCIALS ")
+        return None
+
+
 def ticker_save_financials(full_symbol, yf_obj, max_age_minutes=5):
     """ This is a very slow ticker fetch system, we use yfinance here
         But we could call any of the other APIs
     """
     try:
+
+        internal_ticker_data_schema = {
+            'price': 'currentPrice',
+            'ratio': 'currentRatio',
+            'day_low': 'dayLow',
+            'day_high': 'dayHigh',
+            'current_open': 'open',
+            'previous_close': 'previousClose',
+            'volume': 'volume',
+            'bid': 'bid',
+            'bid_size': 'bidSize',
+        }
+
         fin = DB_TickerTimeSeries.objects(exchange_ticker=full_symbol).order_by("-creation_date").limit(1).first()
 
         if fin and fin.age_minutes() < max_age_minutes:
@@ -126,19 +203,7 @@ def ticker_save_financials(full_symbol, yf_obj, max_age_minutes=5):
         if not yf_obj.info['currentPrice']:
             return fin
 
-        new_schema = {
-            'price': 'currentPrice',
-            'ratio': 'currentRatio',
-            'day_low': 'dayLow',
-            'day_high': 'dayHigh',
-            'current_open': 'open',
-            'previous_close': 'previousClose',
-            'volume': 'volume',
-            'bid': 'bid',
-            'bid_size': 'bidSize',
-        }
-
-        financial_data = prepare_update_with_schema(yf_obj.info, new_schema)
+        financial_data = prepare_update_with_schema(yf_obj.info, internal_ticker_data_schema)
         financial_data['exchange_ticker'] = full_symbol
 
         fin = DB_TickerTimeSeries(**financial_data)

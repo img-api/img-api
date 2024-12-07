@@ -16,7 +16,8 @@ from api.ticker.tickers_helpers import standardize_ticker_format
 from flask import request
 from mongoengine.queryset.visitor import Q
 
-from .models import (DB_Ticker, DB_TickerHighRes, DB_TickerTimeSeries,
+from .models import (DB_Ticker, DB_TickerHighRes, DB_TickerHistoryTS,
+                     DB_TickerSimple, DB_TickerTimeSeries,
                      DB_TickerUserWatchlist)
 
 
@@ -140,8 +141,8 @@ def api_update_ticker(full_symbol):
 
     from .tickers_helpers import extract_ticker_from_symbol
 
-    if current_user.subscription.status != "active":
-        return get_response_formatted({'processed': processed})
+    if not current_user.subscription or current_user.subscription.status != "active":
+        return get_response_formatted({})
 
     ticker = extract_ticker_from_symbol(full_symbol)
 
@@ -173,7 +174,6 @@ def api_get_suggestions():
     from itertools import chain
 
     from api.company.routes import company_get_suggestions
-
 
     query = request.args.get("query", "").upper()
     if not query:
@@ -216,8 +216,12 @@ def api_get_query():
 @blueprint.route('/ts/query', methods=['GET', 'POST'])
 @api_key_or_login_required
 def api_get_financial_query():
-    """ https://domain/api/ticker/ts/query?id__exists=1&order_by=-creation_date """
+    """ https://domain/api/ticker/ts/query?id__exists=1&order_by=-creation_date
+        http://domain/api/ticker/ts/query?exchange_ticker=NYSE:UNH&verbose=1
+    """
     time_series = build_query_from_request(DB_TickerTimeSeries, global_api=True)
+
+    verbose = request.args.get("verbose", None)
 
     ret = {'ts': time_series}
     return get_response_formatted(ret)
@@ -527,3 +531,98 @@ def yahoo_test():
             download_yahoo_news(ticker)
         except Exception as e:
             print(e)
+
+
+def get_yearly_change(exchange_ticker):
+    pipeline = [
+        # Step 1: Filter documents by exchange_ticker
+        {
+            '$match': {
+                'exchange_ticker': exchange_ticker
+            }
+        },
+        # Step 2: Add a year field by extracting the year from the creation_date
+        {
+            '$addFields': {
+                'year': {
+                    '$year': '$creation_date'
+                }
+            }
+        },
+        # Step 3: Group by year, getting the first and last closing prices
+        {
+            '$group': {
+                '_id': '$year',  # Group by the extracted year
+                'first_close': {
+                    '$first': '$close'
+                },  # First close of the year
+                'last_close': {
+                    '$last': '$close'
+                },  # Last close of the year
+            }
+        },
+        # Step 4: Calculate the yearly change (last - first close)
+        {
+            '$project': {
+                '_id': 0,  # Remove the default _id field
+                'year': '$_id',
+                'yearly_change': {
+                    '$subtract': ['$last_close', '$first_close']
+                }
+            }
+        },
+        # Step 5: Sort by year (ascending order)
+        {
+            '$sort': {
+                'year': 1
+            }
+        }
+    ]
+
+    # Run the aggregation pipeline
+    results = DB_TickerHistoryTS.objects.aggregate(pipeline)
+
+    # Print or return the results
+
+    ret = {}
+    for result in results:
+        print(f"Year: {result['year']}, Yearly Change: {result['yearly_change']}")
+        ret[result['year']] = result['yearly_change']
+
+    return ret
+
+
+@blueprint.route('/history_change/<string:full_symbol>', methods=['GET', 'POST'])
+def api_find_full_symbol_historical_change_data(full_symbol):
+    return get_response_formatted({'exchange_ticker': full_symbol, 'results': get_yearly_change(full_symbol)})
+
+
+@blueprint.route('/history/<string:full_symbol>', methods=['GET', 'POST'])
+def api_find_full_symbol_historical_data(full_symbol):
+    from api.query_helper import (mongo_to_dict_helper,
+                                  prepare_update_with_schema)
+
+    results = DB_TickerHistoryTS.objects(exchange_ticker=full_symbol).order_by("-creation_date")
+
+    if request.args.get('verbose'):
+        for ts in results:
+            ts['creation_date_verbose'] = ts.creation_date.strftime("%Y/%m/%d, %H:%M:%S")
+
+    fin = DB_TickerSimple.objects(exchange_ticker=full_symbol).first()
+    if fin:
+        res = mongo_to_dict_helper(results)
+        new_schema = {
+            "creation_date": "last_update",
+            "open": "price",
+            "close": "previous_close",
+            "high": "day_high",
+            "low": "day_low",
+            "volume": "volume",
+        }
+
+        myupdate = prepare_update_with_schema(fin.serialize(), new_schema)
+        res.append(myupdate)
+
+        results = res
+
+    return get_response_formatted({'exchange_ticker': full_symbol, 'results': results})

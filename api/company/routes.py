@@ -35,6 +35,9 @@ def api_company_get_query():
             arr = query.split('-')
             companies = DB_Company.objects(exchange_tickers=arr[0])
 
+    for company in companies:
+        api_create_ai_regex_tool(company)
+
     ret = {'companies': companies}
     return get_response_formatted(ret)
 
@@ -251,6 +254,8 @@ def company_explorer_categories():
 
 
 def api_create_ai_summary(company, force_summary=False):
+    api_create_ai_regex_tool(company)
+
     prompt = "Summarize this, and format it max one paragraph and 5 bullet points, use markdown to highlight important facts: "
 
     if not company['long_business_summary']:
@@ -307,7 +312,6 @@ def api_company_callback_ai_summary():
     business = DB_Company.objects(safe_name=json['id']).first()
 
     if 'type' in json:
-
         print_b(" AI_CALLBACK " + json['id'])
 
         t = json['type']
@@ -317,6 +321,114 @@ def api_company_callback_ai_summary():
         elif t == 'summary':
             if 'result' in json:
                 business.set_key_value('ai_summary', json['result'])
+
+    ret = {}
+    return get_response_formatted(ret)
+
+
+def api_create_ai_regex_tool(company, invalidate=False):
+    from api.news.models import DB_News
+
+    if not invalidate and company['regex']:
+        return
+
+    if not company['long_business_summary']:
+        return
+
+    system = "You are an python expert developer in fetches and backend, you are writing scripts to parse website articles to discover company names."
+    create_regex = {
+        "type": "function",
+        "function": {
+            "name": "regular_expression",
+            "description":
+            "Given a company name, create a regular expression that can find this company in any text so we can replace it with a link to the company. Be careful with names that are common words so we don't match every text if it is not relevant, better not match than a false positive.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "regex": {
+                        "type": "string",
+                        "description": "Regex for python.",
+                    },
+                    "regex_explanation": {
+                        "type": "string",
+                        "description": "Chain of though on how this regex works.",
+                    },
+                },
+                "required": ["regex"],
+            },
+        },
+    }
+
+    article_content = ""
+    user_prompt = "Examples of articles that might contain the company name: "
+    db_news = DB_News.objects(ia_summary__exists=1, related_exchange_tickers__size=1,
+                              related_exchange_tickers=company.exchange_tickers[0]).order_by('-creation_date').limit(5)
+    for article in db_news:
+        article_content += article['ia_summary']
+
+    print(article_content)
+
+    arr_messages = [{
+        "role": "assistant",
+        "content": company.long_name + " " + company.long_business_summary,
+    }, {
+        "role": "system",
+        "content": system,
+    }, {
+        "role": "user",
+        "content": user_prompt + article_content[:2096],
+    }]
+
+    data = {
+        'type': 'raw_llama',
+        'subtype': 'company_regex',
+        'id': str(company.id),
+        'raw_messages': arr_messages,
+        'raw_tools': [create_regex],
+        'callback_url': get_api_entry() + "/company/ai_callback_prompt"
+    }
+
+    if invalidate:
+        data['prefix'] = "0_REGEX_"
+    else:
+        data['prefix'] = "REGEX_"
+
+    try:
+        response = requests.post(get_api_AI_service(), json=data)
+        response.raise_for_status()
+
+        json_response = response.json()
+        return json_response
+
+    except Exception as e:
+        print_exception(e, "CRASH READING RESPONSE")
+
+    return "FAILED"
+
+
+@blueprint.route('/ai_callback_prompt', methods=['GET', 'POST'])
+#@api_key_or_login_required
+def api_company_callback_ai_callback_prompt():
+    """ """
+    json = request.json
+
+    business = DB_Company.objects(id=json['id']).first()
+
+    if 'type' in json:
+        print_b(" AI_CALLBACK " + json['id'])
+
+        t = json['type']
+        if t == 'dict':
+            functions = {'tools': json['dict']}
+
+            try:
+                if json['subtype'] == "company_regex":
+                    regex = json['dict'][0]["function"]["arguments"]["regex"]
+                    compiled_pattern = re.compile(regex)
+
+                    business.update(**{'regex': regex})
+            except Exception as e:
+                print_exception(e, "CRASHED")
 
     ret = {}
     return get_response_formatted(ret)
@@ -407,9 +519,11 @@ def api_update_company(company_id):
         return get_response_error_formatted(404, {'error_msg': "Business doesn't have tickers!"})
 
     ticker = db_company.exchange_tickers[-1]
+    result = api_create_ai_regex_tool(db_company, invalidate=True)
+
     processed = ticker_process_invalidate_full_symbol(ticker)
 
-    return get_response_formatted({'processed': processed})
+    return get_response_formatted({'processed': processed, 'result': result})
 
 
 def api_build_company_state_query(db_company):
@@ -550,6 +664,7 @@ def api_get_ticker_financials(ticker_id):
         Returns a list of tickers that the user is watching.
     """
     db_company = DB_Company.objects(exchange_tickers=ticker_id).first()
+    forced = request.args.get("forced", None)
 
     fin = {}
     if not db_company or 'exchange_tickers' not in db_company:
@@ -560,7 +675,7 @@ def api_get_ticker_financials(ticker_id):
             if len(db_company['exchange_tickers']) > 1 and 'NMS' in full_symbol:
                 continue
 
-            fin[full_symbol] = ticker_update_financials(full_symbol)
+            fin[full_symbol] = ticker_update_financials(full_symbol, force=forced)
         except Exception as e:
             print_exception(e, "CRASHED FINANCIAL UPDATES")
 

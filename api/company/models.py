@@ -45,6 +45,7 @@ class DB_Company(db.DynamicDocument):
 
     public_key = db.StringField()
     private_key = db.StringField()
+    regex = db.StringField()
     CIK = db.IntField()
 
     # Where did we fetch the information

@@ -48,6 +48,7 @@ def api_create_prompt_local():
         pass
 
     res = api_create_prompt_ai_summary(db_prompt, priority)
+    res2 = api_let_AI_search_for_information(db_prompt, priority)
     ret = {"prompts": [db_prompt]}
 
     if 'queue_size' in res:
@@ -300,7 +301,7 @@ def api_create_prompt_ai_summary(db_prompt, priority=False, force_summary=False)
     })
 
     data['id'] = str(db_prompt.id)
-    data['prefix'] = "PROMPT_" + db_prompt.username
+    data['prefix'] = "0_PROMPT_" + db_prompt.username
     data['callback_url'] = get_api_entry() + "/prompts/ai_callback"
 
     if db_prompt.use_markdown:
@@ -345,3 +346,128 @@ def api_llama_get_state():
         print_exception(e, "CRASH READING RESPONSE")
 
     return {}
+
+def api_let_AI_search_for_information(db_prompt, priority=False):
+    system = "You are an expert user of search and mongodb."
+    system += "You are searching in several articles for an user that is asking a questions,"
+    system += "you need to fill your knowledge with up to date information about the request."
+
+    arr_messages = [
+        {
+            "role": "assistant",
+            "content": "",
+        },
+        {
+            "role": "system",
+            "content": system,
+        },
+        {
+            "role": "user",
+            "content": db_prompt.prompt[:2048],
+        }
+    ]
+
+    search_for_information = {
+        "type": "function",
+        "function": {
+            "name": "search_for_information",
+            "description": "Create a list of keywords to search online or our articles in our database, including companies or financial information",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "companies": {
+                        "type": "string",
+                        "description": "Comma separated list of companies to search for information.",
+                    },
+                    "online_query": {
+                        "type": "string",
+                        "description": "Search engine to get up to date information about the user request.",
+                    },
+                    "finance_request": {
+                        "type": "string",
+                        "description": "Information about a company to include up to date financials.",
+                    },
+                },
+                "required": ["companies", "online_query"],
+            },
+        },
+    }
+
+    db_prompt.update(**{
+        'raw_messages': arr_messages,
+        'raw_tools': [search_for_information],
+    })
+
+    data = {
+        'id': str(db_prompt.id),
+        'type': 'raw_llama',
+        'use_markdown': True,
+        'raw_messages': arr_messages,
+        'raw_tools': [search_for_information],
+    }
+
+    data['prefix'] = "CHAT_" + db_prompt.username
+    data['callback_url'] = get_api_entry() + "/prompts/ai_callback_function_search"
+
+    if priority:
+        data['priority'] = priority
+
+    response = requests.post(get_api_AI_service(), json=data)
+    response.raise_for_status()
+
+    try:
+        json_response = response.json()
+        print_json(json_response)
+
+        db_prompt.update(**{
+            'raw': json_response,
+            'ai_upload_date': datetime.now(),
+            'ai_queue_size': json_response['queue_size']
+        })
+
+        return json_response
+    except Exception as e:
+        print_exception(e, "CRASH READING RESPONSE")
+
+    return {}
+
+
+@blueprint.route('/ai_callback_function_search', methods=['GET', 'POST'])
+#@api_key_or_login_required
+#@admin_login_required
+def api_prompt_ai_callback_function_call():
+    json = request.json
+
+    if 'id' not in json:
+        return get_response_error_formatted(400, {'error_msg': "An id is required"})
+
+    db_prompt = DB_UserPrompt.objects(id=json['id']).first()
+
+    if not db_prompt:
+        print_r(" FAILED UPDATING AI " + json['id'])
+        return get_response_formatted({})
+
+    if 'type' in json:
+        print_b(" NEWS AI_CALLBACK " + json['id'] + " " + str(db_prompt.prompt))
+
+        update = {}
+
+        t = json['type']
+        if t == 'dict':
+            update = {'tools': json['dict']}
+
+        update['last_visited_date'] = datetime.now()
+        update['last_visited_verbose'] = datetime.now().strftime("%Y/%m/%d, %H:%M:%S")
+
+        if os.environ.get('FLASK_ENV', None) == "development":
+            update['dev'] = True
+
+        update['status'] = "PROCESSED"
+
+        if 'raw' in json:
+            update['raw'] = json['raw']
+
+        db_prompt.update(**update, is_admin=True)
+
+    ret = {}
+    return get_response_formatted(ret)

@@ -90,6 +90,21 @@ class DB_News(db.DynamicDocument):
         age = (datetime.now() - self.last_cache_date).total_seconds() / 60
         return age
 
+    def sanetize_exchange_tickers(self):
+        """ Our tickers sometimes get duplicated due how we get the info and how we clean it up
+            Here we just try to cleanup the cases in which a ticker is duplicated.
+
+            Maybe we should just change the list as unique in mongo
+        """
+
+        unique = []
+        for item in self.related_exchange_tickers:
+            if item not in unique:
+                unique.append(item)
+
+        if len(unique) != len(self.related_exchange_tickers):
+            self.update(**{'related_exchange_tickers': unique})
+
     def precalculate_name_tickers(self):
         from api.company.models import DB_Company
         from api.ticker.tickers_helpers import standardize_ticker_format
@@ -97,6 +112,7 @@ class DB_News(db.DynamicDocument):
         if len(self.named_exchange_tickers) == len(self.related_exchange_tickers):
             return None
 
+        self.sanetize_exchange_tickers()
         res = {}
         for ticker in self.related_exchange_tickers:
             ticker_cleanup = standardize_ticker_format(ticker)
@@ -139,6 +155,7 @@ class DB_News(db.DynamicDocument):
         if not self.creation_date:
             self.creation_date = datetime.now()
 
+        self.related_exchange_tickers = list(set(self.related_exchange_tickers))
         ret = super(DB_News, self).save(*args, **kwargs)
         return ret
 

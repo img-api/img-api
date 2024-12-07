@@ -74,6 +74,9 @@ def get_gif_for_sentiment(sentiment):
             response = requests.get(url)
             data = response.json()
 
+            if not 'results' in data or len(data['results']) == 0:
+                return None, None, None
+
             gif_first = data['results'][0]
             mp4 = gif_first['media_formats']['mp4']['url']
 

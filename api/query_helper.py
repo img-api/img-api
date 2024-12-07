@@ -531,6 +531,7 @@ def query_clean_reserved(args):
     args.pop('value', None)
     args.pop('database', None)
     args.pop('populate', None)
+    args.pop('verbose', None)
     args.pop('username', None)
     args.pop('order_by', None)
     args.pop('skip', None)
@@ -578,6 +579,8 @@ def build_query_from_request(MyClass, args=None, get_all=False, global_api=False
     get_all = args.get("get_all")
     order_by = args.get("order_by")
     reversed = args.get("reversed")
+
+    verbose = args.get("verbose")
 
     limit = args.get("limit", 25)
     skip = args.get("skip")
@@ -645,6 +648,10 @@ def build_query_from_request(MyClass, args=None, get_all=False, global_api=False
 
     if reversed:
         return list(data)[::-1]
+
+    if verbose:
+        for ts in data:
+            ts['creation_date_verbose'] = ts.creation_date.strftime("%Y/%m/%d, %H:%M:%S")
 
     return data
 
