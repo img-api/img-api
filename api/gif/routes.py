@@ -75,11 +75,11 @@ def api_gif_get_query_match_best():
 def api_internal_gif_upload(f_request, media_info, file_name, file_extension, file_type="video", gif_username="GIF"):
     media_path = File_Tracking.get_media_path()
 
-    print(" User to upload files " + gif_username)
+    #print(" User to upload files " + gif_username)
 
     user_space_path = gif_username + "/"
     full_path = media_path + user_space_path
-    print(" Save at " + full_path)
+    #print(" Save at " + full_path)
     ensure_dir(full_path)
 
     md5, size = generate_file_md5(f_request)
@@ -102,8 +102,8 @@ def api_internal_gif_upload(f_request, media_info, file_name, file_extension, fi
     # Eventually if the project grows, files in folders like this are not ideal and all this code should get revamped
 
     if my_file:
-        print(" FILE ALREADY UPLOADED WITH ID " + str(my_file.id))
-        return
+        #print(" FILE ALREADY UPLOADED WITH ID " + str(my_file.id))
+        return True
 
     if file_type != "video":
         return
