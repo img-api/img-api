@@ -103,6 +103,7 @@ def api_internal_gif_upload(f_request, media_info, file_name, file_extension, fi
 
     if my_file:
         print(" FILE ALREADY UPLOADED WITH ID " + str(my_file.id))
+        return
 
     if file_type != "video":
         return
