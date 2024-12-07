@@ -93,7 +93,6 @@ def ticker_update_financials(full_symbol, max_age_minutes=15, force=False):
     try:
         financial_data = prepare_update_with_schema(yf_obj.info, new_schema)
         ticker_save_financials(full_symbol, yf_obj)
-
         ticker_save_history(full_symbol, yf_obj)
 
     except Exception as e:
@@ -324,6 +323,7 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
 
     info = yf_obj.info
     ticker_save_financials(db_ticker.full_symbol(), yf_obj)
+    ticker_save_history(db_ticker.full_symbol(), yf_obj)
 
     new_schema = {
         'website': 'website',
