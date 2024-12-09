@@ -83,7 +83,7 @@ class DB_Company(db.DynamicDocument):
         #if os.path.exists(abs_path):
         #    os.remove(abs_path)
 
-        print(" DELETED Company Data ")
+        print_r(self.long_name + " DELETED " + str(self.exchange_tickers))
         return super(DB_Company, self).delete(*args, **kwargs)
 
     def set_key_value(self, key, value):
@@ -95,16 +95,16 @@ class DB_Company(db.DynamicDocument):
 
     def serialize(self):
         """ Cleanup version of the media file so don't release confidential information """
-        serialized = {}
+        from api.ticker.tickers_helpers import ticker_exchanges_cleanup_dups
 
-        for key in self:
-            if self[key]:
-                if key == 'id':
-                    serialized[key] = str(self[key])
-                else:
-                    serialized[key] = self[key]
+        res = mongo_to_dict_helper(self)
 
-        return serialized
+        et = ticker_exchanges_cleanup_dups(self['exchange_tickers'])
+        res['exchange_tickers'] = et
+        if len(et) != 0:
+            res['primary_ticker'] = et[0]
+
+        return res
 
     @staticmethod
     def get_safe_name(possible_name):
@@ -194,6 +194,19 @@ class DB_Company(db.DynamicDocument):
 
         if ex_update:
             self.save(validate=False)
+
+    def get_primary_ticker(self):
+        if len(self.exchange_tickers) == 0:
+            return 'N/A'
+
+        if len(self.exchange_tickers) == 1:
+            return self.exchange_tickers[0]
+
+        for et in self.exchange_tickers:
+            if 'NMS:' not in et:
+                return et
+
+        return self.exchange_tickers[-1]
 
 
 class DB_CompanyPrompt(db.DynamicDocument):

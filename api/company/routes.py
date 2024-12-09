@@ -23,7 +23,6 @@ def api_company_get_query():
     Example of queries: https://dev.gputop.com/api/company/query?founded=1994
 
     https://gputop.com/api/company/query?exchange_tickers=NASDAQ:INTC
-
     """
 
     companies = build_query_from_request(DB_Company, global_api=True)
@@ -35,10 +34,12 @@ def api_company_get_query():
             arr = query.split('-')
             companies = DB_Company.objects(exchange_tickers=arr[0])
 
+    res = []
     for company in companies:
         api_create_ai_regex_tool(company)
+        res.append(company.serialize())
 
-    ret = {'companies': companies}
+    ret = {'companies': res}
     return get_response_formatted(ret)
 
 
@@ -361,7 +362,8 @@ def api_create_ai_regex_tool(company, invalidate=False):
 
     article_content = ""
     user_prompt = "Examples of articles that might contain the company name: "
-    db_news = DB_News.objects(ia_summary__exists=1, related_exchange_tickers__size=1,
+    db_news = DB_News.objects(ia_summary__exists=1,
+                              related_exchange_tickers__size=1,
                               related_exchange_tickers=company.exchange_tickers[0]).order_by('-creation_date').limit(5)
     for article in db_news:
         article_content += article['ia_summary']
@@ -376,7 +378,7 @@ def api_create_ai_regex_tool(company, invalidate=False):
         "content": system,
     }, {
         "role": "user",
-        "content": user_prompt + article_content[:2096],
+        "content": user_prompt + article_content[:4096],
     }]
 
     data = {
@@ -663,6 +665,8 @@ def api_get_ticker_financials(ticker_id):
     """
         Returns a list of tickers that the user is watching.
     """
+    from api.ticker.tickers_helpers import ticker_exchanges_cleanup_dups
+
     db_company = DB_Company.objects(exchange_tickers=ticker_id).first()
     forced = request.args.get("forced", None)
 
@@ -670,13 +674,55 @@ def api_get_ticker_financials(ticker_id):
     if not db_company or 'exchange_tickers' not in db_company:
         return get_response_formatted(fin)
 
-    for full_symbol in db_company['exchange_tickers']:
-        try:
-            if len(db_company['exchange_tickers']) > 1 and 'NMS' in full_symbol:
-                continue
+    exchange_tickers = ticker_exchanges_cleanup_dups(db_company['exchange_tickers'])
 
+    for full_symbol in exchange_tickers:
+        try:
             fin[full_symbol] = ticker_update_financials(full_symbol, force=forced)
         except Exception as e:
             print_exception(e, "CRASHED FINANCIAL UPDATES")
 
-    return get_response_formatted({'exchange_tickers': db_company['exchange_tickers'], 'financials': fin})
+    return get_response_formatted({'exchange_tickers': exchange_tickers, 'financials': fin})
+
+
+@blueprint.route('/cleanup', methods=['GET', 'POST'])
+def api_get_nms_cleanup():
+    """
+        Looks for companies that have only NMS tickers and tries to merge them with the real ones.
+
+        NYS is the exchange code for the primary instrument code trading in the
+        New York Stock Exchange (NYSE) and NYQ is the exchange
+        code for the consolidated instrument code when it is primarily trading in NYSE.
+
+        The National Market System (NMS) is a regulatory mechanism that
+        governs the operations of securities trading in the United States.
+    """
+
+    GENERICS = ["NMS:", "NYQ:"]
+
+    for test in GENERICS:
+        dups = DB_Company.objects(exchange_tickers__istartswith=test)
+
+        for co in dups:
+            exchange, ticker = co.exchange_tickers[0].split(":")
+            candidate_list = DB_Company.objects(exchange_tickers__iendswith=":" + ticker, id__ne=co.id)
+
+            c = len(candidate_list)
+            if c == 0:
+                continue
+
+            if c == 1:
+                candidate = candidate_list.first()
+                print_b(co.long_name + " " + str(co.exchange_tickers) + " MERGE " + str(candidate.exchange_tickers))
+
+                #candidate.exchange_tickers.append(exchange + ":" + ticker)
+                #candidate.update(**{'exchange_tickers': candidate.exchange_tickers})
+
+                candidate.delete()
+                co.delete()
+            else:
+                print_r(co.long_name + " NEEDS RESOLVE ")
+                for c in candidate_list:
+                    print_b(c.long_name + " MERGE " + str(c) + " " + str(c.exchange_tickers))
+
+    return get_response_formatted({'dups': dups})

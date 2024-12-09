@@ -261,6 +261,8 @@ def api_build_article_query(db_prompt):
 
                 content += article.get_title() + "\n"
                 content += article.get_paragraph()[:200] + "\n\n"
+                if 'ai_summary' in article:
+                    content += article['ai_summary'][:2048] + "\n\n"
 
             except Exception as e:
                 print_exception(e, "CRASHED ARTICLES ")
@@ -276,9 +278,9 @@ def cut_string(s, limit):
 
 
 def api_create_prompt_ai_summary(db_prompt, priority=False, force_summary=False):
-    articles_content = api_build_article_query(db_prompt)
+    articles_content = "Portfolio state articles: " + api_build_article_query(db_prompt)
 
-    prompt = db_prompt.prompt[:2048]
+    prompt = db_prompt.prompt[:4096]
 
     system = "Today is " + str(datetime.now().strftime("%Y/%m/%d, %H:%M")) + "\n"
 
@@ -292,7 +294,7 @@ def api_create_prompt_ai_summary(db_prompt, priority=False, force_summary=False)
         'type': 'user_prompt',
         'prompt': prompt,
         'system': system,
-        'assistant': cut_string(articles_content, 4096) + cut_string(chat_content, 2048),
+        'assistant': cut_string(articles_content, 131072) + cut_string(chat_content, 131072),
     }
 
     db_prompt.update(**{
@@ -363,7 +365,7 @@ def api_let_AI_search_for_information(db_prompt, priority=False):
         },
         {
             "role": "user",
-            "content": db_prompt.prompt[:2048],
+            "content": db_prompt.prompt[:4096],
         }
     ]
 

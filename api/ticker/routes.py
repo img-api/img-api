@@ -202,7 +202,7 @@ def api_get_suggestions():
 
 
 @blueprint.route('/query', methods=['GET', 'POST'])
-@api_key_or_login_required
+#@api_key_or_login_required
 def api_get_query():
     """
     """

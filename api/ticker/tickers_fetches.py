@@ -61,7 +61,6 @@ def save_article(self, date, link, title, news_type, publisher, article, uuid, r
 
     """Creates a MongoDB article object.
     Saves article into the relevant database"""
-
     news = DB_News(
         creation_date = date,
         last_visited_date = datetime.now(),

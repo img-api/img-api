@@ -207,7 +207,7 @@ def api_create_article_ai_summary(article, priority=False, force_summary=False):
         'type': 'summary',
         'id': str(article['id']),
         'prompt': prompt,
-        'article': articles[:4096],
+        'article': articles[:16384],
         'callback_url': get_api_entry() + "/news/ai_callback"
     }
 
@@ -403,9 +403,7 @@ def api_news_callback_ai_summary():
             tools = json['dict']
 
             try:
-                args = {
-                    'tools': []
-                }
+                args = {'tools': []}
                 for f in tools:
                     # We flat the functions. For us they are mainly data in a DB
                     args.update(f["function"]["arguments"])
@@ -455,7 +453,7 @@ def api_news_callback_ai_summary():
     return get_response_formatted(ret)
 
 
-def get_portfolio_query(name_list="default", tickers_list=None, limit=20, my_args=None):
+def get_portfolio_query(name_list="default", tickers_list=None, limit=40, my_args=None):
     from api.ticker.routes import get_watchlist_or_create
 
     if tickers_list:
@@ -558,3 +556,51 @@ def api_news_redo_database_cleanup():
 
     ret = {'news': news}
     return get_response_formatted(ret)
+
+
+@blueprint.route('/cleanup', methods=['GET', 'POST'])
+def api_news_get_cleanup():
+    """
+        Looks for companies that have only NMS tickers and tries to merge them with the real ones.
+
+        NYS is the exchange code for the primary instrument code trading in the
+        New York Stock Exchange (NYSE) and NYQ is the exchange
+        code for the consolidated instrument code when it is primarily trading in NYSE.
+
+        The National Market System (NMS) is a regulatory mechanism that
+        governs the operations of securities trading in the United States.
+    """
+    from api.company.models import DB_Company
+
+    GENERICS = ["NMS:", "NYQ:"]
+
+    for test in GENERICS:
+        dups = DB_News.objects(related_exchange_tickers__istartswith=test)
+        for article in dups:
+            print_b(str(article.title) + " " + str(article.related_exchange_tickers))
+
+            clean = []
+            for et in article.related_exchange_tickers:
+                if et.startswith(test):
+                    exchange, ticker = et.split(":")
+                    candidates = DB_Company.objects(exchange_tickers__iendswith=":" + ticker)
+
+                    if len(candidates) == 0:
+                        print_r(et + " FAILED TO FIND TICKER ")
+                    elif len(candidates) > 1:
+                        for c in candidates:
+                            print_r("** FOUND " + str(c.exchange_tickers))
+
+                        print_r(et + " CONFLICT RESOLUTION REQUIRED")
+                    else:
+                        new_et = candidates.first().get_primary_ticker()
+                        print_g(et + " REPLACE WITH => " + new_et)
+                        et = new_et
+
+                if et not in clean:
+                    clean.append(et)
+
+            print_g(str(clean))
+            article.update(**{'related_exchange_tickers': clean})
+
+    return get_response_formatted({'dups': dups})

@@ -96,11 +96,9 @@ class DB_News(db.DynamicDocument):
 
             Maybe we should just change the list as unique in mongo
         """
+        from api.ticker.tickers_helpers import ticker_exchanges_cleanup_dups
 
-        unique = []
-        for item in self.related_exchange_tickers:
-            if item not in unique:
-                unique.append(item)
+        unique = ticker_exchanges_cleanup_dups(self.related_exchange_tickers)
 
         if len(unique) != len(self.related_exchange_tickers):
             self.update(**{'related_exchange_tickers': unique})
@@ -148,14 +146,15 @@ class DB_News(db.DynamicDocument):
         super(DB_News, self).__init__(*args, **kwargs)
 
     def update(self, *args, **kwargs):
-        #mongo_prevalidate_fields(self)
         return super(DB_News, self).update(*args, **kwargs)
 
     def save(self, *args, **kwargs):
+        from api.ticker.tickers_helpers import ticker_exchanges_cleanup_dups
         if not self.creation_date:
             self.creation_date = datetime.now()
 
-        self.related_exchange_tickers = list(set(self.related_exchange_tickers))
+        self.related_exchange_tickers = ticker_exchanges_cleanup_dups(self.related_exchange_tickers)
+
         ret = super(DB_News, self).save(*args, **kwargs)
         return ret
 
@@ -239,3 +238,5 @@ class DB_News(db.DynamicDocument):
 
     def get_summary(self):
         return self.get_arguments_param("summary", self.ai_summary)
+
+

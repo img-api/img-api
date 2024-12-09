@@ -429,6 +429,22 @@ def standardize_ticker_format(ticker: str) -> str:
         # Here we assume a default exchange if none is provided, let's assume NASDAQ
         return f"NASDAQ:{ticker}"
 
+def ticker_exchanges_cleanup_dups(exchange_tickers):
+    res = []
+
+    m = {}
+    STANDARDS = ['NMS']
+
+    for ticker in exchange_tickers:
+        exchange, stock = ticker.split(':')
+        if stock in m and exchange in STANDARDS:
+            continue
+
+        m[stock] = standardize_ticker_format(ticker)
+
+    res = list(m.values())
+    return res
+
 
 def standardize_ticker_format_to_yfinance(ticker: str) -> str:
 
@@ -450,8 +466,8 @@ def standardize_ticker_format_to_yfinance(ticker: str) -> str:
 
     # Case 3: Handle "TICKER" format with no exchange (assume NASDAQ or other default logic)
     else:
-        # Here we assume a default exchange if none is provided, let's assume NASDAQ
-        return f"NASDAQ:{ticker}"
+        # Here we assume a default exchange if none is provided, let's assume National Market System
+        return f"NMS:{ticker}"
 
 
 # Test cases

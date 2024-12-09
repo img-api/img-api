@@ -82,6 +82,9 @@ class DB_Ticker(db.DynamicDocument):
             self.update(**{'force_reindex': True})
 
     def age_minutes(self, *args, **kwargs):
+        if not self.last_processed_date:
+            return 0
+
         age = (datetime.now() - self.last_processed_date).total_seconds() / 60
         #print(self.ticker + " => " + str(age))
         return age
@@ -147,6 +150,12 @@ class DB_Ticker(db.DynamicDocument):
             query = Q(pk=self.company_id)
 
         db_company = DB_Company.objects(query).first()
+
+        # Hack to fix issues with duplicated companies
+        if not db_company:
+            self.company_id = None
+            query = Q(exchange_tickers__iendswith=":" + self.ticker)
+            db_company = DB_Company.objects(query).first()
 
         if not self.company_id and db_company:
             self.company_id = str(db_company.id)
