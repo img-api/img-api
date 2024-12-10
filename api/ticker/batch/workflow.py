@@ -88,11 +88,11 @@ def ticker_process_news_sites(BATCH_SIZE=5):
             item.set_state("INDEX_START")
 
             if item.source == "YFINANCE":
-                if 'related_exchange_tickers' in item:
-                    clean = yticker_check_tickers(item['related_exchange_tickers'])
+                #if 'related_exchange_tickers' in item:
+                #    clean = yticker_check_tickers(item['related_exchange_tickers'])
 
-                    if clean and Counter(clean) != Counter(item['related_exchange_tickers']):
-                        item.update(**{'related_exchange_tickers': clean})
+                #    if clean and Counter(clean) != Counter(item['related_exchange_tickers']):
+                #        item.update(**{'related_exchange_tickers': clean})
 
                 yfetch_process_news(item)
 

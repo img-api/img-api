@@ -186,6 +186,11 @@ def api_create_article_ai_summary(article, priority=False, force_summary=False):
     if not force_summary and 'ai_summary' in article:
         return
 
+    wait_min = article.age_ai_upload_minutes()
+    if wait_min < 120:
+        print_g(article.link +  " WAITING FOR AI FOR " + str(wait_min))
+        return
+
     articles = '\n'.join(article['articles'])
 
     # Should we include the title to orient the AI? This seems to make it replace our generated title :(
@@ -582,6 +587,8 @@ def api_news_get_cleanup():
         for article in dups:
             print_b(str(article.title) + " " + str(article.related_exchange_tickers))
 
+            article.related_exchange_tickers = list(set(article.related_exchange_tickers))
+
             clean = []
             for et in article.related_exchange_tickers:
                 if et.startswith(test):
@@ -595,6 +602,7 @@ def api_news_get_cleanup():
                             print_r("** FOUND " + str(c.exchange_tickers))
 
                         print_r(et + " CONFLICT RESOLUTION REQUIRED")
+                        continue
                     else:
                         new_et = candidates.first().get_primary_ticker()
                         print_g(et + " REPLACE WITH => " + new_et)

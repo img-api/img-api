@@ -359,11 +359,10 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
         #for officer in company_officers:
         #    print_b(f"TODO: Create person {officer['name']} => {officer['title']}")
 
-    if not dry_run:
-        if not db_company:
-            print_b("NO COMPANY WTF")
-        else:
-            db_company.update(**company_update, validate=False)
+    if not db_company:
+        print_b("NO COMPANY WTF")
+    elif not 'ai_summary' in db_company:
+        db_company.update(**company_update, validate=False)
 
     try:
         news = yf_obj.news
@@ -381,6 +380,10 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
 
                 try:
                     api_create_article_ai_summary(db_news)
+
+                    # Work to figure out problems with tickers
+                    if 'raw_tickers' not in db_news:
+                        db_news.update(**{'raw_tickers': item['relatedTickers']})
 
                     #fix_news_ticker(db_ticker, db_news)
                 except Exception as e:
@@ -417,6 +420,8 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
                     value = datetime.fromtimestamp(int(item['providerPublishTime']))
                     print_b(" DATE " + str(value))
                     myupdate['creation_date'] = value
+
+                myupdate['raw_tickers'] = item['relatedTickers']
             except Exception as e:
                 print_e(e, "CRASHED LOADING DATE")
 
@@ -427,14 +432,22 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
                 yticker_check_tickers(item['relatedTickers'])
 
                 for ticker in item['relatedTickers']:
+                    from api.ticker.tickers_helpers import \
+                        standardize_ticker_format
 
-                    if ticker == db_ticker.ticker:
-                        related_tickers.append(db_ticker.full_symbol())
+                    ticker = standardize_ticker_format(ticker)
+                    exchange, ticker = ticker.split(":")
+
+                    candidates = DB_Company.objects(exchange_tickers__iendswith=":" + ticker)
+                    if len(candidates) == 0:
+                        print_r(ticker + " FAILED TO FIND COMPANY ")
                     else:
-                        full_symbol = get_full_symbol(ticker)
-                        related_tickers.append(full_symbol)
+                        new_et = candidates.first().get_primary_ticker()
+                        related_tickers.append(new_et)
 
-                myupdate['related_exchange_tickers'] = related_tickers
+                print(str(related_tickers))
+                myupdate['related_exchange_tickers'] = list(set(related_tickers))
+
             else:
                 print_r(" NO RELATED TICKERS ")
 

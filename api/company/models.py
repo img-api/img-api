@@ -73,7 +73,9 @@ class DB_Company(db.DynamicDocument):
 
         self.last_update_date = datetime.now()
 
-        self.safe_name = self.get_safe_name(self.company_name)
+        if self.company_name:
+            self.safe_name = self.get_safe_name(self.company_name)
+
         ret = super(DB_Company, self).save(*args, **kwargs)
         ret.reload()
         return ret
@@ -196,17 +198,19 @@ class DB_Company(db.DynamicDocument):
             self.save(validate=False)
 
     def get_primary_ticker(self):
+        from api.ticker.tickers_helpers import standardize_ticker_format
+
         if len(self.exchange_tickers) == 0:
             return 'N/A'
 
         if len(self.exchange_tickers) == 1:
-            return self.exchange_tickers[0]
+            return standardize_ticker_format(self.exchange_tickers[0])
 
         for et in self.exchange_tickers:
             if 'NMS:' not in et:
-                return et
+                return standardize_ticker_format(et)
 
-        return self.exchange_tickers[-1]
+        return standardize_ticker_format(self.exchange_tickers[-1])
 
 
 class DB_CompanyPrompt(db.DynamicDocument):

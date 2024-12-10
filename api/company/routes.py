@@ -263,7 +263,7 @@ def api_create_ai_summary(company, force_summary=False):
     if not company['long_business_summary']:
         return
 
-    if not force_summary and 'ai_summary' in company or 'ia_summary' in company:
+    if not force_summary and 'ai_summary' in company:
         return
 
     if company.ai_upload_date:
@@ -365,11 +365,11 @@ def api_create_ai_regex_tool(company, invalidate=False):
 
     article_content = ""
     user_prompt = "Examples of articles that might contain the company name: "
-    db_news = DB_News.objects(ia_summary__exists=1,
+    db_news = DB_News.objects(ai_summary__exists=1,
                               related_exchange_tickers__size=1,
                               related_exchange_tickers=company.exchange_tickers[0]).order_by('-creation_date').limit(5)
     for article in db_news:
-        article_content += article['ia_summary']
+        article_content += article['ai_summary']
 
     print(article_content)
 

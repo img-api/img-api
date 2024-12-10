@@ -86,6 +86,13 @@ class DB_News(db.DynamicDocument):
         age = (datetime.now() - self.creation_date).total_seconds() / 60
         return age
 
+    def age_ai_upload_minutes(self, *args, **kwargs):
+        if not self.ai_upload_date:
+            return 9999
+
+        age = (datetime.now() - self.ai_upload_date).total_seconds() / 60
+        return age
+
     def age_cache_minutes(self, *args, **kwargs):
         age = (datetime.now() - self.last_cache_date).total_seconds() / 60
         return age
@@ -169,7 +176,7 @@ class DB_News(db.DynamicDocument):
     def set_state(self, state_msg):
         """ Update a processing state """
 
-        print_b(self.link + " " + self.status + " => " + state_msg)
+        #print_b(self.link + " " + self.status + " => " + state_msg)
 
         self.update(**{
             'force_reindex': False,
