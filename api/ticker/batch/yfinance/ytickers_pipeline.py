@@ -241,10 +241,20 @@ def yticker_check_tickers(relatedTickers):
                 print_r(" No ticker? ")
                 return
 
-            ticker = info['symbol']
-            exchange = info['exchange']
+            if 'symbol' in info:
+                ticker = info['symbol']
+            else:
+                ticker = "N/A"
+
+            if 'exchange' in info:
+                exchange = info['exchange']
+            else:
+                exchange = "N/A"
+
             if 'longName' in info:
                 my_company = info['longName']
+            else:
+                my_company = "N/A"
 
             new_schema = {
                 'website': 'website',
