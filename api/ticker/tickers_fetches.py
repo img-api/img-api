@@ -626,6 +626,9 @@ def update_needed(my_company, db_company):
 def create_or_update_company(my_company, exchange=None, ticker=None):
     from .tickers_helpers import standardize_exchange_format
 
+    if 'company_name' not in my_company or not my_company['company_name']:
+        print(my_company)
+
     db_company = None
 
     # We search first for the combination of ticker exchange in the format EXCHANGE:TICKER
@@ -644,7 +647,7 @@ def create_or_update_company(my_company, exchange=None, ticker=None):
         db_company = DB_Company.objects(query).first()
 
     if not db_company:
-        print_b("Created: " + str(exchange) + ":" + str(ticker) + " " + my_company['company_name'])
+        print_b("Created: " + str(exchange) + ":" + str(ticker) + " " + str(my_company['company_name']))
 
         # For us it is important to track tickers and exchanges in which companies trade
         if exchange:

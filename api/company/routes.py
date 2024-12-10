@@ -1,4 +1,5 @@
 import io
+import socket
 from datetime import datetime
 
 import qrcode
@@ -265,15 +266,17 @@ def api_create_ai_summary(company, force_summary=False):
     if not force_summary and 'ai_summary' in company or 'ia_summary' in company:
         return
 
-    age_update = (datetime.now() - company.ai_upload_date).total_seconds() / 60
-    if age_update < 600:
-        return
+    if company.ai_upload_date:
+        age_update = (datetime.now() - company.ai_upload_date).total_seconds() / 60
+        if age_update < 600:
+            return
 
     data = {
         'type': 'summary',
         'id': company['safe_name'],
         'message': prompt + company['long_business_summary'],
-        'callback_url': get_api_entry() + "/company/ai_callback"
+        'callback_url': get_api_entry() + "/company/ai_callback",
+        'hostname': socket.gethostname(),
     }
 
     print_b(" INDEX " + company['safe_name'])
@@ -387,7 +390,8 @@ def api_create_ai_regex_tool(company, invalidate=False):
         'id': str(company.id),
         'raw_messages': arr_messages,
         'raw_tools': [create_regex],
-        'callback_url': get_api_entry() + "/company/ai_callback_prompt"
+        'callback_url': get_api_entry() + "/company/ai_callback_prompt",
+        'hostname': socket.gethostname(),
     }
 
     if invalidate:

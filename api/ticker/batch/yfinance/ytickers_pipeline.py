@@ -330,6 +330,7 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
     try:
         api_create_ai_summary(db_company)
     except Exception as e:
+        print_exception(e, "CRASH")
         pass
 
     info = yf_obj.info
@@ -381,7 +382,7 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
                 try:
                     api_create_article_ai_summary(db_news)
 
-                    fix_news_ticker(db_ticker, db_news)
+                    #fix_news_ticker(db_ticker, db_news)
                 except Exception as e:
                     print_exception(e, "CRASHED")
                     pass

@@ -1,4 +1,5 @@
 import copy
+import socket
 from datetime import datetime
 
 import requests
@@ -208,7 +209,8 @@ def api_create_article_ai_summary(article, priority=False, force_summary=False):
         'id': str(article['id']),
         'prompt': prompt,
         'article': articles[:16384],
-        'callback_url': get_api_entry() + "/news/ai_callback"
+        'callback_url': get_api_entry() + "/news/ai_callback",
+        'hostname': socket.gethostname(),
     }
 
     if priority:
@@ -249,7 +251,8 @@ def api_create_news_translation(id, text, field, language):
         'language': language,
         'prefix': "TRANSLATION_" + language + "_" + field + "_",
         'article': content,
-        'callback_url': get_api_entry() + "/news/ai_callback_translation"
+        'callback_url': get_api_entry() + "/news/ai_callback_translation",
+        'hostname': socket.gethostname(),
     }
 
     response = requests.post(get_api_AI_service(), json=data)
@@ -446,8 +449,8 @@ def api_news_callback_ai_summary():
         try:
             news.update(**update, validate=False)
         except Exception as e:
-            print_exception(e, "cRASHED VALIDATING")
             print_r("STOP")
+            print_exception(e, "cRASHED VALIDATING")
 
     ret = {}
     return get_response_formatted(ret)
