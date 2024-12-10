@@ -19,7 +19,8 @@ import yfinance as yf
 
 from .tickers_pipeline import ticker_pipeline_process
 from .yfinance.yfinance_news import yfetch_process_news
-from .yfinance.ytickers_pipeline import (yticker_check_tickers, yticker_pipeline_process)
+from .yfinance.ytickers_pipeline import (yticker_check_tickers,
+                                         yticker_pipeline_process)
 
 ####################################
 # PROCESS TO MICROSERVICE PLAN
@@ -178,16 +179,16 @@ def ticker_process_invalidate_full_symbol(full_symbol):
 def ticker_process_invalidate(ticker, max_age_minutes=5):
 
     query = Q(ticker=ticker)
-    tickers = DB_Ticker.objects(query)
-    for db_ticker in tickers:
+    db_ticker = DB_Ticker.objects(query).first()
+    #for db_ticker in tickers:
+
+    if db_ticker.age_minutes() < max_age_minutes:
+        return
+
+    try:
         db_ticker.set_state("PIPELINE_START")
+        yticker_pipeline_process(db_ticker)
+    except Exception as e:
+        print_exception(e, "CRASHED PROCESSING BATCH")
 
-        if db_ticker.age_minutes() < max_age_minutes:
-            continue
-
-        try:
-            yticker_pipeline_process(db_ticker)
-        except Exception as e:
-            print_exception(e, "CRASHED PROCESSING BATCH")
-
-    return tickers
+    return [db_ticker]

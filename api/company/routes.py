@@ -283,7 +283,7 @@ def api_create_ai_summary(company, force_summary=False):
     response = requests.post(get_api_AI_service(), json=data)
     response.raise_for_status()
 
-    company.update({'ai_upload_date': datetime.now()})
+    company.update(**{'ai_upload_date': datetime.now()})
 
 
 @blueprint.route('/ai_summary', methods=['GET', 'POST'])
@@ -594,7 +594,8 @@ def api_build_company_state_query(db_company):
         'company': db_company.safe_name,
         'prefix': "9_" + db_company.safe_name,
         'id': str(db_prompt.id),
-        'callback_url': get_api_entry() + "/company/ai_prompt"
+        'callback_url': get_api_entry() + "/company/ai_prompt",
+        'hostname': socket.gethostname(),
     }
 
     response = requests.post(get_api_AI_service(), json=data)

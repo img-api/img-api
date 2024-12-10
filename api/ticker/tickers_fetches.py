@@ -687,6 +687,8 @@ def create_or_update_ticker(db_company, exchange=None, ticker=None):
         A ticker has stock prices and multiple information related to the exchange
 
     """
+    from .tickers_helpers import standardize_format_exchange_ticker
+
     db_ticker = None
 
     # We search first for the combination of ticker exchange in the format EXCHANGE:TICKER
@@ -696,6 +698,9 @@ def create_or_update_ticker(db_company, exchange=None, ticker=None):
 
     if db_ticker:
         return db_ticker
+
+    # Renormalize ticker, remove duplicates
+    exchange, ticker = standardize_format_exchange_ticker(exchange, ticker)
 
     print_b(" CREATE NEW TICKER " + exchange + ":" + ticker)
 

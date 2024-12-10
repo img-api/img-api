@@ -386,6 +386,8 @@ def standardize_exchange_format(exchange: str) -> str:
     if not exchange:
         return ""
 
+    exchange = prefix_to_exchange.get(exchange, exchange)
+
     if exchange not in mic_to_exchange:
         return exchange
 
@@ -428,6 +430,13 @@ def standardize_ticker_format(ticker: str) -> str:
     else:
         # Here we assume a default exchange if none is provided, let's assume NASDAQ
         return f"NASDAQ:{ticker}"
+
+
+def standardize_format_exchange_ticker(exchange: str, ticker: str):
+    et = standardize_ticker_format(exchange + ":" + ticker)
+    exchange, stock = et.split(':')
+    return exchange, stock
+
 
 def ticker_exchanges_cleanup_dups(exchange_tickers):
     res = []

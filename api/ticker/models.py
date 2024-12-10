@@ -86,7 +86,7 @@ class DB_Ticker(db.DynamicDocument):
             return 0
 
         age = (datetime.now() - self.last_processed_date).total_seconds() / 60
-        #print(self.ticker + " => " + str(age))
+        print(self.exchange + ":" + self.ticker + " => " + str(age))
         return age
 
     def serialize(self):
