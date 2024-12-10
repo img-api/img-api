@@ -669,7 +669,7 @@ def create_or_update_company(my_company, exchange=None, ticker=None):
         print_b(" BREAK ME ")
 
     if update_needed(my_company, db_company):
-        print_b("Updated: " + my_company['company_name'])
+        #print_b("Updated: " + my_company['company_name'])
         db_company.update(**my_company, validate=False)
 
     # We create tickers, consult yahoo for the ticker and process everything.

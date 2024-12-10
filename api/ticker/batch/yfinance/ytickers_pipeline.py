@@ -243,7 +243,8 @@ def yticker_check_tickers(relatedTickers):
 
             ticker = info['symbol']
             exchange = info['exchange']
-            my_company = info['longName']
+            if 'longName' in info:
+                my_company = info['longName']
 
             new_schema = {
                 'website': 'website',
