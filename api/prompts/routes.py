@@ -1,4 +1,5 @@
 import os
+import socket
 from datetime import datetime
 
 import requests
@@ -305,6 +306,7 @@ def api_create_prompt_ai_summary(db_prompt, priority=False, force_summary=False)
     data['id'] = str(db_prompt.id)
     data['prefix'] = "0_PROMPT_" + db_prompt.username
     data['callback_url'] = get_api_entry() + "/prompts/ai_callback"
+    data['hostname'] = socket.gethostname()
 
     if db_prompt.use_markdown:
         data['use_markdown'] = True
@@ -410,6 +412,7 @@ def api_let_AI_search_for_information(db_prompt, priority=False):
 
     data['prefix'] = "CHAT_" + db_prompt.username
     data['callback_url'] = get_api_entry() + "/prompts/ai_callback_function_search"
+    data['hostname'] = socket.gethostname()
 
     if priority:
         data['priority'] = priority
