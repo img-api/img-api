@@ -575,6 +575,9 @@ def build_query_from_request(MyClass, args=None, get_all=False, global_api=False
     if not args:
         args = request.args.to_dict()
 
+    if extra_args:
+        args.update(extra_args)
+
     fields = args.get("fields", None)
     get_all = args.get("get_all")
     order_by = args.get("order_by")
@@ -588,8 +591,6 @@ def build_query_from_request(MyClass, args=None, get_all=False, global_api=False
     only = args.get("only")
     exclude = args.get("exclude")
 
-    if extra_args:
-        args.update(extra_args)
 
     args = query_clean_reserved(args)
 

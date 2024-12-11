@@ -275,9 +275,10 @@ def api_create_ai_summary(company, force_summary=False):
         'type': 'summary',
         'id': str(company['id']),
         'message': prompt + company['long_business_summary'],
-        'prefix': str(company['safe_name']),
+        'prefix': "COMPANY_" + str(company['safe_name']),
         'callback_url': get_api_entry() + "/company/ai_callback",
         'hostname': socket.gethostname(),
+        'tickers': str(company['exchange_tickers']),
     }
 
     print_b(" INDEX " + company['safe_name'])
@@ -528,13 +529,25 @@ def api_update_company(company_id):
     ticker = db_company.exchange_tickers[-1]
     result = api_create_ai_regex_tool(db_company, invalidate=True)
 
+    query_report = api_build_company_state_query(db_company)
+
     processed = ticker_process_invalidate_full_symbol(ticker)
 
-    return get_response_formatted({'processed': processed, 'result': result})
+    return get_response_formatted({'processed': processed, 'result': result, 'query_report': query_report})
 
 
 def api_build_company_state_query(db_company):
+    from datetime import timedelta
+
+    if not db_company:
+        return {}
+
     from api.news.routes import get_portfolio_query
+
+    cache_review_date = datetime.now() - timedelta(days=1)
+    db_prompt = DB_CompanyPrompt.objects(company_id=str(db_company.id), ai_upload_date__gte=cache_review_date).first()
+    if db_prompt:
+        return db_prompt
 
     content = ""
     news, tkrs = get_portfolio_query(tickers_list=db_company.exchange_tickers)
@@ -548,15 +561,12 @@ def api_build_company_state_query(db_company):
         unique_tickers = set(article.related_exchange_tickers) | unique_tickers
         content += "| Article " + str(index) + " from " + article.publisher + "\n"
         content += "| Title: " + article.get_title() + "\n"
-        content += article.get_summary()[:64] + "\n"
+        content += str(article.get_summary()) + "\n"
         content += "\n---\n"
+
 
     #tickers = str.join(",", unique_tickers)
     #content += "## Tickers: " + tickers + "\n\n"
-
-    prompt = "Given the articles for "
-    prompt += db_company.long_name
-    prompt += "What is the current state of the company ?"
 
     system = "Analyze the provided articles to assess the performance of the company mentioned and its potential impact on stock market trends. Focus on the following aspects:"
     system += "Company Performance:"
@@ -577,24 +587,47 @@ def api_build_company_state_query(db_company):
     system += "Summarize any analyst opinions or forecasts."
     system += "Highlight any plans or milestones mentioned that could affect future performance."
     system += "Provide a concise summary of your findings, structured in bullet points or short paragraphs. Focus on actionable insights relevant to investors or market analysts."
+    system += "Add Unicode icons to emphasise different aspects and important information."
+
+    prompt = "Given the articles and information for "
+    prompt += db_company.long_name
+    prompt += ". What is the current state of the company ?"
 
     jrequest = {
         "company_id": str(db_company.id),
-        "prompt": prompt + content,
-        "article": content,
+        "prompt": prompt,
+        "assistant": content,
         "system": system,
+        "tickers": db_company.exchange_tickers,
     }
 
     db_prompt = DB_CompanyPrompt(**jrequest)
     db_prompt.save()
 
+    assistant = "Current date " + str(datetime.now())
+    assistant += ". Relevant articles for " + db_company.long_name + " "
+    assistant += db_company.long_business_summary + " " + content
+
+    arr_messages = [{
+        "role": "assistant",
+        "content": assistant,
+    }, {
+        "role": "system",
+        "content": system,
+    }, {
+        "role": "user",
+        "content": prompt,
+    }]
+
     data = {
-        'type': 'company_prompt',
-        'system': system,
-        'prompt': prompt,
-        'company': db_company.safe_name,
-        'prefix': "9_" + db_company.safe_name,
+        'type': 'raw_llama',
+        'subtype': 'company_state',
+        'company': str(db_company.safe_name),
+        'raw_messages': arr_messages,
+        'raw_tools': None,
+        'prefix': "0_COMPANY_SUMMARY_" + str(db_company.safe_name),
         'id': str(db_prompt.id),
+        'model': "llama3.3",
         'callback_url': get_api_entry() + "/company/ai_prompt",
         'hostname': socket.gethostname(),
     }
@@ -607,6 +640,7 @@ def api_build_company_state_query(db_company):
         print_json(json_response)
 
         db_prompt.update(**{'ai_upload_date': datetime.now(), 'ai_queue_size': json_response['queue_size']})
+        db_prompt.reload()
     except Exception as e:
         print_exception(e, "CRASH READING RESPONSE")
 
@@ -704,31 +738,47 @@ def api_get_nms_cleanup():
         governs the operations of securities trading in the United States.
     """
 
-    GENERICS = ["NMS:", "NYQ:"]
+    legacy_fix = request.args.get("legacy_fix", None)
+    if legacy_fix:
+        res = []
+        legacy = DB_Company.objects(ia_summary__exists=1, ai_summary__exists=0)
+        for company in legacy:
+            company.update(**{'ai_summary': company['ia_summary'], 'ia_summary': None})
+            res.append(company)
+            print(">> COMPANY " + str(company.safe_name))
 
-    for test in GENERICS:
-        dups = DB_Company.objects(exchange_tickers__istartswith=test)
+        return get_response_formatted({'res': res})
 
-        for co in dups:
-            exchange, ticker = co.exchange_tickers[0].split(":")
-            candidate_list = DB_Company.objects(exchange_tickers__iendswith=":" + ticker, id__ne=co.id)
+    generics = request.args.get("generics", None)
+    if generics:
 
-            c = len(candidate_list)
-            if c == 0:
-                continue
+        GENERICS = ["NMS:", "NYQ:"]
 
-            if c == 1:
-                candidate = candidate_list.first()
-                print_b(co.long_name + " " + str(co.exchange_tickers) + " MERGE " + str(candidate.exchange_tickers))
+        for test in GENERICS:
+            dups = DB_Company.objects(exchange_tickers__istartswith=test)
 
-                #candidate.exchange_tickers.append(exchange + ":" + ticker)
-                #candidate.update(**{'exchange_tickers': candidate.exchange_tickers})
+            for co in dups:
+                exchange, ticker = co.exchange_tickers[0].split(":")
+                candidate_list = DB_Company.objects(exchange_tickers__iendswith=":" + ticker, id__ne=co.id)
 
-                candidate.delete()
-                co.delete()
-            else:
-                print_r(co.long_name + " NEEDS RESOLVE ")
-                for c in candidate_list:
-                    print_b(c.long_name + " MERGE " + str(c) + " " + str(c.exchange_tickers))
+                c = len(candidate_list)
+                if c == 0:
+                    continue
 
-    return get_response_formatted({'dups': dups})
+                if c == 1:
+                    candidate = candidate_list.first()
+                    print_b(co.long_name + " " + str(co.exchange_tickers) + " MERGE " + str(candidate.exchange_tickers))
+
+                    #candidate.exchange_tickers.append(exchange + ":" + ticker)
+                    #candidate.update(**{'exchange_tickers': candidate.exchange_tickers})
+
+                    candidate.delete()
+                    co.delete()
+                else:
+                    print_r(co.long_name + " NEEDS RESOLVE ")
+                    for c in candidate_list:
+                        print_b(c.long_name + " MERGE " + str(c) + " " + str(c.exchange_tickers))
+
+        return get_response_formatted({'dups': dups})
+
+    return get_response_formatted({})

@@ -129,6 +129,8 @@ def ticker_process_batch(end=None, dry_run=False, BATCH_SIZE=10):
     Limit to BATCH_SIZE so we don't ask for too many at once to all APIs
     """
 
+    from api.company.routes import api_build_company_state_query
+
     # Ignore the end, we always want to process data now
     #if not end:
     #    end = datetime.fromtimestamp(get_timestamp_verbose("1 days"))
@@ -146,6 +148,11 @@ def ticker_process_batch(end=None, dry_run=False, BATCH_SIZE=10):
             db_ticker.update(**{'force_reindex': False})
 
         db_ticker.set_state("PIPELINE_START")
+
+        try:
+            api_build_company_state_query(db_ticker.get_company())
+        except Exception as e:
+            print_exception(e, "CRASHED PROCESSING BATCH")
 
         # We process every ticker with a different pipeline.
         # Parsers should self-register to provide support. TBD
