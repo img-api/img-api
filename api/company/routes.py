@@ -273,8 +273,9 @@ def api_create_ai_summary(company, force_summary=False):
 
     data = {
         'type': 'summary',
-        'id': company['safe_name'],
+        'id': str(company['id']),
         'message': prompt + company['long_business_summary'],
+        'prefix': str(company['safe_name']),
         'callback_url': get_api_entry() + "/company/ai_callback",
         'hostname': socket.gethostname(),
     }
@@ -313,7 +314,7 @@ def api_company_callback_ai_summary():
     """ """
     json = request.json
 
-    business = DB_Company.objects(safe_name=json['id']).first()
+    business = DB_Company.objects(id=json['id']).first()
 
     if 'type' in json:
         print_b(" AI_CALLBACK " + json['id'])

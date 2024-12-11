@@ -461,7 +461,7 @@ def api_news_callback_ai_summary():
     return get_response_formatted(ret)
 
 
-def get_portfolio_query(name_list="default", tickers_list=None, limit=40, my_args=None):
+def get_portfolio_query(name_list="default", tickers_list=None, limit=100, my_args=None):
     from api.ticker.routes import get_watchlist_or_create
 
     if tickers_list:
