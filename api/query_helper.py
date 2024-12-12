@@ -505,7 +505,7 @@ def mongo_to_dict_helper(obj, filter_out=None, add_empty_lists=True):
                 continue
 
             if field_name[0:1] == "_":
-                print("Ignore field " + field_name)
+                #print("Ignore field " + field_name)
                 continue
 
             if field_name in obj._data:
@@ -526,6 +526,8 @@ def query_clean_reserved(args):
     args.pop('reversed', None)
     args.pop('fields', None)
     args.pop('cleanup', None)
+    args.pop('reserved', None)
+    args.pop('extra', None)
     args.pop('key', None)
     args.pop('k', None)
     args.pop('value', None)

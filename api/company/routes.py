@@ -558,12 +558,14 @@ def api_build_company_state_query(db_company):
     unique_tickers = set()
 
     for index, article in enumerate(news):
-        unique_tickers = set(article.related_exchange_tickers) | unique_tickers
-        content += "| Article " + str(index) + " from " + article.publisher + "\n"
-        content += "| Title: " + article.get_title() + "\n"
-        content += str(article.get_summary()) + "\n"
-        content += "\n---\n"
-
+        try:
+            unique_tickers = set(article.related_exchange_tickers) | unique_tickers
+            content += "| Article " + str(index) + " from " + str(article.publisher) + "\n"
+            content += "| Title: " + str(article.get_title()) + "\n"
+            content += str(article.get_summary()) + "\n"
+            content += "\n---\n"
+        except Exception as e:
+            print_exception(e, "CRASHED READING ARTICLE")
 
     #tickers = str.join(",", unique_tickers)
     #content += "## Tickers: " + tickers + "\n\n"
@@ -686,16 +688,56 @@ def api_prompt_callback_company():
     return get_response_formatted({})
 
 
+def api_company_build_prompts_query(extra_args=None):
+    extra = extra_args.get("extra", "")
+
+    prompts = build_query_from_request(DB_CompanyPrompt, global_api=True, extra_args=extra_args)
+    ret = {'news': prompts}
+
+    if 'include_company' not in extra:
+        return ret
+
+    companies = {}
+    reasonable_fields = ['company_name', 'website', 'exchange_tickers']
+    for prompt in prompts:
+        if prompt['company_id'] in companies:
+            continue
+
+        c = DB_Company.objects(id=prompt['company_id']).only(*reasonable_fields).first()
+        companies[prompt['company_id']] = c
+
+    ret['companies'] = companies
+    return ret
+
+
 @blueprint.route('/query_prompts', methods=['GET', 'POST'])
 #@api_key_or_login_required
 def api_company_get_query_prompts():
     delete = request.args.get("cleanup", None)
 
-    prompts = build_query_from_request(DB_CompanyPrompt, global_api=True)
-    ret = {'prompts': prompts}
-
-    if delete:
+    ret = api_company_build_prompts_query(request.args)
+    if delete and current_user.is_admin:
         prompts.delete()
+
+    return get_response_formatted(ret)
+
+
+@blueprint.route('/latest_prompts', methods=['GET', 'POST'])
+#@api_key_or_login_required
+def api_company_get_query_prompts_latest():
+    """
+    Abstraction so we don't call this very long query:
+    /api/company/query_prompts?order_by=-ai_upload_date&only=&ai_summary__exists=1&extra=include_company
+    """
+    new_args = {
+        'order_by': "-ai_upload_date",
+        'only': "company_id,ai_summary,ai_upload_date",
+        'ai_summary__exists': "1",
+        'extra': "include_company",
+    }
+
+    new_args.update(request.args)
+    ret = api_company_build_prompts_query(new_args)
 
     return get_response_formatted(ret)
 
