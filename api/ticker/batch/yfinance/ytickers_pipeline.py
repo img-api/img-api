@@ -93,7 +93,7 @@ def ticker_update_financials(full_symbol, max_age_minutes=15, force=False):
     try:
         financial_data = prepare_update_with_schema(yf_obj.info, new_schema)
         ticker_save_financials(full_symbol, yf_obj)
-        ticker_save_history(full_symbol, yf_obj)
+        #ticker_save_history(full_symbol, yf_obj)
 
     except Exception as e:
         print_exception(e, "CRASH")
@@ -416,14 +416,15 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
 
             # Overwrite our creation time with the publisher time
             try:
+                myupdate['raw_tickers'] = item['relatedTickers']
+
                 if 'providerPublishTime' in item:
                     value = datetime.fromtimestamp(int(item['providerPublishTime']))
                     print_b(" DATE " + str(value))
                     myupdate['creation_date'] = value
 
-                myupdate['raw_tickers'] = item['relatedTickers']
             except Exception as e:
-                print_e(e, "CRASHED LOADING DATE")
+                print_exception(e, "CRASHED LOADING DATE")
 
             # We need to convert between both systems
             related_tickers = []
