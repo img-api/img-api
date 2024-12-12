@@ -550,13 +550,15 @@ def api_update_company_summary():
     for db_company in companies:
 
         ret = api_build_company_state_query(db_company)
-
         if 'last_analysis_date' in db_company and db_company['last_analysis_date']:
             ret['last_analysis_date_verbose'] = db_company['last_analysis_date'].strftime("%Y/%m/%d, %H:%M:%S")
             print(" DATE " + ret['last_analysis_date_verbose'])
 
         db_company.update(**{'last_analysis_date': datetime.now()})
         reports.append(ret)
+
+        if 'ai_queue_size' in ret and ret['ai_queue_size'] > 10:
+            return get_response_formatted({'query_report': reports})
 
     return get_response_formatted({'query_report': reports})
 
