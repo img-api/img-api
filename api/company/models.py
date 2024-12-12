@@ -25,6 +25,7 @@ class DB_Company(db.DynamicDocument):
 
     creation_date = db.DateTimeField()
     last_update_date = db.DateTimeField()
+    last_analysis_date = db.DateTimeField()
 
     # Convert into date
     founded = db.StringField()

@@ -21,6 +21,16 @@ API_VERSION = "0.51pa"
 cache = Cache(config={'CACHE_TYPE': 'SimpleCache'})
 api_ignore_list = ['tracking']
 
+def cache_make_key():
+   """A function which is called to derive the key for a computed value.
+      The key in this case is the concat value of all the json request
+      parameters. Other strategy could to use any hashing function.
+   :returns: unique string for which the value should be cached.
+   """
+   user_data = request.args
+   return ",".join([f"{key}={value}" for key, value in user_data.items()])
+
+
 mail = Mail()
 
 def api_clean_recursive(content, output):

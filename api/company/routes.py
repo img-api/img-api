@@ -4,7 +4,7 @@ from datetime import datetime
 
 import qrcode
 import requests
-from api import get_response_error_formatted, get_response_formatted
+from api import cache, get_response_error_formatted, get_response_formatted
 from api.company import blueprint
 from api.company.models import DB_Company, DB_CompanyPrompt
 from api.config import get_api_AI_service, get_api_entry
@@ -134,10 +134,12 @@ def api_remove_a_business_by_id(biz_id):
 
 @blueprint.route('/get/<string:biz_name>', methods=['GET', 'POST'])
 @blueprint.route('/get/<string:biz_name>', methods=['GET', 'POST'])
+@cache.cached(timeout=600)
 def api_get_business_info(biz_name):
     """ Business get info
     ---
     """
+    print(" LOAD " + biz_name)
     if biz_name == "ALL":
         business = DB_Company.objects()
 
@@ -536,6 +538,23 @@ def api_update_company(company_id):
     return get_response_formatted({'processed': processed, 'result': result, 'query_report': query_report})
 
 
+@blueprint.route('/analysis/batch', methods=['GET', 'POST'])
+def api_update_company_summary():
+    """ We refetch a company
+    """
+    companies = DB_Company.objects(last_analysis_date__exists=0).limit(10)
+
+    if len(companies) == 0:
+        companies = DB_Company.objects().order_by("-last_analysis_date")
+
+    reports = []
+    for db_company in companies:
+        db_company.update(**{'last_analysis_date': datetime.now()})
+        reports.append(api_build_company_state_query(db_company))
+
+    return get_response_formatted({'query_report': reports})
+
+
 def api_build_company_state_query(db_company):
     from datetime import timedelta
 
@@ -743,6 +762,7 @@ def api_company_get_query_prompts_latest():
 
 
 @blueprint.route('/financials/get/<string:ticker_id>', methods=['GET', 'POST'])
+@cache.cached(timeout=60)
 def api_get_ticker_financials(ticker_id):
     """
         Returns a list of tickers that the user is watching.

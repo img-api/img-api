@@ -1,8 +1,9 @@
 from datetime import datetime
 
 import pandas as pd
-from api import (admin_login_required, api_key_or_login_required,
-                 get_response_error_formatted, get_response_formatted)
+from api import (admin_login_required, api_key_or_login_required, cache,
+                 cache_make_key, get_response_error_formatted,
+                 get_response_formatted)
 from api.print_helper import *
 from api.query_helper import (build_query_from_request, get_timestamp_verbose,
                               mongo_to_dict_helper)
@@ -14,6 +15,7 @@ from api.ticker.batch.yfinance.ytickers_pipeline import \
     ticker_update_financials
 from api.ticker.tickers_helpers import standardize_ticker_format
 from flask import request
+from flask_cachecontrol import ResponseIsSuccessfulOrRedirect, cache_for
 from mongoengine.queryset.visitor import Q
 
 from .models import (DB_Ticker, DB_TickerHighRes, DB_TickerHistoryTS,
@@ -88,7 +90,6 @@ def api_get_ticker_process_batch(end=None, BATCH_SIZE=10):
             ticker['verbose_date'] = ticker.last_processed_date.strftime("%Y/%m/%d, %H:%M:%S")
 
     return get_response_formatted({'tickers': tickers})
-
 
 @blueprint.route('/index/batch/process', methods=['GET', 'POST'])
 #@api_key_or_login_required
@@ -215,6 +216,7 @@ def api_get_query():
 
 @blueprint.route('/ts/query', methods=['GET', 'POST'])
 @api_key_or_login_required
+@cache_for(hours=24, only_if=ResponseIsSuccessfulOrRedirect)
 def api_get_financial_query():
     """ https://domain/api/ticker/ts/query?id__exists=1&order_by=-creation_date
         http://domain/api/ticker/ts/query?exchange_ticker=NYSE:UNH&verbose=1
@@ -229,6 +231,7 @@ def api_get_financial_query():
 
 @blueprint.route('/<string:ticker_id>/get', methods=['GET', 'POST'])
 @api_key_or_login_required
+@cache.cached(timeout=300)
 def api_get_ticker(ticker_id):
     from flask_login import current_user
     """
@@ -598,6 +601,7 @@ def api_find_full_symbol_historical_change_data(full_symbol):
 
 
 @blueprint.route('/history/<string:full_symbol>', methods=['GET', 'POST'])
+@cache.cached(timeout=3600)
 def api_find_full_symbol_historical_data(full_symbol):
     from api.query_helper import (mongo_to_dict_helper,
                                   prepare_update_with_schema)
