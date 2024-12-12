@@ -652,7 +652,7 @@ def api_build_company_state_query(db_company):
         'company': str(db_company.safe_name),
         'raw_messages': arr_messages,
         'raw_tools': None,
-        'prefix': "0_COMPANY_SUMMARY_" + str(db_company.safe_name),
+        'prefix': "Z_COMPANY_SUMMARY_" + str(db_company.safe_name),
         'id': str(db_prompt.id),
         'model': "llama3.3",
         'callback_url': get_api_entry() + "/company/ai_prompt",
