@@ -543,14 +543,20 @@ def api_update_company_summary():
     """ We refetch a company
     """
     companies = DB_Company.objects(last_analysis_date__exists=0).limit(10)
-
     if len(companies) == 0:
-        companies = DB_Company.objects().order_by("-last_analysis_date")
+        companies = DB_Company.objects(last_analysis_date__exists=1).order_by("+last_analysis_date").limit(10)
 
     reports = []
     for db_company in companies:
+
+        ret = api_build_company_state_query(db_company)
+
+        if 'last_analysis_date' in db_company and db_company['last_analysis_date']:
+            ret['last_analysis_date_verbose'] = db_company['last_analysis_date'].strftime("%Y/%m/%d, %H:%M:%S")
+            print(" DATE " + ret['last_analysis_date_verbose'])
+
         db_company.update(**{'last_analysis_date': datetime.now()})
-        reports.append(api_build_company_state_query(db_company))
+        reports.append(ret)
 
     return get_response_formatted({'query_report': reports})
 
