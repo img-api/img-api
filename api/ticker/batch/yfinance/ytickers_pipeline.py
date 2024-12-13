@@ -382,7 +382,7 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
                     api_create_article_ai_summary(db_news)
 
                     # Work to figure out problems with tickers
-                    if 'raw_tickers' not in db_news:
+                    if 'raw_tickers' not in db_news and 'relatedTickers' in item:
                         db_news.update(**{'raw_tickers': item['relatedTickers']})
 
                     #fix_news_ticker(db_ticker, db_news)
@@ -416,7 +416,8 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
 
             # Overwrite our creation time with the publisher time
             try:
-                myupdate['raw_tickers'] = item['relatedTickers']
+                if 'relatedTickers' in item:
+                    myupdate['raw_tickers'] = item['relatedTickers']
 
                 if 'providerPublishTime' in item:
                     value = datetime.fromtimestamp(int(item['providerPublishTime']))

@@ -641,9 +641,13 @@ def api_build_company_state_query(db_company):
     db_prompt = DB_CompanyPrompt(**jrequest)
     db_prompt.save()
 
-    assistant = "Current date " + str(datetime.now())
-    assistant += ". Relevant articles for " + db_company.long_name + " "
-    assistant += db_company.long_business_summary + " " + content
+    assistant = "Current date " + str(datetime.now())[:16] + "."
+    assistant += "Relevant articles for " + db_company.long_name + ". "
+
+    if db_company.long_business_summary:
+        assistant += str(db_company.long_business_summary) + "."
+
+    assistant += content
 
     arr_messages = [{
         "role": "assistant",
