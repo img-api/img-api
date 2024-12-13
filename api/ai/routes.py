@@ -1,4 +1,4 @@
-
+import requests
 from api import api_key_or_login_required, get_response_formatted
 from api.ai import blueprint
 from api.ai.models import DB_AI_Process
@@ -59,3 +59,20 @@ def api_company_callback_ai_summary():
 
     ret = {}
     return get_response_formatted(ret)
+
+
+def get_api_AI_availability(my_queue="process"):
+    from api.config import get_api_AI_service
+
+    try:
+        response = requests.get(get_api_AI_service("count"))
+        response.raise_for_status()
+
+        json_response = response.json()
+
+        return json_response.get(my_queue, 0)
+
+    except Exception as e:
+        print_exception(e, "CRASH READING RESPONSE")
+
+    return -1

@@ -540,8 +540,15 @@ def api_update_company(company_id):
 
 @blueprint.route('/analysis/batch', methods=['GET', 'POST'])
 def api_update_company_summary():
-    """ We refetch a company
+    """ Create a summary for the current company.
     """
+
+    from api.ai.routes import get_api_AI_availability
+
+    my_count = get_api_AI_availability("process")
+    if my_count == -1 or my_count > 10:
+        return
+
     companies = DB_Company.objects(last_analysis_date__exists=0).limit(10)
     if len(companies) == 0:
         companies = DB_Company.objects(last_analysis_date__exists=1).order_by("+last_analysis_date").limit(10)
@@ -556,9 +563,6 @@ def api_update_company_summary():
 
         db_company.update(**{'last_analysis_date': datetime.now()})
         reports.append(ret)
-
-        if 'ai_queue_size' in ret and ret['ai_queue_size'] > 10:
-            return get_response_formatted({'query_report': reports})
 
     return get_response_formatted({'query_report': reports})
 
@@ -580,6 +584,10 @@ def api_build_company_state_query(db_company):
     news, tkrs = get_portfolio_query(tickers_list=db_company.exchange_tickers)
 
     if not news:
+        return
+
+    if count(news) == 0:
+        # No news to process
         return
 
     unique_tickers = set()
