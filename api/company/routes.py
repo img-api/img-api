@@ -547,7 +547,7 @@ def api_update_company_summary():
 
     my_count = get_api_AI_availability("process")
     if my_count == -1 or my_count > 10:
-        return
+        return get_response_formatted({'my_count': my_count})
 
     companies = DB_Company.objects(last_analysis_date__exists=0).limit(10)
     if len(companies) == 0:
