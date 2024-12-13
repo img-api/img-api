@@ -3,10 +3,8 @@ import socket
 from datetime import datetime
 
 import requests
-from api import (admin_login_required, api_key_or_login_required,
-                 get_response_error_formatted, get_response_formatted)
-from api.config import (get_api_AI_default_service, get_api_AI_service,
-                        get_api_entry)
+from api import (admin_login_required, api_key_or_login_required, get_response_error_formatted, get_response_formatted)
+from api.config import (get_api_AI_default_service, get_api_AI_service, get_api_entry)
 from api.print_helper import *
 from api.prompts import blueprint
 from api.prompts.models import DB_UserPrompt
@@ -314,12 +312,12 @@ def api_create_prompt_ai_summary(db_prompt, priority=False, force_summary=False)
     if priority:
         data['priority'] = priority
 
-    response = requests.post(get_api_AI_service(), json=data)
-    response.raise_for_status()
-
     try:
+        response = requests.post(get_api_AI_service(), json=data)
+        response.raise_for_status()
+
         json_response = response.json()
-        print_json(json_response)
+        #print_json(json_response)
 
         db_prompt.update(**{
             #'raw': json_response,
@@ -351,31 +349,29 @@ def api_llama_get_state():
 
     return {}
 
+
 def api_let_AI_search_for_information(db_prompt, priority=False):
     system = "You are an expert user of search and mongodb."
     system += "You are searching in several articles for an user that is asking a questions,"
     system += "you need to fill your knowledge with up to date information about the request."
 
-    arr_messages = [
-        {
-            "role": "assistant",
-            "content": "",
-        },
-        {
-            "role": "system",
-            "content": system,
-        },
-        {
-            "role": "user",
-            "content": db_prompt.prompt[:4096],
-        }
-    ]
+    arr_messages = [{
+        "role": "assistant",
+        "content": "",
+    }, {
+        "role": "system",
+        "content": system,
+    }, {
+        "role": "user",
+        "content": db_prompt.prompt[:4096],
+    }]
 
     search_for_information = {
         "type": "function",
         "function": {
             "name": "search_for_information",
-            "description": "Create a list of keywords to search online or our articles in our database, including companies or financial information",
+            "description":
+            "Create a list of keywords to search online or our articles in our database, including companies or financial information",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -417,12 +413,12 @@ def api_let_AI_search_for_information(db_prompt, priority=False):
     if priority:
         data['priority'] = priority
 
-    response = requests.post(get_api_AI_service(), json=data)
-    response.raise_for_status()
-
     try:
+        response = requests.post(get_api_AI_service(), json=data)
+        response.raise_for_status()
+
         json_response = response.json()
-        print_json(json_response)
+        #print_json(json_response)
 
         db_prompt.update(**{
             'raw': json_response,

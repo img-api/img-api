@@ -669,12 +669,12 @@ def api_build_company_state_query(db_company):
         'hostname': socket.gethostname(),
     }
 
-    response = requests.post(get_api_AI_service(), json=data)
-    response.raise_for_status()
-
     try:
+        response = requests.post(get_api_AI_service(), json=data)
+        response.raise_for_status()
+
         json_response = response.json()
-        print_json(json_response)
+        #print_json(json_response)
 
         db_prompt.update(**{'ai_upload_date': datetime.now(), 'ai_queue_size': json_response['queue_size']})
         db_prompt.reload()

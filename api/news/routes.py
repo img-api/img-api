@@ -188,7 +188,7 @@ def api_create_article_ai_summary(article, priority=False, force_summary=False):
 
     wait_min = article.age_ai_upload_minutes()
     if wait_min < 120:
-        print_g(article.link +  " WAITING FOR AI FOR " + str(wait_min))
+        print_g(article.link + " WAITING FOR AI FOR " + str(wait_min))
         return
 
     articles = '\n'.join(article['articles'])
@@ -229,10 +229,10 @@ def api_create_article_ai_summary(article, priority=False, force_summary=False):
     if 'source' in article:
         data['source'] = article['source']
 
-    response = requests.post(get_api_AI_service(), json=data)
-    response.raise_for_status()
-
     try:
+        response = requests.post(get_api_AI_service(), json=data)
+        response.raise_for_status()
+
         json_response = response.json()
     except Exception as e:
         print_exception(e, "CRASH READING RESPONSE")
@@ -260,10 +260,10 @@ def api_create_news_translation(id, text, field, language):
         'hostname': socket.gethostname(),
     }
 
-    response = requests.post(get_api_AI_service(), json=data)
-    response.raise_for_status()
-
     try:
+        response = requests.post(get_api_AI_service(), json=data)
+        response.raise_for_status()
+
         json_response = response.json()
     except Exception as e:
         print_exception(e, "CRASH READING RESPONSE")
