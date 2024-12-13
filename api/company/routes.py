@@ -586,7 +586,7 @@ def api_build_company_state_query(db_company):
     if not news:
         return
 
-    if count(news) == 0:
+    if len(news) == 0:
         # No news to process
         return
 
