@@ -283,7 +283,7 @@ def api_key_or_login_required(func):
                 ret = func(*args, **kwargs)
 
                 if request.cookies.get('stay_logged') != "1":
-                    logout_user()/state
+                    logout_user()
                 return ret
 
         except HTTPException as errh:
