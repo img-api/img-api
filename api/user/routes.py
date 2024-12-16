@@ -77,6 +77,15 @@ def get_user_from_request():
     return user
 
 
+@blueprint.route('/session', methods=['GET', 'POST'])
+@api_key_login_or_anonymous
+def api_token_login_user():
+    token = current_user.generate_auth_token()
+    resp = get_response_formatted({'status': 'success', 'msg': 'hello user', 'token': token})
+    resp.set_cookie('stay_logged', '1')
+    return resp
+
+
 @blueprint.route('/login', methods=['GET', 'POST'])
 def api_login_user():
     """Login an user into the system
