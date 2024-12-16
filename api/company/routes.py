@@ -379,7 +379,7 @@ def api_create_ai_regex_tool(company, invalidate=False):
 
     arr_messages = [{
         "role": "assistant",
-        "content": company.long_name + " " + company.long_business_summary,
+        "content": str(company.long_name) + " " + str(company.long_business_summary),
     }, {
         "role": "system",
         "content": system,
@@ -531,7 +531,7 @@ def api_update_company(company_id):
     ticker = db_company.exchange_tickers[-1]
     result = api_create_ai_regex_tool(db_company, invalidate=True)
 
-    query_report = api_build_company_state_query(db_company)
+    query_report = api_build_company_state_query(db_company, forced=True)
 
     processed = ticker_process_invalidate_full_symbol(ticker)
 
@@ -567,7 +567,7 @@ def api_update_company_summary():
     return get_response_formatted({'query_report': reports})
 
 
-def api_build_company_state_query(db_company):
+def api_build_company_state_query(db_company, forced=False):
     from datetime import timedelta
 
     if not db_company:
@@ -575,10 +575,15 @@ def api_build_company_state_query(db_company):
 
     from api.news.routes import get_portfolio_query
 
-    cache_review_date = datetime.now() - timedelta(days=1)
-    db_prompt = DB_CompanyPrompt.objects(company_id=str(db_company.id), ai_upload_date__gte=cache_review_date).first()
-    if db_prompt:
-        return db_prompt
+    if not forced:
+        my_count = get_api_AI_availability("process")
+        if my_count == -1 or my_count > 10:
+            return
+
+        cache_review_date = datetime.now() - timedelta(days=1)
+        db_prompt = DB_CompanyPrompt.objects(company_id=str(db_company.id), ai_upload_date__gte=cache_review_date).first()
+        if db_prompt:
+            return db_prompt
 
     content = ""
     news, tkrs = get_portfolio_query(tickers_list=db_company.exchange_tickers)
@@ -697,7 +702,7 @@ def api_get_company_prompt(ticker):
     if not db_company:
         return get_response_error_formatted(404, {'error_msg': "Business doesn't have tickers!"})
 
-    processed = api_build_company_state_query(db_company)
+    processed = api_build_company_state_query(db_company, forced=True)
     return get_response_formatted({'processed': processed})
 
 
