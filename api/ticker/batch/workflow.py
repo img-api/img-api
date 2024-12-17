@@ -189,8 +189,8 @@ def ticker_process_invalidate(ticker, max_age_minutes=5):
     db_ticker = DB_Ticker.objects(query).first()
     #for db_ticker in tickers:
 
-    if db_ticker.age_minutes() < max_age_minutes:
-        return
+    #if db_ticker.age_minutes() < max_age_minutes:
+    #    return
 
     try:
         db_ticker.set_state("PIPELINE_START")

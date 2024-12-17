@@ -81,6 +81,7 @@ def ticker_update_financials(full_symbol, max_age_minutes=15, force=False):
         'company_name': 'longName',
         'price': 'currentPrice',
         'ratio': 'currentRatio',
+        'trailingEps': 'trailingEps',
         'day_low': 'dayLow',
         'day_high': 'dayHigh',
         'current_open': 'open',
@@ -95,11 +96,16 @@ def ticker_update_financials(full_symbol, max_age_minutes=15, force=False):
         ticker_save_financials(full_symbol, yf_obj)
         #ticker_save_history(full_symbol, yf_obj)
 
+        if 'trailingEps' in financial_data and financial_data['trailingEps']:
+            PE = round(financial_data['price'] / financial_data['trailingEps'], 2)
+            financial_data['PE'] = PE
+
     except Exception as e:
         print_exception(e, "CRASH")
         return fin
 
     financial_data['exchange_ticker'] = full_symbol
+
 
     if not fin:
         fin = DB_TickerSimple(**financial_data)
@@ -244,17 +250,17 @@ def yticker_check_tickers(relatedTickers):
             if 'symbol' in info:
                 ticker = info['symbol']
             else:
-                ticker = "N/A"
+                ticker = ""
 
             if 'exchange' in info:
                 exchange = info['exchange']
             else:
-                exchange = "N/A"
+                exchange = ""
 
             if 'longName' in info:
                 my_company = info['longName']
             else:
-                my_company = "N/A"
+                my_company = ""
 
             new_schema = {
                 'website': 'website',

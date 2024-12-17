@@ -86,7 +86,7 @@ def api_stripe_create_checkout_redirect():
     YOUR_DOMAIN = "https://" + PUBLIC_HOST
     domain_callback = stripe_settings.get("domain_callback", YOUR_DOMAIN)
 
-    username = "N/A"
+    username = "NOT_AVAILABLE"
     extra = '&tier=' + tier + '&months=' + months
     try:
         if current_user.is_authenticated:

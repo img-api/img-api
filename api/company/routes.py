@@ -134,7 +134,7 @@ def api_remove_a_business_by_id(biz_id):
 
 @blueprint.route('/get/<string:biz_name>', methods=['GET', 'POST'])
 @blueprint.route('/get/<string:biz_name>', methods=['GET', 'POST'])
-@cache.cached(timeout=600)
+#@cache.cached(timeout=600)
 def api_get_business_info(biz_name):
     """ Business get info
     ---
@@ -570,6 +570,8 @@ def api_update_company_summary():
 def api_build_company_state_query(db_company, forced=False):
     from datetime import timedelta
 
+    from api.ai.routes import get_api_AI_availability
+
     if not db_company:
         return {}
 
@@ -824,6 +826,17 @@ def api_get_nms_cleanup():
         The National Market System (NMS) is a regulatory mechanism that
         governs the operations of securities trading in the United States.
     """
+    cleanup_tickers_id = request.args.get("cleanup_tickers_id", None)
+    if cleanup_tickers_id:
+        res = []
+        company = DB_Company.objects(id=cleanup_tickers_id).first()
+        exchange_tickers = [company['exchange_tickers'][0]]
+        exchanges = [company['exchanges'][0]]
+        company.update(**{'exchange_tickers': exchange_tickers, 'exchanges': exchanges})
+        res.append(company)
+        print(">> COMPANY " + str(company.safe_name))
+
+        return get_response_formatted({'res': res})
 
     legacy_fix = request.args.get("legacy_fix", None)
     if legacy_fix:

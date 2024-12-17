@@ -202,7 +202,7 @@ class DB_Company(db.DynamicDocument):
         from api.ticker.tickers_helpers import standardize_ticker_format
 
         if len(self.exchange_tickers) == 0:
-            return 'N/A'
+            return ''
 
         if len(self.exchange_tickers) == 1:
             return standardize_ticker_format(self.exchange_tickers[0])
