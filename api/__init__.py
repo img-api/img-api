@@ -48,7 +48,15 @@ def api_clean_recursive(content, output):
         output = content
         return output
 
+    #if isinstance(content, list):
+    #    res = []
+    #    return
+
     for key in content:
+        if isinstance(key, dict):
+            value = key
+            continue
+
         value = content[key]
         if value == None:
             # print_r(key + ' is Empty')

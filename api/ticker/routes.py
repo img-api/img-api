@@ -91,6 +91,7 @@ def api_get_ticker_process_batch(end=None, BATCH_SIZE=10):
 
     return get_response_formatted({'tickers': tickers})
 
+
 @blueprint.route('/index/batch/process', methods=['GET', 'POST'])
 #@api_key_or_login_required
 def api_batch_process():
@@ -601,7 +602,7 @@ def api_find_full_symbol_historical_change_data(full_symbol):
 
 
 @blueprint.route('/history/<string:full_symbol>', methods=['GET', 'POST'])
-@cache.cached(timeout=3600)
+#@cache.cached(timeout=3600)
 def api_find_full_symbol_historical_data(full_symbol):
     from api.query_helper import (mongo_to_dict_helper,
                                   prepare_update_with_schema)
@@ -638,3 +639,108 @@ def api_find_full_symbol_historical_data(full_symbol):
 def api_delete_allhistory():
     DB_TickerHistoryTS.objects().delete()
     return get_response_formatted({'status': 'deleted'})
+
+
+@blueprint.route('/technical/crossovers', methods=['GET', 'POST'])
+#@api_key_or_login_required
+def api_detect_crossovers():
+
+    exchange_ticker = request.args.get("exchange_ticker", None)
+
+    pipeline = []
+
+    if exchange_ticker:
+        pipeline.append({'$match': {'exchange_ticker': exchange_ticker}})
+
+        pipeline.append({"$sort": {"creation_date": 1}})
+    else:
+        # Sort documents by ticker symbol and creation_date
+        sorting = {"$sort": {"exchange_ticker": 1, "creation_date": 1}}
+        pipeline.append(sorting)
+
+    # Calculate moving averages (50-day and 200-day)
+    window = {
+        "$setWindowFields": {
+            "sortBy": {
+                "creation_date": 1
+            },
+            "partitionBy": "$exchange_ticker",  # Group by ticker
+            "output": {
+                "ma50": {  # Equivalent to ~50-day moving average
+                    "$avg": "$close",
+                    "window": {
+                        "documents": [-6, 0]
+                    }
+                },
+                "ma200": {  # Equivalent to ~200-day moving average
+                    "$avg": "$close",
+                    "window": {
+                        "documents": [-28, 0]
+                    }
+                }
+            }
+        }
+    }
+
+    pipeline.append(window)
+
+    # Project relevant fields
+    project = {
+        "$project": {
+            "exchange_ticker": 1,
+            "close": 1,
+            "creation_date": 1,
+            "ma50": 1,
+            "ma200": 1,
+            "crossoverType": {
+                "$switch": {
+                    "branches": [
+                        {  # Golden Cross: ma50 crosses above ma200
+                            "case": {
+                                "$and": [
+                                    {
+                                        "$gt": ["$ma50", "$ma200"]
+                                    },
+                                    {
+                                        "$lt": ["$ma50", {
+                                            "$avg": ["$ma200", -1]
+                                        }]
+                                    }  # Detect upward cross
+                                ]
+                            },
+                            "then": "Golden Cross"
+                        },
+                        {  # Death Cross: ma50 crosses below ma200
+                            "case": {
+                                "$and": [
+                                    {
+                                        "$lt": ["$ma50", "$ma200"]
+                                    },
+                                    {
+                                        "$gt": ["$ma50", {
+                                            "$avg": ["$ma200", -1]
+                                        }]
+                                    }  # Detect downward cross
+                                ]
+                            },
+                            "then": "Death Cross"
+                        }
+                    ],
+                    "default":
+                    "None"
+                }
+            }
+        }
+    }
+
+    pipeline.append(project)
+
+    # Sort results by date
+    final_sort = {"$match": {"crossoverType": {"$in": ["Golden Cross", "Death Cross"]}}}
+
+    #pipeline.append(final_sort)
+
+    # Execute the aggregation pipeline
+    results = DB_TickerHistoryTS.objects().aggregate(pipeline)
+
+    return get_response_formatted({"crossovers": results})

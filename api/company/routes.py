@@ -633,6 +633,9 @@ def api_build_company_state_query(db_company, forced=False):
     system += "Provide a concise summary of your findings, structured in bullet points or short paragraphs. Focus on actionable insights relevant to investors or market analysts."
     system += "Add Unicode icons to emphasise different aspects and important information."
 
+    if not db_company.long_name:
+        return
+
     prompt = "Given the articles and information for "
     prompt += db_company.long_name
     prompt += ". What is the current state of the company ?"

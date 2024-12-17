@@ -340,8 +340,6 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
         pass
 
     info = yf_obj.info
-    ticker_save_financials(db_ticker.full_symbol(), yf_obj)
-    ticker_save_history(db_ticker.full_symbol(), yf_obj)
 
     new_schema = {
         'website': 'website',
@@ -355,10 +353,18 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
         'country': 'country',
         'phone_number': 'phone',
         'gics_sector': 'sector',
+        'quote_type': 'quoteType',
         'gics_sub_industry': 'industry',
     }
 
     company_update = prepare_update_with_schema(info, new_schema)
+
+    if not company_update['long_name']:
+        company_update['long_name'] = info['shortName']
+
+    ticker_save_financials(db_ticker.full_symbol(), yf_obj)
+    ticker_save_history(db_ticker.full_symbol(), yf_obj)
+
 
     if 'companyOfficers' in info:
         company_officers = info['companyOfficers']

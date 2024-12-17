@@ -62,7 +62,7 @@ def date_from_unix(string):
 
 def date_to_unix(dt):
     """Converts a datetime object to unixtime"""
-    unixtime = time.mktime(d.timetuple())
+    unixtime = time.mktime(dt.timetuple())
     return int(unixtime)
 
 
@@ -461,6 +461,9 @@ def mongo_to_dict_helper(obj, filter_out=None, add_empty_lists=True):
         return ret
 
     return_data = {}
+
+    if isinstance(obj, datetime):
+        return date_to_unix(obj)
 
     if isinstance(obj, bool) or isinstance(obj, str) or isinstance(obj, float) or isinstance(obj, int):
         return obj
