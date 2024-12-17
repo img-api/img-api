@@ -557,12 +557,13 @@ def api_update_company_summary():
     for db_company in companies:
 
         ret = api_build_company_state_query(db_company)
-        if 'last_analysis_date' in db_company and db_company['last_analysis_date']:
-            ret['last_analysis_date_verbose'] = db_company['last_analysis_date'].strftime("%Y/%m/%d, %H:%M:%S")
-            print(" DATE " + ret['last_analysis_date_verbose'])
+        if ret:
+            if 'last_analysis_date' in db_company and db_company['last_analysis_date']:
+                ret['last_analysis_date_verbose'] = db_company['last_analysis_date'].strftime("%Y/%m/%d, %H:%M:%S")
+                print(" DATE " + ret['last_analysis_date_verbose'])
 
-        db_company.update(**{'last_analysis_date': datetime.now()})
-        reports.append(ret)
+            db_company.update(**{'last_analysis_date': datetime.now()})
+            reports.append(ret)
 
     return get_response_formatted({'query_report': reports})
 
@@ -573,14 +574,18 @@ def api_build_company_state_query(db_company, forced=False):
     from api.ai.routes import get_api_AI_availability
 
     if not db_company:
-        return {}
+        return None
+
+    if not db_company.long_name:
+        print_r(" MISSING COMPANY NAME ")
+        return None
 
     from api.news.routes import get_portfolio_query
 
     if not forced:
         my_count = get_api_AI_availability("process")
         if my_count == -1 or my_count > 10:
-            return
+            return None
 
         cache_review_date = datetime.now() - timedelta(days=1)
         db_prompt = DB_CompanyPrompt.objects(company_id=str(db_company.id), ai_upload_date__gte=cache_review_date).first()
@@ -591,11 +596,11 @@ def api_build_company_state_query(db_company, forced=False):
     news, tkrs = get_portfolio_query(tickers_list=db_company.exchange_tickers)
 
     if not news:
-        return
+        return None
 
     if len(news) == 0:
         # No news to process
-        return
+        return None
 
     unique_tickers = set()
 
@@ -632,9 +637,6 @@ def api_build_company_state_query(db_company, forced=False):
     system += "Highlight any plans or milestones mentioned that could affect future performance."
     system += "Provide a concise summary of your findings, structured in bullet points or short paragraphs. Focus on actionable insights relevant to investors or market analysts."
     system += "Add Unicode icons to emphasise different aspects and important information."
-
-    if not db_company.long_name:
-        return
 
     prompt = "Given the articles and information for "
     prompt += db_company.long_name
