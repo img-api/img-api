@@ -116,7 +116,7 @@ def ticker_update_financials(full_symbol, max_age_minutes=15, force=False):
     return fin
 
 
-def ticker_save_history(full_symbol, yf_obj, ts_interval="1wk"):
+def ticker_save_history(full_symbol, yf_obj, ts_interval="1d"):
     """ Test to capture 1 year of this ticker in intervals of 1 month for our basic graphs
 
     period: data period to download (either use period parameter or use start and end) Valid periods are:
@@ -131,12 +131,12 @@ def ticker_save_history(full_symbol, yf_obj, ts_interval="1wk"):
     today = datetime.now()
 
     fin = DB_TickerHistoryTS.objects(exchange_ticker=full_symbol).order_by('-creation_date').limit(1).first()
-    if fin and fin.age_month() < 1:
-        print_r(full_symbol + " We already have data for this ticker, force reindex? ")
+    if fin and fin.age_days() < 2:
+        print_r(full_symbol + " Too close ")
         return
 
     if fin:
-        start = today - relativedelta(weeks=1)
+        start = fin.creation_date.strftime("%Y-%m-%d")
     else:
         old_data_date = today - relativedelta(years=10)
         start = old_data_date.strftime("%Y-%m-%d")

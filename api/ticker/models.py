@@ -275,6 +275,11 @@ class DB_TickerHistoryTS(db.DynamicDocument):
         #print(self.exchange_ticker + " => " + str(age_in_months) + " months ")
         return age_in_months
 
+    def age_days(self, *args, **kwargs):
+        delta = datetime.now() - self.creation_date
+        age_in_days = delta.days + (delta.seconds / 86400.0)
+        return age_in_days
+
 
 class DB_TickerTimeSeries(db.DynamicDocument):
     """ Closest update in the system for 'realtime' data
