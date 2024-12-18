@@ -558,21 +558,24 @@ def api_update_company_summary():
     if my_count == -1 or my_count > 10:
         return get_response_formatted({'my_count': my_count})
 
-    companies = DB_Company.objects(last_analysis_date__exists=0).limit(10)
+    companies = DB_Company.objects(last_analysis_date__exists=0, long_name__exists=1).limit(10)
     if len(companies) == 0:
-        companies = DB_Company.objects(last_analysis_date__exists=1).order_by("+last_analysis_date").limit(10)
+        companies = DB_Company.objects(last_analysis_date__exists=1, long_name__exists=1).order_by("+last_analysis_date").limit(10)
 
     reports = []
     for db_company in companies:
 
         ret = api_build_company_state_query(db_company)
+        if ret == -1:
+            continue
+
         if ret:
             if 'last_analysis_date' in db_company and db_company['last_analysis_date']:
                 ret['last_analysis_date_verbose'] = db_company['last_analysis_date'].strftime("%Y/%m/%d, %H:%M:%S")
                 print(" DATE " + ret['last_analysis_date_verbose'])
 
-            db_company.update(**{'last_analysis_date': datetime.now()})
-            reports.append(ret)
+        db_company.update(**{'last_analysis_date': datetime.now()})
+        reports.append(ret)
 
     return get_response_formatted({'query_report': reports})
 
@@ -587,14 +590,14 @@ def api_build_company_state_query(db_company, forced=False):
 
     if not db_company.long_name:
         print_r(" MISSING COMPANY NAME ")
-        return None
+        return True
 
     from api.news.routes import get_portfolio_query
 
     if not forced:
         my_count = get_api_AI_availability("process")
         if my_count == -1 or my_count > 10:
-            return None
+            return -1
 
         cache_review_date = datetime.now() - timedelta(days=1)
         db_prompt = DB_CompanyPrompt.objects(company_id=str(db_company.id), ai_upload_date__gte=cache_review_date).first()
