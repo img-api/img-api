@@ -346,7 +346,7 @@ def api_create_ai_regex_tool(company, invalidate=False):
     description = "Given the company name |" + company['company_name'] + "|"
 
     if 'long_name' in company and company['long_name'] and company['long_name'] != company['company_name']:
-        description = +" or |" + company['long_name'] + "| "
+        description += " or |" + company['long_name'] + "| "
 
     description += "Create a regular expression that can find this company "
     description += "in any text so we can replace it with a link to the company. "
