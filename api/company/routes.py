@@ -343,19 +343,27 @@ def api_create_ai_regex_tool(company, invalidate=False):
     if not company['long_business_summary']:
         return
 
-    system = "You are an python expert developer in fetches and backend, you are writing scripts to parse website articles to discover company names."
+    description = "Given the company name |" + company['company_name'] + "|"
+
+    if 'long_name' in company and company['long_name'] and company['long_name'] != company['company_name']:
+        description = +" or |" + company['long_name'] + "| "
+
+    description += "Create a regular expression that can find this company "
+    description += "in any text so we can replace it with a link to the company. "
+    description += "Make sure it defines the company and only the company in any part of the text."
+
+    system = "You are an python expert developer in regular expressions and backend, you are writing scripts to parse website articles to match articles with companies."
     create_regex = {
         "type": "function",
         "function": {
             "name": "regular_expression",
-            "description":
-            "Given a company name, create a regular expression that can find this company in any text so we can replace it with a link to the company. Be careful with names that are common words so we don't match every text if it is not relevant, better not match than a false positive.",
+            "description": description,
             "parameters": {
                 "type": "object",
                 "properties": {
                     "regex": {
                         "type": "string",
-                        "description": "Regex for python.",
+                        "description": "Regex for python for " + company['company_name'],
                     },
                     "regex_explanation": {
                         "type": "string",
@@ -392,6 +400,7 @@ def api_create_ai_regex_tool(company, invalidate=False):
         'type': 'raw_llama',
         'subtype': 'company_regex',
         'id': str(company.id),
+        'model': "llama3.3",
         'raw_messages': arr_messages,
         'raw_tools': [create_regex],
         'callback_url': get_api_entry() + "/company/ai_callback_prompt",

@@ -635,6 +635,9 @@ def create_or_update_company(my_company, exchange=None, ticker=None):
     if exchange:
         exchange = standardize_exchange_format(exchange)
 
+    if ticker and "^" in ticker:
+        ticker, cleanup = ticker.split("^")
+
     if exchange and ticker:
         if ticker == "INTC":
             print(" TEST ")
