@@ -1,10 +1,12 @@
 import copy
+import re
 import socket
 from datetime import datetime
 
 import requests
 from api import (admin_login_required, api_key_or_login_required,
                  get_response_error_formatted, get_response_formatted)
+from api.company.models import DB_Company
 from api.config import get_api_AI_service, get_api_entry
 from api.news import blueprint
 from api.news.models import DB_News
@@ -203,9 +205,16 @@ def api_create_article_ai_summary(article, priority=False, force_summary=False):
         article.update(**{"articles": [], "force_reindex": True})
         return
 
-    prompt = "Summarize this, and format it max one paragraph, "
-    prompt += "use markdown to highlight important facts, "
-    prompt += "give a sentiment at the end about the company in the stock market."
+    prompt = "Remove everything that is not relevant to the title: |"
+    if 'source_title' in article:
+        prompt += article['source_title']
+    elif 'title' in article:
+        prompt += article['title']
+
+    prompt += "|. After cleanning up, summarize and format the article in max two paragraphs, "
+
+    prompt += ". Use markdown and unicode emojis and icons to highlight important facts. "
+    #prompt += "give a sentiment at the end about the company in the stock market."
 
     article.update(**{"ai_upload_date": datetime.now()})
 
@@ -213,7 +222,7 @@ def api_create_article_ai_summary(article, priority=False, force_summary=False):
         'type': 'summary',
         'id': str(article['id']),
         'prompt': prompt,
-        'article': articles[:16384],
+        'article': articles[:65384],
         'callback_url': get_api_entry() + "/news/ai_callback",
         'hostname': socket.gethostname(),
     }
@@ -578,7 +587,6 @@ def api_news_get_cleanup():
         The National Market System (NMS) is a regulatory mechanism that
         governs the operations of securities trading in the United States.
     """
-    from api.company.models import DB_Company
 
     GENERICS = ["NMS:", "NYQ:"]
 
@@ -615,3 +623,55 @@ def api_news_get_cleanup():
             article.update(**{'related_exchange_tickers': clean})
 
     return get_response_formatted({'dups': dups})
+
+
+def validate_regex_for_company(company_name: str, regex: str, text: str) -> bool:
+    """
+    Validates if the given regex matches only the company name in the provided text.
+
+    Args:
+        company_name (str): The expected company name (e.g., "3M Company").
+        regex (str): The regex pattern to validate.
+        text (str): The text to search for matches.
+
+    Returns:
+        bool: True if the regex matches only the company name, False otherwise.
+    """
+    try:
+        # Find all matches of the regex in the text
+        matches = re.findall(regex, text)
+
+        print(str(matches))
+
+        # Check if matches are exclusively the company name
+        return matches == [company_name]
+    except re.error as e:
+        # Handle invalid regex patterns
+        print(f"Invalid regex: {e}")
+        return False
+
+@blueprint.route('/process_regex', methods=['GET', 'POST'])
+def api_regex_processing():
+    """
+        We ask llama to generate
+    """
+    extra_args = { 'regex__exists': 1, 'limit': 1, 'order_by': "-last_analysis_date" }
+    companies = build_query_from_request(DB_Company, global_api=True, extra_args=extra_args)
+
+    if not companies:
+        companies = DB_Company.objects(regex__exists=1).order_by('-last_analysis_date').limit(1)
+
+    ret = []
+    for company in companies:
+
+        if not validate_regex_for_company(company.long_name, company.regex, company.ai_summary):
+            print(" FAILED REGEX ")
+
+        primary_ticker = company.get_primary_ticker()
+        exchange, ticker = primary_ticker.split(":")
+        db_news = DB_News.objects(related_exchange_tickers__nin=primary_ticker, ia_summary__regex=company['regex']).order_by('-creation_date').limit(10)
+
+        ret.append(db_news)
+
+
+    return get_response_formatted({ 'companies': companies, 'news': ret })
