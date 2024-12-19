@@ -6,6 +6,7 @@ from api.query_helper import *
 from api.subscription import blueprint
 from api.user.models import User
 from mongoengine import *
+from mongoengine.errors import ValidationError
 
 
 def api_subscription_process_user(db_user):
@@ -14,9 +15,6 @@ def api_subscription_process_user(db_user):
     #db_user.update(**{'last_email_date': datetime.now()})
 
     return db_user
-
-
-from mongoengine.errors import ValidationError
 
 
 def check_subscription_status():

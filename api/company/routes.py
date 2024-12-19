@@ -224,6 +224,25 @@ def api_apply_stamp(biz_name, encrypted_date):
     return get_response_formatted(ret)
 
 
+@blueprint.route('/query_symbol/<symbol>', methods=['GET', 'POST'])
+#@api_key_or_login_required
+def api_prompt_get_query_symbol(symbol):
+    """
+
+    """
+
+    db_company = DB_Company.objects(exchange_tickers=symbol).first()
+    if not db_company:
+        return get_response_formatted({'empty': 1, 'news': []})
+
+    extra_args = {'company_id': str(db_company.id)}
+
+    ret = api_company_build_prompts_query(extra_args=extra_args)
+
+    ret['companies'] = {str(db_company.id): db_company.serialize()}
+    return get_response_formatted(ret)
+
+
 @blueprint.route('/categories', methods=['GET', 'POST'])
 @api_file_cache(expiration_secs=86400)
 def company_explorer_categories():
@@ -912,3 +931,28 @@ def api_get_nms_cleanup():
         return get_response_formatted({'dups': dups})
 
     return get_response_formatted({})
+
+
+@blueprint.route('/sitemap.xml', methods=['GET', 'POST'])
+#@api_key_or_login_required
+def api_prompt_generate_sitemap():
+    import urllib.parse
+
+    from flask import Response
+
+    companies = DB_Company.objects()
+
+    xml_content = """<?xml version='1.0' encoding='UTF-8'?><urlset xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>"""
+
+    for company in companies:
+        symbol = company.get_primary_ticker()
+
+        if not company.company_name:
+            company_name = ""
+        else:
+            company_name = urllib.parse.quote(company.company_name)
+        xml_content += f"<url><loc>https://headingtomars.com/analysis/{ symbol }#{ company_name }</loc></url>"
+
+    xml_content += "</urlset>"
+
+    return Response(xml_content, mimetype='text/xml')

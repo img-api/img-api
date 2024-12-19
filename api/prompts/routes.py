@@ -5,6 +5,7 @@ from datetime import datetime
 import requests
 from api import (admin_login_required, api_key_or_login_required,
                  get_response_error_formatted, get_response_formatted)
+from api.company.models import DB_Company
 from api.config import (get_api_AI_default_service, get_api_AI_service,
                         get_api_entry)
 from api.print_helper import *
