@@ -189,6 +189,7 @@ def api_create_user_local():
     """
     from api.tools.validators import (get_validated_email, is_password_valid,
                                       is_valid_username)
+    from api.user.models import User
 
     print("======= CREATE USER LOCAL =============")
 
@@ -284,7 +285,8 @@ def api_create_user_local():
         'user': user.serialize()
     }
 
-    api_user_validation_required("New user created [" + user.username + "]")
+    if username != "dummy":
+        api_user_validation_required("New user created [" + username + "]")
     return get_response_formatted(ret)
 
 
@@ -1138,6 +1140,11 @@ def api_validate_email():
 
 
 def api_user_validation_required(subject):
+    from api.config import get_config_value, get_host_name
+
+    if not hasattr(current_user, "username") or not current_user.username:
+        return
+
     admin_user = User.objects(username="admin").first()
     link = "https://" + get_host_name()
 
