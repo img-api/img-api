@@ -19,7 +19,7 @@ from mongoengine.queryset.visitor import Q
 
 
 @blueprint.route('/query', methods=['GET', 'POST'])
-@api_file_cache(expiration_secs=60)
+@api_file_cache(expiration_secs=120)
 def api_company_get_query():
     """
     Example of queries: https://dev.gputop.com/api/company/query?founded=1994
@@ -43,6 +43,13 @@ def api_company_get_query():
 
     ret = {'companies': res}
     return get_response_formatted(ret)
+
+
+@blueprint.route('/query_cache', methods=['GET', 'POST'])
+@api_file_cache(expiration_secs=86400)
+def api_company_get_query_long():
+    """ Long cache query """
+    return api_company_get_query()
 
 
 def company_get_suggestions(text, only_tickers=False):
@@ -218,6 +225,7 @@ def api_apply_stamp(biz_name, encrypted_date):
 
 
 @blueprint.route('/categories', methods=['GET', 'POST'])
+@api_file_cache(expiration_secs=86400)
 def company_explorer_categories():
     """
         Examples, you can search for a gics_sector or group by category and industry.
@@ -561,7 +569,8 @@ def api_update_company_summary():
 
     companies = DB_Company.objects(last_analysis_date__exists=0, long_name__exists=1).limit(10)
     if len(companies) == 0:
-        companies = DB_Company.objects(last_analysis_date__exists=1, long_name__exists=1).order_by("+last_analysis_date").limit(10)
+        companies = DB_Company.objects(last_analysis_date__exists=1,
+                                       long_name__exists=1).order_by("+last_analysis_date").limit(10)
 
     reports = []
     for db_company in companies:
@@ -601,7 +610,8 @@ def api_build_company_state_query(db_company, forced=False):
             return -1
 
         cache_review_date = datetime.now() - timedelta(days=1)
-        db_prompt = DB_CompanyPrompt.objects(company_id=str(db_company.id), ai_upload_date__gte=cache_review_date).first()
+        db_prompt = DB_CompanyPrompt.objects(company_id=str(db_company.id),
+                                             ai_upload_date__gte=cache_review_date).first()
         if db_prompt:
             return db_prompt
 
@@ -902,4 +912,3 @@ def api_get_nms_cleanup():
         return get_response_formatted({'dups': dups})
 
     return get_response_formatted({})
-

@@ -3,6 +3,7 @@ import random
 from datetime import datetime
 
 import bcrypt
+import mistune
 import validators
 from api import (admin_login_required, api_key_login_or_anonymous,
                  api_key_or_login_required, get_response_error_formatted,
@@ -282,6 +283,8 @@ def api_create_user_local():
         'token': user.generate_auth_token(),
         'user': user.serialize()
     }
+
+    api_user_validation_required("New user created [" + user.username + "]")
     return get_response_formatted(ret)
 
 
@@ -1130,26 +1133,27 @@ def set_user_info(my_key):
 @blueprint.route('/validate_email', methods=['GET', 'POST'])
 @api_key_or_login_required
 def api_validate_email():
-    admin_user = User.objects(username="admin").first()
-
-    host = get_host_name() + "/api/validate/user"
-
-    subject = "Validate user " + current_user.username
-    message = "Someone needs validation"
-
-    send_email_user(admin_user, message, subject)
+    api_user_validation_required("Validate user [" + current_user.username + "]")
     return redirect("/please_wait")
 
 
-def send_email_user(user, message, subject, link=""):
-    host = get_host_name()
+def api_user_validation_required(subject):
+    admin_user = User.objects(username="admin").first()
+    link = "https://" + get_host_name()
 
+    link += "/api/user/admin/set/" + current_user.username
+    link += "/is_email_validated?value=true&key=" + admin_user.generate_auth_token()
+
+    message = "Someone needs validation __" + current_user.username + "__\n\n"
+    message += "*" + current_user.email + "*"
+
+    send_email_user(admin_user, message, subject, link, 'Validate ' + current_user.username)
+
+
+def send_email_user(user, message, subject, link="", link_text="", html=None):
     print_big("EMAIL " + user.email)
 
-    msg = Message(subject,
-                  sender=get_config_value("MAIL_DEFAULT_SENDER"),
-                  reply_to=current_user.email,
-                  recipients=[user.email])
+    msg = Message(subject, sender=get_config_value("MAIL_DEFAULT_SENDER"), reply_to=user.email, recipients=[user.email])
 
     name = user.first_name
     if not name:
@@ -1159,7 +1163,21 @@ def send_email_user(user, message, subject, link=""):
         "\n" + message + "\n\n %s \n\n Date: %s \n\n" % (
             link, str(datetime.now()))
 
-    #html_content = message +"<br><br><hr><small><a href='" + link + "'>" + link +"</a></small>"
+    if not html:
+        html = mistune.html(message)
+        if link:
+            if not link_text:
+                link_text = link
+
+            html += "<hr><h4><a href='" + link + "'>" + link_text + "</a></h4>"
+
+        header = '<span style="font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #111;">'
+        footer = '</span>'
+
+        html = header + html + footer
+
+    msg.html = html
+
     #msg.html = render_template(
     #    "email/email_template_1.html",
     #    notification_title=subject,
@@ -1169,4 +1187,4 @@ def send_email_user(user, message, subject, link=""):
     #    template_folder='base')
 
     mail.send(msg)
-    return msg.html
+    return msg.body
