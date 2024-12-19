@@ -8,6 +8,7 @@ from api import cache, get_response_error_formatted, get_response_formatted
 from api.company import blueprint
 from api.company.models import DB_Company, DB_CompanyPrompt
 from api.config import get_api_AI_service, get_api_entry
+from api.file_cache import api_file_cache
 from api.print_helper import *
 from api.query_helper import (build_query_from_request, get_timestamp_verbose,
                               is_mongo_id)
@@ -18,7 +19,7 @@ from mongoengine.queryset.visitor import Q
 
 
 @blueprint.route('/query', methods=['GET', 'POST'])
-#@api_key_or_login_required
+@api_file_cache(expiration_secs=60)
 def api_company_get_query():
     """
     Example of queries: https://dev.gputop.com/api/company/query?founded=1994
@@ -134,7 +135,7 @@ def api_remove_a_business_by_id(biz_id):
 
 @blueprint.route('/get/<string:biz_name>', methods=['GET', 'POST'])
 @blueprint.route('/get/<string:biz_name>', methods=['GET', 'POST'])
-#@cache.cached(timeout=600)
+@api_file_cache(expiration_secs=600)
 def api_get_business_info(biz_name):
     """ Business get info
     ---
@@ -775,6 +776,7 @@ def api_company_build_prompts_query(extra_args=None):
 
 @blueprint.route('/query_prompts', methods=['GET', 'POST'])
 #@api_key_or_login_required
+@api_file_cache(expiration_secs=3600)
 def api_company_get_query_prompts():
     delete = request.args.get("cleanup", None)
 
@@ -787,6 +789,7 @@ def api_company_get_query_prompts():
 
 @blueprint.route('/latest_prompts', methods=['GET', 'POST'])
 #@api_key_or_login_required
+@api_file_cache(expiration_secs=30)
 def api_company_get_query_prompts_latest():
     """
     Abstraction so we don't call this very long query:
@@ -806,7 +809,7 @@ def api_company_get_query_prompts_latest():
 
 
 @blueprint.route('/financials/get/<string:ticker_id>', methods=['GET', 'POST'])
-@cache.cached(timeout=60)
+@api_file_cache(expiration_secs=300)
 def api_get_ticker_financials(ticker_id):
     """
         Returns a list of tickers that the user is watching.

@@ -2,9 +2,9 @@
     Unauthorized copying of this file, via any medium is strictly prohibited
     Proprietary and confidential
 """
-
 import hashlib
 import pathlib
+import time
 from datetime import datetime
 from functools import wraps
 
@@ -12,130 +12,136 @@ from flask import json, request
 from flask_login import current_user
 
 from api import get_response_formatted
+from api.print_helper import *
 from api.tools import ensure_dir
 
-from .print_helper import *
 
-
-def api_file_cache(func):
+def api_file_cache(global_api=True, expiration_secs=86400):
     """
-    Decorator that caches the data on disk, so we don't hammer our slow database.
+    Decorator that caches API responses to disk to reduce database load.
+    Allows passing 'global_api' as a parameter to control specific behavior.
     """
 
-    def make_cache_key(*args, **kwargs):
+    def make_cache_key(global_api):
+        """Generate a unique cache key based on the request and user."""
         path = request.path
         lang = "EN"
 
-        params = ""
-        for item in request.args.items():
-            if item[0] in ["no_cache", "q", "break", "debug_cache"]:
-                continue
+        # Build query parameters, ignoring certain keys
+        params = "&".join(f"{key}={value}" for key, value in request.args.items()
+                          if key not in ["key", "no_cache", "q", "break", "debug_cache"])
 
-            if len(params) > 0:
-                params += "&"
-
-            params += item[0] + "=" + item[1]
-
-        if current_user.is_authenticated:
-            key = lang + "/" + current_user.username + "/" + path + "?" + params
+        # Include user information in the cache key
+        if global_api:
+            key = f"{lang}/API/{path}?{params}"
         else:
-            key = lang + "/anon/" + path + "?" + params
+            if current_user.is_authenticated:
+                key = f"{lang}/{current_user.username}/{path}?{params}"
+            else:
+                key = f"{lang}/anon/{path}?{params}"
 
-        cache_key = hashlib.md5(key.encode()).hexdigest()
-        return cache_key
+        return hashlib.md5(key.encode()).hexdigest()
 
-    def force_disk_read_cache(real_path=None, key=None):
+    def read_from_disk_cache(real_path=None, key=None, global_api=False, expiration_secs=86400):
+        """Read cached data from disk if available and valid."""
         if request.args.get("no_cache") == "1":
             return None
 
-        if not key:
-            key = make_cache_key()
-
+        key = key or make_cache_key(global_api)
         debug_cache = request.args.get("debug_cache")
 
         try:
-            if current_user.is_authenticated:
-                cache_path = "/tmp/cache/" + current_user.username + "/"
+            if global_api:
+                cache_path = f"/tmp/cache/API/"
             else:
-                cache_path = "/tmp/cache/anon/"
+                cache_path = f"/tmp/cache/{current_user.username if current_user.is_authenticated else 'anon'}/"
 
+            file_path = f"{cache_path}{key}.json"
 
-            file_path = cache_path + key + ".json"
+            cached_file = pathlib.Path(file_path)
+            if not cached_file.exists():
+                if debug_cache:
+                    print_r(f"NOCACHE {file_path}")
+                return None
 
-            cached = pathlib.Path(file_path)
-            if not cached.exists():
-                print_r("NOCACHE " + file_path)
+            current_timestamp = time.time()
+            expire = current_timestamp - expiration_secs
+
+            if cached_file.stat().st_mtime < expire:
+                print(f"CACHE Expired {file_path}")
                 return None
 
             if real_path:
-                check = pathlib.Path(real_path)
-
-                if check.stat().st_mtime > cached.stat().st_mtime:
-                    s1 = datetime.fromtimestamp(check.stat().st_mtime)
-                    s2 = datetime.fromtimestamp(cached.stat().st_mtime)
-
-                    #if debug_cache:
-                    #    print_r("CACHE INVALIDATE " + real_path + " " + str(s1) + " => CACHE " + str(s2))
+                real_file = pathlib.Path(real_path)
+                if real_file.stat().st_mtime > cached_file.stat().st_mtime:
+                    if debug_cache:
+                        print(f"CACHE INVALID {real_path} is newer than {file_path}")
                     return None
 
-            with open(file_path, 'r') as the_file:
-                print("======================= CACHE HIT ====================")
-                output = json.load(the_file)
+            with open(file_path, 'r') as f:
+                output = json.load(f)
                 output['cache'] = key
                 output['cached'] = True
-
                 if debug_cache:
-                    print_b("CACHED " + file_path)
-
+                    print(f"CACHED {file_path}")
                 return output
 
         except Exception as e:
-            print_r("FAILED " + key + " " + str(e))
+            print(f"FAILED TO READ CACHE {key}: {e}")
 
         return None
 
-    def force_disc_cache_write(output, key=None):
+    def write_to_disk_cache(output, key=None, global_api=False):
+        """Write API response data to disk for caching."""
         try:
-            debug_cache = request.args.get("debug_cache", True)
+            debug_cache = request.args.get("debug_cache")
 
-            if current_user.is_authenticated:
-                cache_path = "/tmp/cache/" + current_user.username + "/"
+            key = key or make_cache_key(global_api)
+
+            if global_api:
+                cache_path = f"/tmp/cache/API/"
             else:
-                cache_path = "/tmp/cache/anon/"
+                cache_path = f"/tmp/cache/{current_user.username if current_user.is_authenticated else 'anon'}/"
 
             ensure_dir(cache_path)
-            if not key:
-                key = make_cache_key()
+            file_path = f"{cache_path}{key}.json"
 
-            with open(cache_path + key + ".json", 'w') as the_file:
-                the_file.write(json.dumps(output))
+            with open(file_path, 'w') as f:
+                json.dump(output, f)
 
             if debug_cache:
-                print_b("SAVED " + cache_path + key + ".json")
+                print(f"SAVED {file_path}")
         except Exception as e:
-            pass
+            print(f"FAILED TO WRITE CACHE {key}: {e}")
 
-        return None
+    def decorator(func):
+        """The actual decorator that wraps the target function."""
 
-    @wraps(func)
-    def decorated_view(*args, **kwargs):
+        @wraps(func)
+        def decorated_view(*args, **kwargs):
+            """Wrapper function that adds caching logic."""
+            # Handle 'global_api' if passed as a keyword argument
 
-        output = force_disk_read_cache()
-        if output:
-            return get_response_formatted(output)
+            # Try to load from the cache
+            output = read_from_disk_cache(global_api=global_api, expiration_secs=expiration_secs)
+            if output:
+                return get_response_formatted(output)
 
-        print_r(" NO CACHE HIT ")
-        response = func(*args, **kwargs)
-        try:
-            data = response.json
-            if data['status'] != "success":
-                return response
+            # If no cache, call the original function
+            response = func(*args, **kwargs)
 
-            data['cache'] = True
-            force_disc_cache_write(data)
-        except Exception as e:
-            print_exception(e, "FAILED ON API CACHE")
+            try:
+                data = response.json
+                if data.get('status') != "success":
+                    return response
 
-        return response
+                data['cache'] = True
+                write_to_disk_cache(data, global_api=global_api)
+            except Exception as e:
+                print(f"FAILED TO CACHE API RESPONSE: {e}")
 
-    return decorated_view
+            return response
+
+        return decorated_view
+
+    return decorator

@@ -4,6 +4,7 @@ import pandas as pd
 from api import (admin_login_required, api_key_or_login_required, cache,
                  cache_make_key, get_response_error_formatted,
                  get_response_formatted)
+from api.file_cache import api_file_cache
 from api.print_helper import *
 from api.query_helper import (build_query_from_request, get_timestamp_verbose,
                               mongo_to_dict_helper)
@@ -217,7 +218,7 @@ def api_get_query():
 
 @blueprint.route('/ts/query', methods=['GET', 'POST'])
 @api_key_or_login_required
-@cache_for(hours=24, only_if=ResponseIsSuccessfulOrRedirect)
+@api_file_cache(expiration_secs=3600)
 def api_get_financial_query():
     """ https://domain/api/ticker/ts/query?id__exists=1&order_by=-creation_date
         http://domain/api/ticker/ts/query?exchange_ticker=NYSE:UNH&verbose=1
@@ -602,10 +603,12 @@ def api_find_full_symbol_historical_change_data(full_symbol):
 
 
 @blueprint.route('/history/<string:full_symbol>', methods=['GET', 'POST'])
-#@cache.cached(timeout=3600)
+@api_file_cache(expiration_secs=86400)
 def api_find_full_symbol_historical_data(full_symbol):
     from api.query_helper import (mongo_to_dict_helper,
                                   prepare_update_with_schema)
+
+    start_time = datetime.now()
 
     results = DB_TickerHistoryTS.objects(exchange_ticker=full_symbol).order_by("-creation_date")
 
@@ -629,6 +632,9 @@ def api_find_full_symbol_historical_data(full_symbol):
         res.append(myupdate)
 
         results = res
+
+    end_time = (datetime.now() - start_time).total_seconds()
+    print_g(" TOTAL TIME IN SECS " + str(end_time))
 
     return get_response_formatted({'exchange_ticker': full_symbol, 'results': results})
 

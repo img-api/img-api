@@ -246,6 +246,9 @@ class DB_TickerHistoryTS(db.DynamicDocument):
         'strict': False,
         "auto_create_index": True,
         "index_background": True,
+        'indexes': [
+            {'fields': ['creation_date', 'exchange_ticker'], 'unique': False}
+        ],
     }
 
     source = db.StringField()

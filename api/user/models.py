@@ -92,6 +92,8 @@ class User(UserMixin, db.DynamicDocument):
     is_admin = db.BooleanField(default=False)
     is_readonly = db.BooleanField(default=False)
 
+    is_email_validated = db.BooleanField(default=False)
+
     current_subscription = db.StringField(default="")
     subscription = db.EmbeddedDocumentField(DB_UserPayments, default=None)
 
@@ -99,6 +101,9 @@ class User(UserMixin, db.DynamicDocument):
 
     settings = db.EmbeddedDocumentField(DB_UserSettings, default=DB_UserSettings())
     galleries = db.EmbeddedDocumentField(DB_UserGalleries, default=DB_UserGalleries())
+
+    last_email_date = db.DateTimeField()
+    last_alert_date = db.DateTimeField()
 
     # TODO: Special entries for an user. This should be dynamic, or be in settings.
     my_debug_interface = db.BooleanField(default=False)

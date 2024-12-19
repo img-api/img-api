@@ -58,6 +58,9 @@ def api_create_new_comment():
     if 'title' in jrequest:
         jrequest['title'] = markdownify(jrequest['title']).strip()
 
+    if not current_user.is_email_validated:
+        return get_response_error_formatted(400, {'error_msg': "fuck!"})
+
     if current_user.current_subscription == "tier1_monthly":
         jrequest['subscription'] = "star-o"
 

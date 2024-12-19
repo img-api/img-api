@@ -434,6 +434,7 @@ def register_api_blueprints(app):
             'comments',
             'galleries',
             'hello_world',
+            'subscription',
     ):
         module = import_module('api.{}.routes'.format(module_name))
         app.register_blueprint(module.blueprint)
