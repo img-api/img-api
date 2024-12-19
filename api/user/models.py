@@ -192,6 +192,7 @@ class User(UserMixin, db.DynamicDocument):
             'is_anon': self.is_anon,
             'is_public': self.is_public,
             'is_media_public': self.is_media_public,
+            'is_valid': self.is_email_validated,
             'subscription': self.current_subscription,
             'creation_date': time.mktime(self.creation_date.timetuple()),
         }

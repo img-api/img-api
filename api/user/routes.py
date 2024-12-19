@@ -7,6 +7,7 @@ import validators
 from api import (admin_login_required, api_key_login_or_anonymous,
                  api_key_or_login_required, get_response_error_formatted,
                  get_response_formatted, mail)
+from api.config import get_config_value, get_host_name
 from api.galleries.models import DB_MediaList
 from api.print_helper import *
 from api.query_helper import build_query_from_request, mongo_to_dict_helper
@@ -16,7 +17,7 @@ from api.user import blueprint
 from api.user.models import User
 from flask import Response, abort, redirect, request
 from flask_login import current_user, login_user, logout_user
-from flask_mail import Message
+from flask_mail import Mail, Message
 from mongoengine.queryset.visitor import Q
 from services.dictionary.my_dictionary import words
 
@@ -364,8 +365,6 @@ def api_user_recovery():
 
 def password_recovery_user_email(username, email, token):
     import socket
-
-    from api.config import get_config_value, get_host_name
 
     ####################### Report ADMIN ############################
     try:
@@ -1126,3 +1125,48 @@ def set_user_info(my_key):
 
     ret = {"user": current_user.serialize()}
     return get_response_formatted(ret)
+
+
+@blueprint.route('/validate_email', methods=['GET', 'POST'])
+@api_key_or_login_required
+def api_validate_email():
+    admin_user = User.objects(username="admin").first()
+
+    host = get_host_name() + "/api/validate/user"
+
+    subject = "Validate user " + current_user.username
+    message = "Someone needs validation"
+
+    send_email_user(admin_user, message, subject)
+    return redirect("/please_wait")
+
+
+def send_email_user(user, message, subject, link=""):
+    host = get_host_name()
+
+    print_big("EMAIL " + user.email)
+
+    msg = Message(subject,
+                  sender=get_config_value("MAIL_DEFAULT_SENDER"),
+                  reply_to=current_user.email,
+                  recipients=[user.email])
+
+    name = user.first_name
+    if not name:
+        name = user.username
+
+    msg.body = "Hi %s,\n" % name + \
+        "\n" + message + "\n\n %s \n\n Date: %s \n\n" % (
+            link, str(datetime.now()))
+
+    #html_content = message +"<br><br><hr><small><a href='" + link + "'>" + link +"</a></small>"
+    #msg.html = render_template(
+    #    "email/email_template_1.html",
+    #    notification_title=subject,
+    #    text_inbox_preview=subject,
+    #    minimal_header=True,
+    #    content=html_content,
+    #    template_folder='base')
+
+    mail.send(msg)
+    return msg.html
