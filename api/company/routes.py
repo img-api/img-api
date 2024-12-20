@@ -82,7 +82,7 @@ def company_get_suggestions(text, only_tickers=False):
 
 
 @blueprint.route('/suggestions', methods=['GET', 'POST'])
-#@api_key_or_login_required
+@api_file_cache(expiration_secs=86400)
 def api_company_get_suggestions():
     """ """
     query = request.args.get("query", "").upper()
@@ -101,7 +101,7 @@ def api_company_get_suggestions():
 
 
 @blueprint.route('/create', methods=['GET', 'POST'])
-#@api_key_or_login_required
+@api_key_or_login_required
 def api_create_business_for_user_local():
     """ Business creation
     ---
@@ -225,7 +225,7 @@ def api_apply_stamp(biz_name, encrypted_date):
 
 
 @blueprint.route('/query_symbol/<symbol>', methods=['GET', 'POST'])
-#@api_key_or_login_required
+@api_file_cache(expiration_secs=300)
 def api_prompt_get_query_symbol(symbol):
     """
 
@@ -482,7 +482,7 @@ def api_company_callback_ai_callback_prompt():
 
 
 @blueprint.route('/get_related/<string:full_ticker>', methods=['GET', 'POST'])
-#@api_key_or_login_required
+@api_file_cache(expiration_secs=86400)
 def api_group_news_query(full_ticker):
     from api.news.models import DB_News
 
@@ -934,7 +934,7 @@ def api_get_nms_cleanup():
 
 
 @blueprint.route('/sitemap.xml', methods=['GET', 'POST'])
-#@api_key_or_login_required
+@api_file_cache(expiration_secs=86400)
 def api_prompt_generate_sitemap():
     import urllib.parse
 

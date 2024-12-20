@@ -8,6 +8,7 @@ from api import (admin_login_required, api_key_or_login_required,
                  get_response_error_formatted, get_response_formatted)
 from api.company.models import DB_Company
 from api.config import get_api_AI_service, get_api_entry
+from api.file_cache import api_file_cache
 from api.news import blueprint
 from api.news.models import DB_News
 from api.print_helper import *
@@ -45,6 +46,7 @@ def api_create_news_local():
 
 
 @blueprint.route('/search/<string:search_terms>', methods=['GET', 'POST'])
+@api_file_cache(expiration_secs=86400)
 def api_news_search_some_text(search_terms):
     """
     """
@@ -59,6 +61,7 @@ def api_news_search_some_text(search_terms):
 
 
 @blueprint.route('/query', methods=['GET', 'POST'])
+@api_file_cache(expiration_secs=86400)
 def api_news_get_query():
     """
     Example of queries: https://dev.gputop.com/api/news/query?related_exchange_tickers=NASDAQ:NVO
@@ -136,6 +139,7 @@ def api_get_force_reindex_helper(news_id):
 
 
 @blueprint.route('/get/<string:news_id>', methods=['GET', 'POST'])
+@api_file_cache(expiration_secs=86400)
 def api_get_news_helper(news_id):
     """ News get ID
     ---
@@ -695,7 +699,7 @@ def api_news_group_for_sitemap(xml_content, my_group, path):
     return xml_content
 
 @blueprint.route('/sitemap.xml', methods=['GET', 'POST'])
-#@api_key_or_login_required
+@api_file_cache(expiration_secs=86400)
 def api_news_generate_sitemap():
     from flask import Response
 
