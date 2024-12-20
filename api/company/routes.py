@@ -4,7 +4,8 @@ from datetime import datetime
 
 import qrcode
 import requests
-from api import cache, get_response_error_formatted, get_response_formatted
+from api import (api_key_or_login_required, cache,
+                 get_response_error_formatted, get_response_formatted)
 from api.company import blueprint
 from api.company.models import DB_Company, DB_CompanyPrompt
 from api.config import get_api_AI_service, get_api_entry
