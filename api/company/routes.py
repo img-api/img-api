@@ -935,7 +935,7 @@ def api_get_nms_cleanup():
 
 
 @blueprint.route('/sitemap.xml', methods=['GET', 'POST'])
-@api_file_cache(expiration_secs=86400)
+@api_file_cache(expiration_secs=86400, data_type="xml")
 def api_prompt_generate_sitemap():
     import urllib.parse
 

@@ -699,7 +699,7 @@ def api_news_group_for_sitemap(xml_content, my_group, path):
     return xml_content
 
 @blueprint.route('/sitemap.xml', methods=['GET', 'POST'])
-@api_file_cache(expiration_secs=86400)
+@api_file_cache(expiration_secs=86400, data_type="xml")
 def api_news_generate_sitemap():
     from flask import Response
 

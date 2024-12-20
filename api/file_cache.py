@@ -8,7 +8,7 @@ import time
 from datetime import datetime
 from functools import wraps
 
-from flask import json, request
+from flask import Response, json, request
 from flask_login import current_user
 
 from api import get_response_formatted
@@ -16,7 +16,7 @@ from api.print_helper import *
 from api.tools import ensure_dir
 
 
-def api_file_cache(global_api=True, expiration_secs=86400):
+def api_file_cache(global_api=True, expiration_secs=86400, data_type="json"):
     """
     Decorator that caches API responses to disk to reduce database load.
     Allows passing 'global_api' as a parameter to control specific behavior.
@@ -56,7 +56,7 @@ def api_file_cache(global_api=True, expiration_secs=86400):
             else:
                 cache_path = f"/tmp/cache/{current_user.username if current_user.is_authenticated else 'anon'}/"
 
-            file_path = f"{cache_path}{key}.json"
+            file_path = f"{cache_path}{key}." + data_type
 
             cached_file = pathlib.Path(file_path)
             if not cached_file.exists():
@@ -78,12 +78,15 @@ def api_file_cache(global_api=True, expiration_secs=86400):
                         print(f"CACHE INVALID {real_path} is newer than {file_path}")
                     return None
 
-            with open(file_path, 'r') as f:
-                output = json.load(f)
-                output['cache'] = key
-                output['cached'] = True
-                if debug_cache:
-                    print(f"CACHED {file_path}")
+            with open(file_path, 'rb') as f:
+                if data_type == "json":
+                    output = json.load(f)
+                    output['cache'] = key
+                    output['cached'] = True
+                    if debug_cache:
+                        print(f"CACHED {file_path}")
+                else:
+                    return f.read()
                 return output
 
         except Exception as e:
@@ -91,7 +94,7 @@ def api_file_cache(global_api=True, expiration_secs=86400):
 
         return None
 
-    def write_to_disk_cache(output, key=None, global_api=False):
+    def write_to_disk_cache(output, content_type, key=None, global_api=False):
         """Write API response data to disk for caching."""
         try:
             debug_cache = request.args.get("debug_cache")
@@ -104,10 +107,14 @@ def api_file_cache(global_api=True, expiration_secs=86400):
                 cache_path = f"/tmp/cache/{current_user.username if current_user.is_authenticated else 'anon'}/"
 
             ensure_dir(cache_path)
-            file_path = f"{cache_path}{key}.json"
 
-            with open(file_path, 'w') as f:
-                json.dump(output, f)
+            file_path = f"{cache_path}{key}." + data_type
+            if content_type == "json":
+                with open(file_path, 'w') as f:
+                    json.dump(output, f)
+            else:
+                with open(file_path, 'wb') as f:
+                    f.write(output)
 
             if debug_cache:
                 print(f"SAVED {file_path}")
@@ -125,18 +132,34 @@ def api_file_cache(global_api=True, expiration_secs=86400):
             # Try to load from the cache
             output = read_from_disk_cache(global_api=global_api, expiration_secs=expiration_secs)
             if output:
-                return get_response_formatted(output)
+                if data_type == "xml":
+                    return Response(output, mimetype='text/xml')
+
+                if data_type == "json":
+                    return get_response_formatted(output)
+
+                return Response(output, mimetype=data_type)
 
             # If no cache, call the original function
             response = func(*args, **kwargs)
 
             try:
-                data = response.json
-                if data.get('status') != "success":
-                    return response
+                # We don't trust our developers? Ofc not.
+                if 'json' in response.content_type:
+                    data = response.json
+                    if data.get('status') != "success":
+                        return response
 
-                data['cache'] = True
-                write_to_disk_cache(data, global_api=global_api)
+                    data['cache'] = True
+                    content_type = "json"
+                elif 'xml' in response.content_type:
+                    data = response.data
+                    content_type = "xml"
+                else:
+                    data = response.data
+                    content_type = "bin"
+
+                write_to_disk_cache(data, data_type, global_api=global_api)
             except Exception as e:
                 print(f"FAILED TO CACHE API RESPONSE: {e}")
 
