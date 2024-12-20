@@ -676,32 +676,35 @@ def api_regex_processing():
 
     return get_response_formatted({ 'companies': companies, 'news': ret })
 
-
-@blueprint.route('/sitemap.xml', methods=['GET', 'POST'])
-#@api_key_or_login_required
-def api_news_generate_sitemap():
+def api_news_group_for_sitemap(xml_content, my_group, path):
     import urllib.parse
 
-    from flask import Response
-
     pipeline = []
-
-    pipeline.append({"$group": {"_id": "$publisher", "count": {"$sum": 1}}})
+    pipeline.append({"$group": {"_id": "$" + my_group, "count": {"$sum": 1}}})
     pipeline.append({"$sort": {"_id": 1}})
-
-    ret = {}
-
     news = DB_News.objects.aggregate(*pipeline)
-
-    xml_content = """<?xml version='1.0' encoding='UTF-8'?><urlset xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>"""
 
     for article in news:
         if not article['_id']:
             continue
 
-        publisher = article['_id'].replace(" ", "_")
-        xml_content += f"<url><loc>https://headingtomars.com/news/publisher/{ urllib.parse.quote(publisher) }</loc></url>"
+        id_ = article['_id'].replace(" ", "_").replace("*", "")
+        encoded = urllib.parse.quote_plus(id_)
+        xml_content.append(f"<url><loc>https://headingtomars.com/{ path }/{ encoded }</loc></url>")
 
-    xml_content += "</urlset>"
+    return xml_content
+
+@blueprint.route('/sitemap.xml', methods=['GET', 'POST'])
+#@api_key_or_login_required
+def api_news_generate_sitemap():
+    from flask import Response
+
+    ret = {}
+    xml = ["<?xml version='1.0' encoding='UTF-8'?><urlset xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>"]
+    api_news_group_for_sitemap(xml, "publisher", "publisher")
+    api_news_group_for_sitemap(xml, "AI.classification", "news/class")
+    xml.append("</urlset>")
+
+    xml_content = "".join(xml)
 
     return Response(xml_content, mimetype='text/xml')

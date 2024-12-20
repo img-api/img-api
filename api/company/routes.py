@@ -950,7 +950,7 @@ def api_prompt_generate_sitemap():
         if not company.company_name:
             company_name = ""
         else:
-            company_name = urllib.parse.quote(company.company_name)
+            company_name = urllib.parse.quote_plus(company.company_name)
         xml_content += f"<url><loc>https://headingtomars.com/analysis/{ symbol }#{ company_name }</loc></url>"
 
     xml_content += "</urlset>"
