@@ -529,6 +529,7 @@ def query_clean_reserved(args):
     args.pop('reversed', None)
     args.pop('fields', None)
     args.pop('cleanup', None)
+    args.pop('no_cache', None)
     args.pop('reserved', None)
     args.pop('extra', None)
     args.pop('key', None)

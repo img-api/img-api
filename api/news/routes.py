@@ -61,7 +61,7 @@ def api_news_search_some_text(search_terms):
 
 
 @blueprint.route('/query', methods=['GET', 'POST'])
-@api_file_cache(expiration_secs=86400)
+@api_file_cache(expiration_secs=300)
 def api_news_get_query():
     """
     Example of queries: https://dev.gputop.com/api/news/query?related_exchange_tickers=NASDAQ:NVO
@@ -157,6 +157,10 @@ def api_get_news_helper(news_id):
         ticker_reprocess_news_article(news)
 
     ret = {'news': [news]}
+
+    if 'ai_summary' not in news:
+        ret['no_cache'] = 1
+
     return get_response_formatted(ret)
 
 

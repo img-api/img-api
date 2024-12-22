@@ -147,6 +147,11 @@ def api_file_cache(global_api=True, expiration_secs=86400, data_type="json"):
                 # We don't trust our developers? Ofc not.
                 if 'json' in response.content_type:
                     data = response.json
+
+                    # Don't cache if the system doesn't want us to cache
+                    if data.get('no_cache') == '1':
+                        return response
+
                     if data.get('status') != "success":
                         return response
 
