@@ -41,6 +41,28 @@ from .yfinance.ytickers_pipeline import (yticker_check_tickers,
 # https://learn.temporal.io/getting_started/python/first_program_in_python/
 
 
+def ticker_reprocess_news_article(item):
+    """
+    http://dev.tothemoon.life/api/news/get/67631451ad0c775b1f8b33c1?no_cache=1&extra=reprocess
+    """
+
+    from api.ticker.tickers_helpers import standardize_ticker_format
+
+    try:
+        if item.source != "YFINANCE":
+            return
+
+        item.force_reindex = True
+
+        yticker_check_tickers(item['raw_tickers'], item)
+        yfetch_process_news(item)
+
+    except Exception as e:
+        print_exception(e, "crashed")
+
+    return item
+
+
 def ticker_process_news_sites(BATCH_SIZE=5):
     """ Fetches all the news to be indexed and calls the API to fetch them
         We don't have yet a self-registering plugin api so we will just call manually depending on the source.
@@ -88,18 +110,7 @@ def ticker_process_news_sites(BATCH_SIZE=5):
             item.set_state("INDEX_START")
 
             if item.source == "YFINANCE":
-                #if 'related_exchange_tickers' in item:
-                #    clean = yticker_check_tickers(item['related_exchange_tickers'])
-
-                #    if clean and Counter(clean) != Counter(item['related_exchange_tickers']):
-                #        item.update(**{'related_exchange_tickers': clean})
-
                 yfetch_process_news(item)
-
-            try:
-                api_create_article_ai_summary(item)
-            except Exception as e:
-                pass
 
         except Exception as e:
             item.set_state("ERROR: FETCH CRASHED, SEE LOGS!")

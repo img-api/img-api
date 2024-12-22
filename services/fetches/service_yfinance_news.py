@@ -64,6 +64,7 @@ def yfetch_process_news(item, web_driver=None):
     """
     Downloads the news into disk
     """
+    from api.news.routes import api_create_article_ai_summary
 
     print_b("NEWS -> " + item.link)
 
@@ -135,3 +136,5 @@ def yfetch_process_news(item, web_driver=None):
         item.set_state("INDEXED")
     else:
         item.set_state("ERROR: ARTICLES NOT FOUND")
+
+    api_create_article_ai_summary(item)

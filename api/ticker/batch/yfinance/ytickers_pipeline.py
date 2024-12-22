@@ -106,7 +106,6 @@ def ticker_update_financials(full_symbol, max_age_minutes=15, force=False):
 
     financial_data['exchange_ticker'] = full_symbol
 
-
     if not fin:
         fin = DB_TickerSimple(**financial_data)
         fin.save(validate=False)
@@ -221,12 +220,16 @@ def ticker_save_financials(full_symbol, yf_obj, max_age_minutes=5):
         return None
 
 
-def yticker_check_tickers(relatedTickers):
+def yticker_check_tickers(relatedTickers, item=None):
     from api.ticker.tickers_fetches import create_or_update_company
 
     try:
         result = []
         for local_ticker in relatedTickers:
+
+            if '.' in local_ticker:
+                print(" DEBUG ")
+
             query = DB_Ticker.query_exchange_ticker(local_ticker)
             db_ticker = DB_Ticker.objects(query).first()
             if db_ticker:
@@ -281,12 +284,40 @@ def yticker_check_tickers(relatedTickers):
             my_company = prepare_update_with_schema(info, new_schema)
             db_company = create_or_update_company(my_company, exchange, ticker)
 
-            result.append(db_company.exchange_tickers[-1])
+            et = db_company.exchange_tickers[-1]
+            if et not in result:
+                result.append(et)
+
+        if item:
+            item.update(**{'related_exchange_tickers': result})
+
     except Exception as e:
         print_exception(e, "CRASHED FINDING NEW TICKERS")
         return None
 
     return result
+
+
+"""
+    related_tickers = []
+    for ticker in relatedTickers:
+
+        ticker = standardize_ticker_format(ticker)
+        exchange, ticker = ticker.split(":")
+
+        candidates = DB_Company.objects(exchange_tickers__iendswith=":" + ticker)
+        if len(candidates) == 0:
+            print_r(ticker + " FAILED TO FIND COMPANY ")
+        else:
+            new_et = candidates.first().get_primary_ticker()
+            if new_et not in related_tickers:
+                related_tickers.append(new_et)
+
+    print(str(related_tickers))
+    if item:
+        item.update(**{'related_exchange_tickers': related_tickers})
+
+"""
 
 
 def fix_news_ticker(db_ticker, db_news):
@@ -365,7 +396,6 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
     ticker_save_financials(db_ticker.full_symbol(), yf_obj)
     ticker_save_history(db_ticker.full_symbol(), yf_obj)
 
-
     if 'companyOfficers' in info:
         company_officers = info['companyOfficers']
         #for officer in company_officers:
@@ -429,7 +459,9 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
             # Overwrite our creation time with the publisher time
             try:
                 if 'relatedTickers' in item:
-                    myupdate['raw_tickers'] = item['relatedTickers']
+                    rt = item['relatedTickers']
+                    myupdate['raw_tickers'] = rt
+                    yticker_check_tickers(rt, myupdate)
 
                 if 'providerPublishTime' in item:
                     value = datetime.fromtimestamp(int(item['providerPublishTime']))
@@ -438,32 +470,6 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
 
             except Exception as e:
                 print_exception(e, "CRASHED LOADING DATE")
-
-            # We need to convert between both systems
-            related_tickers = []
-
-            if 'relatedTickers' in item:
-                yticker_check_tickers(item['relatedTickers'])
-
-                for ticker in item['relatedTickers']:
-                    from api.ticker.tickers_helpers import \
-                        standardize_ticker_format
-
-                    ticker = standardize_ticker_format(ticker)
-                    exchange, ticker = ticker.split(":")
-
-                    candidates = DB_Company.objects(exchange_tickers__iendswith=":" + ticker)
-                    if len(candidates) == 0:
-                        print_r(ticker + " FAILED TO FIND COMPANY ")
-                    else:
-                        new_et = candidates.first().get_primary_ticker()
-                        related_tickers.append(new_et)
-
-                print(str(related_tickers))
-                myupdate['related_exchange_tickers'] = list(set(related_tickers))
-
-            else:
-                print_r(" NO RELATED TICKERS ")
 
             try:
                 if 'currentPrice' in info:

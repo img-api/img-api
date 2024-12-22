@@ -251,8 +251,10 @@ def extract_ticker_from_symbol(full_symbol):
         return stock
 
     if "." in full_symbol:
-        stock, exchange = full_symbol.split('.')
-        return stock
+        #stock, exchange = full_symbol.split('.')
+        #return stock
+
+        return full_symbol
 
     return full_symbol
 
@@ -445,6 +447,9 @@ def ticker_exchanges_cleanup_dups(exchange_tickers):
     STANDARDS = ['NMS']
 
     for ticker in exchange_tickers:
+        if ":" not in ticker:
+            continue
+
         exchange, stock = ticker.split(':')
         if stock in m and exchange in STANDARDS:
             continue
@@ -462,6 +467,7 @@ def standardize_ticker_format_to_yfinance(ticker: str) -> str:
         exchange, stock = ticker.split(':')
 
         # Standardize the exchange name using the prefix mapping
+
         map_exchange = exchange_to_suffix.get(exchange, None)  # Default to exchange itself if not found
         if map_exchange:
             return f"{stock}{map_exchange}"

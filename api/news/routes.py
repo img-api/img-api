@@ -144,10 +144,17 @@ def api_get_news_helper(news_id):
     """ News get ID
     ---
     """
+    from api.ticker.batch.workflow import ticker_reprocess_news_article
+
     news = DB_News.objects(id=news_id).first()
 
     if not news:
         return get_response_error_formatted(404, {'error_msg': "News not found"})
+
+    extra = request.args.get("extra", None)
+
+    if extra == "reprocess":
+        ticker_reprocess_news_article(news)
 
     ret = {'news': [news]}
     return get_response_formatted(ret)

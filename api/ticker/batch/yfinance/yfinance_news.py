@@ -50,61 +50,56 @@ def yfetch_process_news(item, web_driver=None):
     articles = []
 
     print_g(" PUBLISHER " + item['publisher'])
-    if item["publisher"] not in [
-        'TEST',
-    ]:
+    if item["publisher"] in ['TEST']:
+        return
+
     # "Barrons", "Financial Times", "The Information", "MT Newswires", "Investor's Business Daily",
-        driver = get_webdriver(web_driver)
-        driver.get(item["link"])
+    driver = get_webdriver(web_driver)
+    driver.get(item["link"])
 
-        if item["publisher"] == "Yahoo Finance Video":
-            print_b(" FINANCE VIDEO ")
-        try:
-            # We get the consent
-            link = driver.find_element(By.CLASS_NAME, "accept-all")
-            link.click()
-        except Exception as e:
-            pass
+    if item["publisher"] == "Yahoo Finance Video":
+        print_b(" FINANCE VIDEO ")
+    try:
+        # We get the consent
+        link = driver.find_element(By.CLASS_NAME, "accept-all")
+        link.click()
+    except Exception as e:
+        pass
 
-        try:
-            link = driver.find_element(By.CLASS_NAME, "readmoreButtonText")
-            link.click()
-        except Exception as e:
-            print_r(" No more read more button ")
-            #print_exception(e, "CRASHED")
-            pass
+    try:
+        link = driver.find_element(By.CLASS_NAME, "readmoreButtonText")
+        link.click()
+    except Exception as e:
+        print_r(" No more read more button ")
+        #print_exception(e, "CRASHED")
+        pass
 
-        try:
-            article = driver.find_element(By.TAG_NAME, "article")
-            article = article.text
+    try:
+        article = driver.find_element(By.TAG_NAME, "article")
+        article = article.text
 
-        except:
-            print("article tag not found", item["publisher"])
-            article = ""
-            paragraphs = driver.find_elements(By.TAG_NAME, "p")
-            for paragraph in paragraphs:
-                article += paragraph.text
-            article = clean_article(article)
-        finally:
-            articles.append(article)
+    except:
+        print("article tag not found", item["publisher"])
+        article = ""
+        paragraphs = driver.find_elements(By.TAG_NAME, "p")
+        for paragraph in paragraphs:
+            article += paragraph.text
+        article = clean_article(article)
+    finally:
+        articles.append(article)
 
-        driver.close()
-        if not web_driver:
-            driver.quit()
+    driver.close()
+    if not web_driver:
+        driver.quit()
 
-        if len(articles) > 0:
-            item.articles = articles
-            item.save(validate=False)
-            item.set_state("INDEXED")
-            try:
-                from api.news.routes import api_create_article_ai_summary
-                api_create_article_ai_summary(item)
-            except Exception as e:
-                print_exception(e, "CRASHED")
-                pass
+    if len(articles) > 0:
+        item.articles = articles
+        item.save(validate=False)
+        item.set_state("INDEXED")
 
-        else:
-            item.set_state("ERROR: ARTICLES NOT FOUND")
+    else:
+        item.set_state("ERROR: ARTICLES NOT FOUND")
+
 
 
 def date_from_unix(string):

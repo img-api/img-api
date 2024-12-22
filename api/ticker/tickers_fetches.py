@@ -628,6 +628,9 @@ def create_or_update_company(my_company, exchange=None, ticker=None):
 
     if 'company_name' not in my_company or not my_company['company_name']:
         print(my_company)
+    else:
+        print_b(f"{ str(exchange) }:{str(ticker)} PROCESS {my_company['company_name']}")
+
 
     db_company = None
 
@@ -640,6 +643,9 @@ def create_or_update_company(my_company, exchange=None, ticker=None):
             exchange= "IDX"
         else:
             ticker, cleanup = ticker.split("^")
+
+    if ticker and "." in ticker:
+        ticker, exchange_not_standard = ticker.split(".")
 
     if exchange and ticker:
         if ticker == "INTC":
