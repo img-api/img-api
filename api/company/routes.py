@@ -936,7 +936,7 @@ def api_get_nms_cleanup():
 
 @blueprint.route('/sitemap.xml', methods=['GET', 'POST'])
 @api_file_cache(expiration_secs=86400, data_type="xml")
-def api_prompt_generate_sitemap():
+def api_sitemap_analysis():
     import urllib.parse
 
     from flask import Response
@@ -953,6 +953,32 @@ def api_prompt_generate_sitemap():
         else:
             company_name = urllib.parse.quote_plus(company.company_name)
         xml_content += f"<url><loc>https://headingtomars.com/analysis/{ symbol }#{ company_name }</loc></url>"
+
+    xml_content += "</urlset>"
+
+    return Response(xml_content, mimetype='text/xml')
+
+@blueprint.route('/sitemap_tickers.xml', methods=['GET', 'POST'])
+@api_file_cache(expiration_secs=86400, data_type="xml")
+def api_sitemap_tickers():
+    import urllib.parse
+
+    from flask import Response
+
+    companies = DB_Company.objects()
+
+    xml_content = """<?xml version='1.0' encoding='UTF-8'?><urlset xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>"""
+
+    for company in companies:
+        symbol = company.get_primary_ticker()
+
+        if not company.company_name:
+            company_name = symbol
+        else:
+            company_name = urllib.parse.quote_plus(company.company_name + " " + symbol)
+
+        for et in company.exchange_tickers:
+            xml_content += f"<url><loc>https://headingtomars.com/ticker/{ et }#{ company_name }</loc></url>"
 
     xml_content += "</urlset>"
 
