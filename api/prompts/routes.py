@@ -7,7 +7,9 @@ from api import (admin_login_required, api_key_or_login_required,
                  get_response_error_formatted, get_response_formatted)
 from api.company.models import DB_Company
 from api.config import (get_api_AI_default_service, get_api_AI_service,
-                        get_api_entry)
+                        get_api_entry, is_api_development)
+from api.news.models import DB_News
+from api.news.routes import get_portfolio_query
 from api.print_helper import *
 from api.prompts import blueprint
 from api.prompts.models import DB_UserPrompt
@@ -165,7 +167,7 @@ def api_prompt_callback_ai_summary():
         update['last_visited_date'] = datetime.now()
         update['last_visited_verbose'] = datetime.now().strftime("%Y/%m/%d, %H:%M:%S")
 
-        if os.environ.get('FLASK_ENV', None) == "development":
+        if is_api_development():
             update['dev'] = True
 
         update['status'] = "PROCESSED"
@@ -220,13 +222,48 @@ def api_build_chats_query(db_prompt):
 
     return content
 
+def api_create_content_from_news(news, append_tickers=False):
+    if not news:
+        return ""
+
+    unique_tickers = set()
+    content = ""
+
+    date = str(datetime.now().strftime("%Y/%m/%d"))
+    for index, article in enumerate(news):
+
+        try:
+            article_date = str(article.creation_date.strftime("%Y/%m/%d"))
+            print_g(article_date + " >> " + article.get_title())
+
+            if date != article_date:
+                content += "| Date " + article_date + "\n"
+                date = article_date
+
+            unique_tickers = set(article.related_exchange_tickers) | unique_tickers
+            content += "| " + str(index) + " from " + article.publisher + "\n"
+
+            if article.stock_price and len(article.related_exchange_tickers) == 1:
+                content += "| Stock Price " + str(article.related_exchange_tickers[0]) + ":" + str(
+                    article.stock_price) + "\n"
+
+            content += article.get_title() + "\n"
+            content += article.get_paragraph()[:200] + "\n\n"
+            if 'ai_summary' in article:
+                content += article['ai_summary'][:2048] + "\n\n"
+
+        except Exception as e:
+            print_exception(e, "CRASHED ARTICLES ")
+
+    if append_tickers:
+        tickers = str.join(",", unique_tickers)
+        content += "## Tickers: " + tickers + "\n\n"
+
+    return content
 
 def api_build_article_query(db_prompt):
-    from api.news.routes import get_portfolio_query
-
     news = None
     tkrs = None
-    content = ""
 
     extra_args = {'interest_score__gte': 7, 'order_by': '-creation_date', 'reversed': 1}
 
@@ -237,46 +274,33 @@ def api_build_article_query(db_prompt):
     else:
         news, tkrs = get_portfolio_query(tickers_list=db_prompt.selection, my_args=extra_args)
 
-    #if tkrs:
-    #    content += "# Selected news from " + tkrs + "\n\n"
-
-    if news:
-        unique_tickers = set()
-
-        date = str(datetime.now().strftime("%Y/%m/%d"))
-        for index, article in enumerate(news):
-
-            try:
-                article_date = str(article.creation_date.strftime("%Y/%m/%d"))
-                print_g(article_date + " >> " + article.get_title())
-
-                if date != article_date:
-                    content += "| Date " + article_date + "\n"
-                    date = article_date
-
-                unique_tickers = set(article.related_exchange_tickers) | unique_tickers
-                content += "| " + str(index) + " from " + article.publisher + "\n"
-
-                if article.stock_price and len(article.related_exchange_tickers) == 1:
-                    content += "| Stock Price " + str(article.related_exchange_tickers[0]) + ":" + str(
-                        article.stock_price) + "\n"
-
-                content += article.get_title() + "\n"
-                content += article.get_paragraph()[:200] + "\n\n"
-                if 'ai_summary' in article:
-                    content += article['ai_summary'][:2048] + "\n\n"
-
-            except Exception as e:
-                print_exception(e, "CRASHED ARTICLES ")
-
-        tickers = str.join(",", unique_tickers)
-        #content += "## Tickers: " + tickers + "\n\n"
-
+    content = api_create_content_from_news(news)
     return content
 
 
 def cut_string(s, limit):
     return s[-limit:] if len(s) > limit else s
+
+
+def api_get_prompt_article(article_id):
+    if not article_id:
+        return ""
+
+    article = DB_News.objects(id=article_id).first()
+
+    news, tkrs = get_portfolio_query(tickers_list=article.related_exchange_tickers)
+
+    assistant = "| We are discussing the following article with Title: "
+    assistant += article.get_title()
+    assistant += "| Which reads: "
+    assistant += article.get_raw_article()
+
+    # TODO Search for the latest analyst prompts to do RAG
+    content = api_create_content_from_news(news)
+    if content:
+        assistant = content + assistant
+
+    return content
 
 
 def api_create_prompt_ai_summary(db_prompt, priority=False, force_summary=False):
@@ -292,11 +316,17 @@ def api_create_prompt_ai_summary(db_prompt, priority=False, force_summary=False)
         system += "Your name is TOTHEMOON, you are an expert system that can provide financial advice due regulations in the country. \n"
 
     chat_content = api_build_chats_query(db_prompt)
+
+    if 'article_id' in db_prompt:
+        assistant = api_get_prompt_article(db_prompt['article_id'])
+    else:
+        assistant = cut_string(articles_content, 131072) + cut_string(chat_content, 131072)
+
     data = {
         'type': 'user_prompt',
         'prompt': prompt,
         'system': system,
-        'assistant': cut_string(articles_content, 131072) + cut_string(chat_content, 131072),
+        'assistant': assistant,
     }
 
     db_prompt.update(**{
@@ -308,6 +338,9 @@ def api_create_prompt_ai_summary(db_prompt, priority=False, force_summary=False)
     data['prefix'] = "0_PROMPT_" + db_prompt.username
     data['callback_url'] = get_api_entry() + "/prompts/ai_callback"
     data['hostname'] = socket.gethostname()
+
+    if is_api_development():
+        data['dev'] = True
 
     if db_prompt.use_markdown:
         data['use_markdown'] = True
@@ -413,6 +446,9 @@ def api_let_AI_search_for_information(db_prompt, priority=False):
     data['callback_url'] = get_api_entry() + "/prompts/ai_callback_function_search"
     data['hostname'] = socket.gethostname()
 
+    if is_api_development():
+        data['dev'] = True
+
     if priority:
         data['priority'] = priority
 
@@ -463,7 +499,7 @@ def api_prompt_ai_callback_function_call():
         update['last_visited_date'] = datetime.now()
         update['last_visited_verbose'] = datetime.now().strftime("%Y/%m/%d, %H:%M:%S")
 
-        if os.environ.get('FLASK_ENV', None) == "development":
+        if is_api_development():
             update['dev'] = True
 
         update['status'] = "PROCESSED"

@@ -7,7 +7,7 @@ import requests
 from api import (admin_login_required, api_key_or_login_required,
                  get_response_error_formatted, get_response_formatted)
 from api.company.models import DB_Company
-from api.config import get_api_AI_service, get_api_entry
+from api.config import get_api_AI_service, get_api_entry, is_api_development
 from api.file_cache import api_file_cache
 from api.news import blueprint
 from api.news.models import DB_News
@@ -471,7 +471,7 @@ def api_news_callback_ai_summary():
         update['last_visited_date'] = datetime.now()
         update['last_visited_verbose'] = datetime.now().strftime("%Y/%m/%d, %H:%M:%S")
 
-        if os.environ.get('FLASK_ENV', None) == "development":
+        if is_api_development():
             update['dev'] = True
 
         update["status"] = "PROCESSED"

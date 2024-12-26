@@ -246,4 +246,6 @@ class DB_News(db.DynamicDocument):
     def get_summary(self):
         return self.get_arguments_param("summary", self.ai_summary)
 
+    def get_raw_article(self):
+        return str.join("\n", self.articles)
 
