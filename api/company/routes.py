@@ -595,16 +595,16 @@ def api_update_company_summary():
     reports = []
     for db_company in companies:
 
+        db_company.update(**{'last_analysis_date': datetime.now()})
+
         ret = api_build_company_state_query(db_company)
-        if ret == -1:
+        if ret == -1 or ret == True or not ret:
             continue
 
-        if ret:
-            if 'last_analysis_date' in db_company and db_company['last_analysis_date']:
-                ret['last_analysis_date_verbose'] = db_company['last_analysis_date'].strftime("%Y/%m/%d, %H:%M:%S")
-                print(" DATE " + ret['last_analysis_date_verbose'])
+        if 'last_analysis_date' in db_company and db_company['last_analysis_date']:
+            ret['last_analysis_date_verbose'] = db_company['last_analysis_date'].strftime("%Y/%m/%d, %H:%M:%S")
+            print(" DATE " + ret['last_analysis_date_verbose'])
 
-        db_company.update(**{'last_analysis_date': datetime.now()})
         reports.append(ret)
 
     return get_response_formatted({'query_report': reports})
