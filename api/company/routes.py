@@ -999,3 +999,105 @@ def api_sitemap_tickers():
     xml_content += "</urlset>"
 
     return Response(xml_content, mimetype='text/xml')
+
+
+@blueprint.route('/cleanup_dups', methods=['GET', 'POST'])
+def api_company_aggregate_dups():
+    """
+        Group by long_name and find duplicates to merge
+    """
+    from api.query_helper import mongo_to_dict_helper
+    from api.ticker.models import DB_Ticker
+
+    pipeline = [
+        {
+            "$group": {
+                "_id": "$long_name",
+                "ids": {
+                    "$push": "$_id"
+                },
+                "count": {
+                    "$sum": 1
+                }
+            }
+        },
+        {
+            "$match": {
+                "count": {
+                    "$gt": 1
+                }
+            }
+        }  # Filter groups with more than one document
+    ]
+
+    ret = {}
+
+    ret['result'] = mongo_to_dict_helper(DB_Company.objects.aggregate(*pipeline))
+    ret['pipeline'] = [pipeline]
+
+    merge_companies = request.args.get("cleanup", None)
+    if not merge_companies:
+        return get_response_formatted(ret)
+
+    try:
+        for res in ret['result']:
+            if not isinstance(res['_id'], str) or res['_id'] == "":
+                print_r(" CHECK THIS " + str(res['_id']))
+                continue
+
+            print_r(" MERGING " + res['_id'])
+
+            first = None
+
+            del_keys = ['id', 'validate', 'exchanges', 'exchange_tickers']
+
+            for i in res['ids']:
+                db_company = DB_Company.objects(id=i).first()
+                if not first:
+                    first = db_company
+                    exchanges = mongo_to_dict_helper(db_company.exchanges)
+                    exchange_tickers = mongo_to_dict_helper(db_company.exchange_tickers)
+                    continue
+
+                my_update = mongo_to_dict_helper(db_company)
+
+                exchanges.extend(my_update['exchanges'])
+                exchange_tickers.extend(my_update['exchange_tickers'])
+
+                for key in del_keys:
+                    if key in my_update:
+                        del my_update[key]
+
+                for k, v in my_update.items():
+                    if not v:
+                        continue
+
+                    first[k] = v
+
+                first.save(validate=False)
+                db_company.delete()
+
+            exchanges = list(set(exchanges))
+            exchange_tickers = list(set(exchange_tickers))
+
+            first.update(** { 'exchanges': exchanges, 'exchange_tickers': exchange_tickers })
+
+            new_id = str(first.id)
+            for i in res['ids']:
+                if i == str(first.id):
+                    continue
+
+                db_ticker = DB_Ticker.objects(company_id=i).first()
+                if not db_ticker:
+                    print_r(" TICKER NOT FOUND " + i)
+                    continue
+
+                print_b(" REPLACE " + str(db_ticker.company_id) + " >> " + new_id)
+
+                #db_ticker.update(** { 'company_id': new_id })
+
+    except Exception as e:
+        print_exception(e, "CRASHED MERGING")
+
+
+    return get_response_formatted(ret)

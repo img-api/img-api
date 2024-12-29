@@ -454,7 +454,7 @@ def has_iterator(obj):
 def mongo_to_dict_helper(obj, filter_out=None, add_empty_lists=True):
     """ mongo object into a dictionary and lets you filter out fields you would like to not send to the next stage """
 
-    if has_iterator(obj):
+    if has_iterator(obj) or isinstance(obj, list):
         ret = []
         for o in obj:
             ret.append(mongo_to_dict_helper(o, filter_out, add_empty_lists))
@@ -501,7 +501,7 @@ def mongo_to_dict_helper(obj, filter_out=None, add_empty_lists=True):
             #return return_data
 
         if not hasattr(obj, '_fields') or "_fields" not in obj:
-            return return_data
+            return str(obj)
 
         for field_name in obj._fields:
             if filter_out and field_name in filter_out:
@@ -514,8 +514,8 @@ def mongo_to_dict_helper(obj, filter_out=None, add_empty_lists=True):
             if field_name in obj._data:
                 data = obj._data[field_name]
                 field = obj._fields[field_name]
-                if field_name == "start_date":
-                    print(" TEST ")
+                #if field_name == "start_date":
+                #    print(" TEST ")
 
                 mongo_get_value(return_data, field, field_name, data, filter_out, add_empty_lists)
 
