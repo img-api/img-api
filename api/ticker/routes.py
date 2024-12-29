@@ -750,3 +750,19 @@ def api_detect_crossovers():
     results = DB_TickerHistoryTS.objects().aggregate(pipeline)
 
     return get_response_formatted({"crossovers": results})
+
+
+def ticker_get_history_date_days(full_symbol, days):
+    """
+    """
+
+    from dateutil.relativedelta import relativedelta
+    time_frame_min = datetime.now() - relativedelta(days=days)
+
+    # Our database has a 7 days maximum data frame.
+    time_frame_max = datetime.now() - relativedelta(days=(days - 7))
+
+    data = DB_TickerHistoryTS.objects(exchange_ticker=full_symbol,
+                                      creation_date__lte=time_frame_max,
+                                      creation_date__gte=time_frame_min).order_by('-creation_date').limit(1).first()
+    return data

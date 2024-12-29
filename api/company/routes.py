@@ -844,6 +844,7 @@ def api_get_ticker_financials(ticker_id):
     """
         Returns a list of tickers that the user is watching.
     """
+    from api.ticker.routes import ticker_get_history_date_days
     from api.ticker.tickers_helpers import ticker_exchanges_cleanup_dups
 
     db_company = DB_Company.objects(exchange_tickers=ticker_id).first()
@@ -857,11 +858,25 @@ def api_get_ticker_financials(ticker_id):
 
     for full_symbol in exchange_tickers:
         try:
-            fin[full_symbol] = ticker_update_financials(full_symbol, force=forced)
+            ticker_data = ticker_update_financials(full_symbol, force=forced)
+
+            add_days = request.args.get("add", None)
+            if add_days:
+                list_days = add_days.split(',')
+                for test in list_days:
+                    res = ticker_get_history_date_days(full_symbol, int(test))
+                    if res:
+                        change = ((ticker_data['day_high'] - res['close']) / res['close']) * 100
+                        res['change_pct'] = change
+                        ticker_data['days_' + test] = res
+
+            fin[full_symbol] = ticker_data
+
         except Exception as e:
             print_exception(e, "CRASHED FINANCIAL UPDATES")
 
-    return get_response_formatted({'exchange_tickers': exchange_tickers, 'financials': fin})
+    ret = {'exchange_tickers': exchange_tickers, 'financials': fin}
+    return get_response_formatted(ret)
 
 
 @blueprint.route('/cleanup', methods=['GET', 'POST'])
@@ -957,6 +972,7 @@ def api_sitemap_analysis():
     xml_content += "</urlset>"
 
     return Response(xml_content, mimetype='text/xml')
+
 
 @blueprint.route('/sitemap_tickers.xml', methods=['GET', 'POST'])
 @api_file_cache(expiration_secs=86400, data_type="xml")

@@ -72,9 +72,11 @@ def ticker_process_news_sites(BATCH_SIZE=5):
 
     update = False
 
-    ai_timeout = datetime.fromtimestamp(get_timestamp_verbose("1 hour"))
+    ai_timeout = datetime.fromtimestamp(get_timestamp_verbose("30 minutes"))
+
     item_news = DB_News.objects(ai_summary=None, last_visited_date__lte=ai_timeout,
-                                articles__not__size=0).order_by('-creation_date')[:BATCH_SIZE * 2]
+                            articles__not__size=0).order_by('-creation_date').limit(10)
+
     for article in item_news:
         try:
             api_create_article_ai_summary(article)
