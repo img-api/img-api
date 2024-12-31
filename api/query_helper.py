@@ -469,8 +469,8 @@ def mongo_to_dict_helper(obj, filter_out=None, add_empty_lists=True):
         return obj
 
     if not obj:
-        print_alert("mongo_to_dict_helper - No data to return ")
-        return return_data
+        #print_alert("mongo_to_dict_helper - No data to return ")
+        return {}
 
     try:
         if isinstance(obj, dict):

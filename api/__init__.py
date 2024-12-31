@@ -439,7 +439,7 @@ def register_api_blueprints(app):
         module = import_module('api.{}.routes'.format(module_name))
         app.register_blueprint(module.blueprint)
 
-        #print(" Registering API " + str(module_name))
+        print(" Registering API " + str(module_name))
 
     configure_media_folder(app)
     configure_news_media_folder(app)

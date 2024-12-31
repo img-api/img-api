@@ -601,9 +601,12 @@ def api_update_company_summary():
         if ret == -1 or ret == True or not ret:
             continue
 
-        if 'last_analysis_date' in db_company and db_company['last_analysis_date']:
-            ret['last_analysis_date_verbose'] = db_company['last_analysis_date'].strftime("%Y/%m/%d, %H:%M:%S")
-            print(" DATE " + ret['last_analysis_date_verbose'])
+        try:
+            if 'last_analysis_date' in db_company and db_company['last_analysis_date']:
+                ret['last_analysis_date_verbose'] = db_company['last_analysis_date'].strftime("%Y/%m/%d, %H:%M:%S")
+                print(" DATE " + ret['last_analysis_date_verbose'])
+        except Exception as e:
+            print_exception(e, "CRASHED")
 
         reports.append(ret)
 
