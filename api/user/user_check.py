@@ -32,7 +32,9 @@ class DB_UserCheck():
         if not self.creation_date:
             self.creation_date = datetime.now()
 
-        self.check_parms(*args, **kwargs)
+        if 'is_admin' not in kwargs or kwargs['is_admin'] == False:
+            self.check_parms(*args, **kwargs)
+
         ret = super(DB_UserCheck, self).save(*args, **kwargs)
         return ret
 

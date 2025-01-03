@@ -241,7 +241,7 @@ class DB_News(db.DynamicDocument):
         return self.get_arguments_param("interest_score", 0)
 
     def get_paragraph(self):
-        return self.get_arguments_param("paragraph", self.ai_summary[:80])
+        return self.get_arguments_param("paragraph", None)
 
     def get_summary(self):
         return self.get_arguments_param("summary", self.ai_summary)

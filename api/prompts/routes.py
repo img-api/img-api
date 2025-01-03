@@ -14,17 +14,28 @@ from api.print_helper import *
 from api.prompts import blueprint
 from api.prompts.models import DB_UserPrompt
 from api.query_helper import build_query_from_request
+from api.ticker.routes import ticker_get_history_date_days
+from api.ticker.tickers_helpers import ticker_exchanges_cleanup_dups
 from api.tools.markdownify import markdownify
 from flask import request
 from flask_login import current_user
 
 
+def api_save_user_prompt(jrequest):
+    print_g("Save user prompt")
+
+    old_prompts = DB_UserPrompt.objects(username=current_user.username, subtype="EMAIL_SUMMARY",
+                                        status="active").update(status='inactive')
+
+    db_prompt = DB_UserPrompt(**jrequest)
+    db_prompt.status = "active"
+    db_prompt.save()
+
+
 @blueprint.route('/create', methods=['GET', 'POST'])
 @api_key_or_login_required
 def api_create_prompt_local():
-    """ Create a new prompt to be resolved
-    ---
-    """
+    """ Create a new prompt to be resolved """
 
     print("======= CREATE A SINGLE PROMPT =============")
 
@@ -34,6 +45,10 @@ def api_create_prompt_local():
         return get_response_error_formatted(400, {'error_msg': "Error, please use UPDATE to update an entry"})
 
     jrequest['prompt'] = markdownify(jrequest['prompt']).strip()
+
+    match jrequest.get('subtype', None):
+        case "EMAIL_SUMMARY":
+            api_save_user_prompt(jrequest)
 
     if 'system' in jrequest and jrequest['system']:
         jrequest['system'] = markdownify(jrequest['system']).strip()
@@ -64,9 +79,6 @@ def api_create_prompt_local():
 @blueprint.route('/query', methods=['GET', 'POST'])
 @api_key_or_login_required
 def api_prompt_get_query():
-    """
-
-    """
     prompts = build_query_from_request(DB_UserPrompt, global_api=False, append_public=False, extra_args=None)
     return get_response_formatted({'prompts': prompts})
 
@@ -74,9 +86,6 @@ def api_prompt_get_query():
 @blueprint.route('/latest_system', methods=['GET', 'POST'])
 @api_key_or_login_required
 def api_prompt_get_system_query():
-    """
-
-    """
     extra_args = {'username__exists': 1, 'username': current_user.username, 'order_by': '-creation_date', 'limit': 1}
 
     prompts = build_query_from_request(DB_UserPrompt, global_api=False, append_public=False, extra_args=extra_args)
@@ -222,6 +231,46 @@ def api_build_chats_query(db_prompt):
 
     return content
 
+
+def api_create_content_from_tickers(tickers, add_days="8,31,365"):
+    from api.ticker.batch.yfinance.ytickers_pipeline import \
+        ticker_update_financials
+
+    if not tickers:
+        return ""
+
+    content = ""
+
+    if isinstance(tickers, str):
+        tickers = tickers.split(',')
+
+    for full_symbol in tickers:
+        list_days = add_days.split(',')
+
+        try:
+            data = ticker_update_financials(full_symbol, force=False)
+            content += f"** {full_symbol} **\n"
+
+            day_change = round(((data['price'] - data['previous_close']) / data['previous_close']) * 100, 2)
+
+            content += f"Price {data['price']} and today change {day_change}%\n"
+            content += f"PE: { data['PE'] } VOL: { int(data['volume']) } trailingEps: { data['trailingEps'] }\n"
+
+            for test in list_days:
+                res = ticker_get_history_date_days(full_symbol, int(test))
+                if not res:
+                    continue
+
+                change = round(((data['day_high'] - res['close']) / res['close']) * 100, 2)
+
+                content += f"Change {test} days {change}%\n"
+        except Exception as e:
+            print_exception(e, "Crashed loading ticker prices")
+
+    print(content)
+    return content
+
+
 def api_create_content_from_news(news, append_tickers=False):
     if not news:
         return ""
@@ -248,7 +297,11 @@ def api_create_content_from_news(news, append_tickers=False):
                     article.stock_price) + "\n"
 
             content += article.get_title() + "\n"
-            content += article.get_paragraph()[:200] + "\n\n"
+
+            paragraph = article.get_paragraph()
+            if paragraph:
+                content += paragraph[:200] + "\n\n"
+
             if 'ai_summary' in article:
                 content += article['ai_summary'][:2048] + "\n\n"
 
@@ -260,6 +313,7 @@ def api_create_content_from_news(news, append_tickers=False):
         content += "## Tickers: " + tickers + "\n\n"
 
     return content
+
 
 def api_build_article_query(db_prompt):
     news = None
@@ -279,6 +333,9 @@ def api_build_article_query(db_prompt):
 
 
 def cut_string(s, limit):
+    """ Cuts from the end
+        We clamp the data to some size depending on the LLM.
+    """
     return s[-limit:] if len(s) > limit else s
 
 

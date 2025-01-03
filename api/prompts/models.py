@@ -40,6 +40,7 @@ class DB_UserPrompt(DB_UserCheck, db.DynamicDocument):
     system_name = db.StringField()
 
     type = db.StringField(default="user_prompt")
+    subtype = db.StringField(default="")
     selection = db.ListField(db.StringField(), default=list)
 
     force_reindex = db.BooleanField(default=False)

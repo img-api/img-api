@@ -15,6 +15,8 @@ from api.query_helper import (build_query_from_request, get_timestamp_verbose,
                               is_mongo_id)
 from api.ticker.batch.yfinance.ytickers_pipeline import \
     ticker_update_financials
+from api.ticker.routes import ticker_get_history_date_days
+from api.ticker.tickers_helpers import ticker_exchanges_cleanup_dups
 from flask import request, send_file
 from mongoengine.queryset.visitor import Q
 
@@ -847,8 +849,6 @@ def api_get_ticker_financials(ticker_id):
     """
         Returns a list of tickers that the user is watching.
     """
-    from api.ticker.routes import ticker_get_history_date_days
-    from api.ticker.tickers_helpers import ticker_exchanges_cleanup_dups
 
     db_company = DB_Company.objects(exchange_tickers=ticker_id).first()
     forced = request.args.get("forced", None)

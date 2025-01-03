@@ -497,6 +497,9 @@ def get_portfolio_query(name_list="default", tickers_list=None, limit=100, my_ar
     extra_args = {'related_exchange_tickers__in': ls, "limit": limit}
 
     if my_args:
+        if not 'order_by' in my_args:
+            extra_args['order_by'] = '-creation_date'
+
         extra_args.update(my_args)
 
     news = build_query_from_request(DB_News, global_api=True, extra_args=extra_args)
@@ -665,12 +668,13 @@ def validate_regex_for_company(company_name: str, regex: str, text: str) -> bool
         print(f"Invalid regex: {e}")
         return False
 
+
 @blueprint.route('/process_regex', methods=['GET', 'POST'])
 def api_regex_processing():
     """
         We ask llama to generate
     """
-    extra_args = { 'regex__exists': 1, 'limit': 1, 'order_by': "-last_analysis_date" }
+    extra_args = {'regex__exists': 1, 'limit': 1, 'order_by': "-last_analysis_date"}
     companies = build_query_from_request(DB_Company, global_api=True, extra_args=extra_args)
 
     if not companies:
@@ -684,12 +688,13 @@ def api_regex_processing():
 
         primary_ticker = company.get_primary_ticker()
         exchange, ticker = primary_ticker.split(":")
-        db_news = DB_News.objects(related_exchange_tickers__nin=primary_ticker, ia_summary__regex=company['regex']).order_by('-creation_date').limit(10)
+        db_news = DB_News.objects(related_exchange_tickers__nin=primary_ticker,
+                                  ia_summary__regex=company['regex']).order_by('-creation_date').limit(10)
 
         ret.append(db_news)
 
+    return get_response_formatted({'companies': companies, 'news': ret})
 
-    return get_response_formatted({ 'companies': companies, 'news': ret })
 
 def api_news_group_for_sitemap(xml_content, my_group, path):
     import urllib.parse
@@ -708,6 +713,7 @@ def api_news_group_for_sitemap(xml_content, my_group, path):
         xml_content.append(f"<url><loc>https://headingtomars.com/{ path }/{ encoded }</loc></url>")
 
     return xml_content
+
 
 @blueprint.route('/sitemap.xml', methods=['GET', 'POST'])
 @api_file_cache(expiration_secs=86400, data_type="xml")
