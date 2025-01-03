@@ -108,11 +108,12 @@ def api_create_prompt_subscription_email(db_user, articles_content):
 
     prompt = "Write an email for the user explaining the information from the articles and their portfolio.\n"
     prompt += "Your output is a final email content that the user will receive, it's not a template and don't include the subject.\n"
+    prompt += "Use markdown and unicode emojis and icons as extra output for the text to be well formatted."
 
     system = "Today is " + str(datetime.now().strftime("%Y/%m/%d, %H:%M")) + "\n"
     system += "The user is " + db_user.first_name + " " + db_user.last_name + "\n"
     system += "Your name is TOTHEMOON, you are an expert system that can provide financial advice due regulations in the country.\n"
-    system += "Use markdown as output for the text."
+
 
     assistant = cut_string(articles_content, 256000)
 
@@ -164,14 +165,13 @@ def api_subscription_process_user(db_user):
                                     api_create_content_from_tickers)
 
     print_b(" Process user " + db_user.username)
-    from api.ticker.routes import get_watchlist_or_create
 
     last_process = datetime.now()
 
     db_user.update(**{'last_email_date': last_process})
 
     extra_args = {'reversed': 1}
-    news, tkrs = get_portfolio_query(my_args=extra_args)
+    news, tkrs = get_portfolio_query(my_args=extra_args, username=db_user.username)
 
     if len(tkrs) == 0:
         return

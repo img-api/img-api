@@ -485,13 +485,13 @@ def api_news_callback_ai_summary():
     return get_response_formatted(ret)
 
 
-def get_portfolio_query(name_list="default", tickers_list=None, limit=100, my_args=None):
+def get_portfolio_query(name_list="default", tickers_list=None, limit=100, my_args=None, username=None):
     from api.ticker.routes import get_watchlist_or_create
 
     if tickers_list:
         ls = str.join(",", tickers_list)
     else:
-        watchlist = get_watchlist_or_create(name_list)
+        watchlist = get_watchlist_or_create(name_list, username)
         ls = str.join(",", watchlist.exchange_tickers)
 
     extra_args = {'related_exchange_tickers__in': ls, "limit": limit}
