@@ -11,6 +11,7 @@ from api.prompts.models import DB_UserPrompt
 from api.query_helper import *
 from api.subscription import blueprint
 from api.user.models import User
+from flask import Flask, json, jsonify, redirect, request
 from flask_login import AnonymousUserMixin, current_user
 from flask_mail import Mail, Message
 from mongoengine import *
@@ -77,10 +78,12 @@ def generate_email_subject(email_data):
     return "Portfolio Report: " + now.strftime("%B %Y")
 
 
-def send_subscription_user_email(db_user, subject, email):
+def send_subscription_user_email(db_user, id, subject, email):
+    from api.config import get_config_value, get_host_name
+
     try:
         msg = Message(subject,
-                      sender=get_config_value("MAIL_DEFAULT_SENDER"),
+                      sender=get_config_sender(),
                       recipients=[db_user.email],
                       bcc=['contact@engineer.blue'])
 
@@ -92,7 +95,11 @@ def send_subscription_user_email(db_user, subject, email):
 
         html = header + html + footer
 
-        #msg.html = render_template('email/recovery.html', btn_link=recovery_link, small_header=True, username=username)
+        link_text = "View on web"
+
+        link = get_api_entry() + "/subscription/redirect/" + id
+        html += f"<hr ref_id='{ id }'><h4><a ref_id='{ id }' href='{ link }'>{ link_text }</a></h4>"
+
         msg.html = html
 
         mail.send(msg)
@@ -113,7 +120,6 @@ def api_create_prompt_subscription_email(db_user, articles_content):
     system = "Today is " + str(datetime.now().strftime("%Y/%m/%d, %H:%M")) + "\n"
     system += "The user is " + db_user.first_name + " " + db_user.last_name + "\n"
     system += "Your name is TOTHEMOON, you are an expert system that can provide financial advice due regulations in the country.\n"
-
 
     assistant = cut_string(articles_content, 256000)
 
@@ -306,9 +312,14 @@ def api_subscription_prompt_callback_ai_summary():
 
     if db_user:
         subject = generate_email_subject(update)
-        send_subscription_user_email(db_user, subject, update['ai_summary'])
+        send_subscription_user_email(db_user, str(json['id']), subject, update['ai_summary'])
 
     db_prompt.update(**update, is_admin=True)
 
     ret = {}
     return get_response_formatted(ret)
+
+
+@blueprint.route('/redirect/<string:id>', methods=['GET', 'POST'])
+def api_subscription_redirect_link(id):
+    return redirect("/pages/prompt?id=" + id)

@@ -253,6 +253,9 @@ def api_gif_get_from_request():
         ret = {"keywords": keywords, 'url': gif, 'raw': raw_data, 'format': format}
         return get_response_formatted(ret)
 
+    if not gif:
+        return {"error": "Failed to download the gif"}, 500
+
     response = requests.get(gif)
     if response.status_code != 200:
         return {"error": "Failed to download the gif"}, 500

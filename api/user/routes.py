@@ -8,7 +8,7 @@ import validators
 from api import (admin_login_required, api_key_login_or_anonymous,
                  api_key_or_login_required, get_response_error_formatted,
                  get_response_formatted, mail)
-from api.config import get_config_value, get_host_name
+from api.config import get_config_sender, get_config_value, get_host_name
 from api.galleries.models import DB_MediaList
 from api.print_helper import *
 from api.query_helper import build_query_from_request, mongo_to_dict_helper
@@ -378,7 +378,7 @@ def password_recovery_user_email(username, email, token):
         print_y(" PASSWORD LOST REPORT " + email)
 
         msg = Message(' User [%s] lost the password at %s ' % (username, socket.gethostname()),
-                      sender=get_config_value("MAIL_DEFAULT_SENDER"),
+                      sender=get_config_sender(),
                       recipients=['contact@engineer.blue'])
 
         msg.body = "User {email} lost the password {date} \n ".format(email=email, date=datetime.now())
@@ -389,7 +389,7 @@ def password_recovery_user_email(username, email, token):
         ####################### SEND RECOVERY INSTRUCTIONS ############################
 
         print_big(" RECOVERY LINK " + email)
-        msg = Message('Reset password instructions', sender=get_config_value("MAIL_DEFAULT_SENDER"), recipients=[email])
+        msg = Message('Reset password instructions', sender=get_config_sender(), recipients=[email])
 
         host = get_host_name()
         protocol = request.scheme
@@ -1160,7 +1160,7 @@ def api_user_validation_required(subject):
 def send_email_user(user, message, subject, link="", link_text="", html=None):
     print_big("EMAIL " + user.email)
 
-    msg = Message(subject, sender=get_config_value("MAIL_DEFAULT_SENDER"), reply_to=user.email, recipients=[user.email])
+    msg = Message(subject, get_config_sender(), reply_to=user.email, recipients=[user.email])
 
     name = user.first_name
     if not name:

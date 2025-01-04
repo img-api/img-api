@@ -204,7 +204,7 @@ def api_create_article_ai_summary(article, priority=False, force_summary=False):
         return
 
     wait_min = article.age_ai_upload_minutes()
-    if wait_min < 120:
+    if not force_summary and wait_min < 120:
         print_g(article.link + " WAITING FOR AI FOR " + str(wait_min))
         return
 

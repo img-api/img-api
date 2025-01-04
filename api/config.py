@@ -5,6 +5,9 @@ from datetime import datetime
 from flask import current_app as app
 
 
+def get_config_sender():
+    return (get_config_value("MAIL_DEFAULT_SENDER_NAME", "Report"), get_config_value("MAIL_DEFAULT_SENDER"))
+
 def get_config_value(key, default_value=None):
     try:
         with app.app_context():
