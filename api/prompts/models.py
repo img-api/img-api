@@ -84,3 +84,19 @@ class DB_UserPrompt(DB_UserCheck, db.DynamicDocument):
             self.update(**update, validate=False)
 
         return True
+
+    def get_arguments_param(self, key, default=None):
+        """ We will deprecate this eventually and hide better the raw AI function calls """
+        try:
+            return self['AI'][key]
+        except:
+            pass
+
+        try:
+            for function in self['tools']:
+                if key in function['function']['arguments']:
+                    return function['function']['arguments'][key]
+        except:
+            pass
+
+        return default

@@ -4,8 +4,9 @@ from datetime import datetime, timedelta
 import mistune
 import requests
 from api import get_response_formatted, mail
-from api.config import (get_api_AI_service, get_api_entry, get_config_value,
-                        is_api_development)
+from api.company.models import DB_Company
+from api.config import (get_api_AI_service, get_api_entry, get_config_sender,
+                        get_config_value, get_host_name, is_api_development)
 from api.print_helper import *
 from api.prompts.models import DB_UserPrompt
 from api.query_helper import *
@@ -77,9 +78,49 @@ def generate_email_subject(email_data):
     now = datetime.now()
     return "Portfolio Report: " + now.strftime("%B %Y")
 
+def get_update_param(update, key, default=None):
+    """ We will deprecate this eventually and hide better the raw AI function calls """
+    try:
+        return update['AI'][key]
+    except:
+        pass
+
+    try:
+        for function in update['tools']:
+            if key in function['function']['arguments']:
+                return function['function']['arguments'][key]
+    except:
+        pass
+
+    return default
+
+def generate_links_email(update, email):
+    try:
+        company_list = get_update_param(update, "company_list", [])
+        cleanup = []
+        for c in company_list:
+            cleanup.append(DB_Company.get_safe_name(c))
+
+        db_comps = DB_Company.objects(safe_name__in=cleanup)
+        for c in db_comps:
+            print(" FOUND COMPANY " + c.long_name)
+            # Write code to replace
+            #email = email.replace(ticker, f"[{c.get_primary_ticker()}](https://headingtomars.com/ticker/{c.get_primary_ticker()})")
+
+        ticker_list = get_update_param(update, "tickers_list", [])
+
+        for ticker in ticker_list:
+            db_comps = DB_Company.objects(exchange_tickers__endswith=":" + ticker)
+            for c in db_comps:
+                print(" FOUND COMPANY " + c.long_name)
+                email = email.replace(ticker, f"[{c.get_primary_ticker()}](https://headingtomars.com/ticker/{c.get_primary_ticker()})")
+
+    except Exception as e:
+        print_exception(e, "CRASH")
+
+    return email
 
 def send_subscription_user_email(db_user, id, subject, email):
-    from api.config import get_config_value, get_host_name
 
     try:
         msg = Message(subject,
@@ -310,11 +351,12 @@ def api_subscription_prompt_callback_ai_summary():
 
     db_user = User.objects(username=db_prompt.username).first()
 
+    db_prompt.update(**update, is_admin=True)
+
     if db_user:
         subject = generate_email_subject(update)
-        send_subscription_user_email(db_user, str(json['id']), subject, update['ai_summary'])
-
-    db_prompt.update(**update, is_admin=True)
+        email = generate_links_email(update, update['ai_summary'])
+        send_subscription_user_email(db_user, str(json['id']), subject, email)
 
     ret = {}
     return get_response_formatted(ret)
