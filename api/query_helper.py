@@ -4,6 +4,7 @@ import time
 from datetime import datetime
 
 import dateutil
+from bson.objectid import ObjectId
 from flask import abort, request
 from flask_login import current_user
 from imgapi_launcher import db
@@ -67,7 +68,10 @@ def date_to_unix(dt):
 
 
 def timestamp_get_verbose_date(mytime):
-    now = datetime.datetime.now()
+    if not isinstance(mytime, datetime):
+        mytime = date_from_unix(str(mytime))
+
+    now = datetime.now()
     diff = (now - mytime).seconds
     if diff < 0:
         return "now"
@@ -398,8 +402,6 @@ def clean_dict(mykey, obj):
 
     ret = {}
     try:
-        from bson.objectid import ObjectId
-
         if isinstance(obj, str):
             return obj
 
@@ -598,7 +600,6 @@ def build_query_from_request(MyClass, args=None, get_all=False, global_api=False
     only = args.get("only")
     exclude = args.get("exclude")
 
-
     args = query_clean_reserved(args)
 
     query_set = QuerySet(MyClass, MyClass()._get_collection())
@@ -740,7 +741,10 @@ def build_query_from_url(args=None):
                 parms = key.split("__")
                 if len(parms) > 1:
                     # We don't support equal number... :(
-                    if parms[-1] == "ne" and value == None:
+                    if parms[-1] == "ne" or value == None:
+                        pass
+
+                    elif isinstance(value, ObjectId):
                         pass
 
                     # Looking for an specific size
@@ -754,7 +758,7 @@ def build_query_from_url(args=None):
                         value = value.split(",")
 
                 newkey = {key: get_adaptive_value(key, value)}
-                query = query & Q(**newkey) if query else Q(**newkey)
+                query = (query & Q(**newkey)) if query else Q(**newkey)
 
     return query
 

@@ -10,8 +10,11 @@ from api.config import (get_api_AI_service, get_api_entry, get_config_sender,
 from api.print_helper import *
 from api.prompts.models import DB_UserPrompt
 from api.query_helper import *
+from api.query_helper import mongo_to_dict_helper
 from api.subscription import blueprint
+from api.subscription.models import DB_Subscription
 from api.user.models import User
+from bson.objectid import ObjectId
 from flask import Flask, json, jsonify, redirect, request
 from flask_login import AnonymousUserMixin, current_user
 from flask_mail import Mail, Message
@@ -78,6 +81,7 @@ def generate_email_subject(email_data):
     now = datetime.now()
     return "Portfolio Report: " + now.strftime("%B %Y")
 
+
 def get_update_param(update, key, default=None):
     """ We will deprecate this eventually and hide better the raw AI function calls """
     try:
@@ -94,6 +98,7 @@ def get_update_param(update, key, default=None):
 
     return default
 
+
 def generate_links_email(update, email):
     try:
         company_list = get_update_param(update, "company_list", [])
@@ -105,7 +110,7 @@ def generate_links_email(update, email):
         for c in db_comps:
             print(" FOUND COMPANY " + c.long_name)
             # Write code to replace
-            #email = email.replace(ticker, f"[{c.get_primary_ticker()}](https://headingtomars.com/ticker/{c.get_primary_ticker()})")
+            # email = email.replace(ticker, f"[{c.get_primary_ticker()}](https://headingtomars.com/ticker/{c.get_primary_ticker()})")
 
         ticker_list = get_update_param(update, "tickers_list", [])
 
@@ -113,22 +118,25 @@ def generate_links_email(update, email):
             db_comps = DB_Company.objects(exchange_tickers__endswith=":" + ticker)
             for c in db_comps:
                 print(" FOUND COMPANY " + c.long_name)
-                email = email.replace(ticker, f"[{c.get_primary_ticker()}](https://headingtomars.com/ticker/{c.get_primary_ticker()})")
+                email = email.replace(
+                    ticker, f"[{c.get_primary_ticker()}](https://headingtomars.com/ticker/{c.get_primary_ticker()})")
 
     except Exception as e:
         print_exception(e, "CRASH")
 
     return email
 
+
 def send_subscription_user_email(db_user, id, subject, email):
 
     try:
-        msg = Message(subject,
-                      sender=get_config_sender(),
-                      recipients=[db_user.email],
-                      bcc=['contact@engineer.blue'])
+        bcc = None
+        if not db_user.is_admin:
+            bcc = ['contact@engineer.blue']
 
-        msg.body = email
+        msg = Message(subject.strip(), sender=get_config_sender(), recipients=[db_user.email.strip()], bcc=bcc)
+
+        msg.body = email.strip()
 
         html = mistune.html(email)
         header = '<span style="font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #111;">'
@@ -141,7 +149,7 @@ def send_subscription_user_email(db_user, id, subject, email):
         link = get_api_entry() + "/subscription/redirect/" + id
         html += f"<hr ref_id='{ id }'><h4><a ref_id='{ id }' href='{ link }'>{ link_text }</a></h4>"
 
-        msg.html = html
+        msg.html = html.strip()
 
         mail.send(msg)
 
@@ -197,16 +205,16 @@ def api_create_prompt_subscription_email(db_user, articles_content):
             'raw': json_response,
             'ai_upload_date': datetime.now(),
             'ai_queue_size': json_response['queue_size']
-        })
+        },
+                         is_admin=True)
 
-        return json_response
     except Exception as e:
         print_exception(e, "CRASH READING RESPONSE")
 
-    return {}
+    return data, db_prompt
 
 
-def api_subscription_process_user(db_user):
+def api_subscription_process_user(db_user, test=False):
     from api.news.routes import get_portfolio_query
     from api.prompts.routes import (api_create_content_from_news,
                                     api_create_content_from_tickers)
@@ -215,21 +223,94 @@ def api_subscription_process_user(db_user):
 
     last_process = datetime.now()
 
-    db_user.update(**{'last_email_date': last_process})
+    if not request.args.get("forced", test):
+        db_user.update(**{'last_email_date': last_process})
+
+    # Create a cache for our subscription duties.
+    db_subs = DB_Subscription.objects(username=db_user.username).first()
+    if not db_subs:
+        data = {'username': db_user.username}
+        db_subs = DB_Subscription(**data)
+        db_subs.save()
+
+    if test: print_json(db_subs)
 
     extra_args = {'reversed': 1}
+
+    db_prompt = None
+    if db_subs and 'last_prompt_id' in db_subs:
+        db_prompt = DB_UserPrompt.objects(id=db_subs['last_prompt_id']).first()
+
+        if db_prompt and 'ai_summary' not in db_prompt:
+            print_r("THERE IS NO AI_SUMMARY YET")
+            return
+
+    # We create only the incremental from the previous call and we add the content from the last email
+    # to the assistant so it knows what was the previous conversation.
+    if 'last_processed_news_id' in db_subs:
+        lnews = db_subs['last_processed_news_id']
+
+        print_b("SUB: " + lnews)
+
+        if not request.args.get("forced", None):
+            extra_args['id__gt'] = ObjectId(lnews)
+
     news, tkrs = get_portfolio_query(my_args=extra_args, username=db_user.username)
 
-    if len(tkrs) == 0:
+    if len(tkrs) == 0 or len(news) == 0:
+        print_r(" NO NEWS SINCE LAST UPDATE ")
         return
 
+    try:
+        last_processed_news_id = str(news[-1].id)
+
+        if not request.args.get("forced", False):
+            db_subs.update(**{'last_processed_news_id': last_processed_news_id})
+
+    except Exception as e:
+        print_exception(e, "CRASH")
+
     tickers = api_create_content_from_tickers(tkrs)
+
+    if db_prompt:
+        tickers += f"Previous email: { db_prompt['ai_summary'] }\n"
+
     content = api_create_content_from_news(news)
 
     print("CONTENT SIZE: " + str(len(content)))
 
-    api_create_prompt_subscription_email(db_user, tickers + content)
-    return db_user
+    email, db_prompt = api_create_prompt_subscription_email(db_user, tickers + content)
+
+    if db_prompt:
+        db_subs.update(**{'last_prompt_id': str(db_prompt.id)})
+
+    ids = []
+    for n in news:
+        my_date = str(n.creation_date.strftime("%Y/%m/%d"))
+        ids.append({'id': str(n.id), 'date': my_date})
+
+    if test:
+        news_title = []
+        for n in news:
+            news_title.append({
+                'id': str(n.id),
+                'title': n.source_title,
+                'date': timestamp_get_verbose_date(n.creation_date)
+            })
+
+        return {
+            'last_processed_news_id': last_processed_news_id,
+            'ids': ids,
+            'username': db_user.username,
+            'news': news_title,
+            'email': {
+                'tickers': tickers,
+                'content': content,
+                'email': email
+            }
+        }
+
+    return {'username': db_user.username, 'news': news}
 
 
 def check_subscription_status():
@@ -245,8 +326,8 @@ def check_subscription_status():
 
             # Reset process
             if request.args.get("forced", None):
-                last_process = datetime.today() - timedelta(days=8)
-                obj.update(**{'last_email_date': last_process})
+                #last_process = datetime.today() - timedelta(days=8)
+                #obj.update(**{'last_email_date': last_process})
 
                 if len(obj.list_payments) > 1:
                     obj.update(**{'list_payments': [obj.list_payments[-1]]})
@@ -275,9 +356,23 @@ def get_raw_query(last_process):
     return raw
 
 
+@blueprint.route('/test/process', methods=['GET', 'DELETE'])
+def api_process_test_user_subscription():
+    """ Testing user subscriptions, it only process admin subscriptions """
+    tiers = []
+
+    user_list = User.objects(subscription__status="active", is_admin=True, my_email_summary=True)
+    for user in user_list:
+        tiers.append(api_subscription_process_user(user, test=True))
+
+    if current_user.is_authenticated and current_user.is_admin:
+        return get_response_formatted({'tiers': tiers})
+
+    return get_response_formatted({"fruit": "banana"})
+
+
 @blueprint.route('/process', methods=['GET', 'DELETE'])
 def api_process_user_subscription():
-    from api.query_helper import mongo_to_dict_helper
 
     tier_2 = []
 
@@ -285,6 +380,7 @@ def api_process_user_subscription():
 
     # Tier 2 Process
     last_process = datetime.today() - timedelta(days=7)
+
     user_list = User.objects(current_subscription="tier2_monthly",
                              subscription__status="active",
                              __raw__=get_raw_query(last_process))
@@ -301,7 +397,7 @@ def api_process_user_subscription():
     for user in user_list:
         tier_3.append(api_subscription_process_user(user))
 
-    if current_user.is_authenticated and current_user.username == "admin":
+    if current_user.is_authenticated and current_user.is_admin:
         return get_response_formatted({'tier2': tier_2, 'tier3': tier_3})
 
     return get_response_formatted({"fruit": "banana"})

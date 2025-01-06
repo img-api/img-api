@@ -130,6 +130,11 @@ def print_color(color, out=''):
 def print_json(obj, color=""):
     from flask import json
 
+    from api.query_helper import mongo_to_dict_helper
+
+    if not isinstance(obj, dict):
+        obj = mongo_to_dict_helper(obj)
+
     if (color == ""):
         print_color(bcolors.OKBLUE, print_h(80, "#"))
 

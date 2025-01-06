@@ -34,7 +34,10 @@ def api_company_get_query():
 
     if len(companies) == 0:
         # Patch to fix issue with tickers that refer to the same company.
-        query = request.args.get("exchange_tickers", None).upper()
+        query = request.args.get("exchange_tickers", None)
+        if query:
+            query = query.upper()
+
         if '-' in query:
             arr = query.split('-')
             companies = DB_Company.objects(exchange_tickers=arr[0])
@@ -862,12 +865,15 @@ def api_get_ticker_financials(ticker_id):
     for full_symbol in exchange_tickers:
         try:
             ticker_data = ticker_update_financials(full_symbol, force=forced)
+            if not ticker_data:
+                continue
 
             add_days = request.args.get("add", None)
             if add_days:
                 list_days = add_days.split(',')
                 for test in list_days:
                     res = ticker_get_history_date_days(full_symbol, int(test))
+
                     if res:
                         change = ((ticker_data['day_high'] - res['close']) / res['close']) * 100
                         res['change_pct'] = change

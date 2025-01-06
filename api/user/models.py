@@ -107,6 +107,8 @@ class User(UserMixin, db.DynamicDocument):
 
     # TODO: Special entries for an user. This should be dynamic, or be in settings.
     my_debug_interface = db.BooleanField(default=False)
+    my_email_summary = db.BooleanField(default=True)
+    my_email_alerts_daily = db.BooleanField(default=True)
 
     # Users can modify directly fields which start with my_ or in the list of public variables
     public_keys = [

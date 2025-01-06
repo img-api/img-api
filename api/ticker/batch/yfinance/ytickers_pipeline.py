@@ -71,27 +71,34 @@ def ticker_update_financials(full_symbol, max_age_minutes=15, force=False):
         fin['age_min'] = fin.age_minutes()
         return fin
 
-    yticker = standardize_ticker_format_to_yfinance(full_symbol)
-    yf_obj = fetch_tickers_info(yticker, no_cache=True)
-
-    #if not yf_obj.info['currentPrice']:
-    #    return fin
-
-    new_schema = {
-        'company_name': 'longName',
-        'price': 'currentPrice',
-        'ratio': 'currentRatio',
-        'trailingEps': 'trailingEps',
-        'day_low': 'dayLow',
-        'day_high': 'dayHigh',
-        'current_open': 'open',
-        'previous_close': 'previousClose',
-        'volume': 'volume',
-        'bid': 'bid',
-        'bid_size': 'bidSize',
-    }
-
     try:
+        yticker = standardize_ticker_format_to_yfinance(full_symbol)
+        yf_obj = fetch_tickers_info(yticker, no_cache=True)
+        if not yf_obj:
+            return fin
+
+        new_schema = {
+            'company_name': 'longName',
+            'price': 'currentPrice',
+            'ratio': 'currentRatio',
+            'trailingEps': 'trailingEps',
+            'day_low': 'dayLow',
+            'day_high': 'dayHigh',
+            'current_open': 'open',
+            'previous_close': 'previousClose',
+            'volume': 'volume',
+            'bid': 'bid',
+            'bid_size': 'bidSize',
+        }
+
+        try:
+            if not yf_obj.info:
+                print_r(full_symbol + " FAILED TO DOWNLOAD INFO ")
+                return fin
+        except Exception as e:
+            print_exception(e, "CRASH")
+            return fin
+
         financial_data = prepare_update_with_schema(yf_obj.info, new_schema)
         ticker_save_financials(full_symbol, yf_obj)
         #ticker_save_history(full_symbol, yf_obj)
@@ -100,17 +107,16 @@ def ticker_update_financials(full_symbol, max_age_minutes=15, force=False):
             PE = round(financial_data['price'] / financial_data['trailingEps'], 2)
             financial_data['PE'] = PE
 
+        financial_data['exchange_ticker'] = full_symbol
+
+        if not fin:
+            fin = DB_TickerSimple(**financial_data)
+            fin.save(validate=False)
+        else:
+            fin.update(**financial_data, validate=False)
+
     except Exception as e:
         print_exception(e, "CRASH")
-        return fin
-
-    financial_data['exchange_ticker'] = full_symbol
-
-    if not fin:
-        fin = DB_TickerSimple(**financial_data)
-        fin.save(validate=False)
-    else:
-        fin.update(**financial_data, validate=False)
 
     return fin
 
