@@ -159,3 +159,5 @@ services/dictionary_alpha_arrays.json
 
 chrome/chrome*
 chrome/*.zip
+
+config_telegram.py

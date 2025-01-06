@@ -658,6 +658,14 @@ def api_user_get_query():
     return get_response_formatted(ret)
 
 
+@blueprint.route('/admin/get_by_id/<string:id>', methods=['GET', 'POST'])
+@api_key_or_login_required
+@admin_login_required
+def api_user_get_query_only_id(id):
+    users = User.objects(id=id)
+    return get_response_formatted({'users': users})
+
+
 @blueprint.route('/admin/get/<string:username>', methods=['GET', 'POST'])
 @api_key_or_login_required
 @admin_login_required

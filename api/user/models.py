@@ -95,6 +95,8 @@ class User(UserMixin, db.DynamicDocument):
     is_email_validated = db.BooleanField(default=False)
 
     current_subscription = db.StringField(default="")
+
+    telegram_chat_id = db.StringField(default="")
     subscription = db.EmbeddedDocumentField(DB_UserPayments, default=None)
 
     list_payments = db.EmbeddedDocumentListField(DB_UserPayments, default=[])
@@ -188,6 +190,7 @@ class User(UserMixin, db.DynamicDocument):
             self.update(**{"creation_date": self.creation_date})
 
         ret = {
+            'id': str(self.id),
             'username': self.username,
             'profile_mid': self.profile_mid,
             'lang': self.lang,

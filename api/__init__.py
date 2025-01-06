@@ -431,6 +431,7 @@ def register_api_blueprints(app):
             'prompts',
             'payment',
             'channels',
+            'telegram',
             'comments',
             'galleries',
             'hello_world',

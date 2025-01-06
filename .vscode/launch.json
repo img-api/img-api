@@ -60,6 +60,22 @@
             "purpose": ["debug-test"],
             "console": "integratedTerminal",
             "justMyCode": false
-        }
+        },
+        {
+            "name": "Launch telegram service",
+            "type": "python",
+            "request": "launch",
+            "program": "services/telegram/service_telegram.py",
+            "stopOnEntry": false,
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "purpose": ["debug-in-terminal"],
+            "env": {
+                "PYTHONPATH": "${cwd}"
+            },
+            "args": [
+                "lachati.com", "5000",
+            ],
+        },
     ]
 }
