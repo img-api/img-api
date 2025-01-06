@@ -96,7 +96,6 @@ class User(UserMixin, db.DynamicDocument):
 
     current_subscription = db.StringField(default="")
 
-    telegram_chat_id = db.StringField(default="")
     subscription = db.EmbeddedDocumentField(DB_UserPayments, default=None)
 
     list_payments = db.EmbeddedDocumentListField(DB_UserPayments, default=[])
@@ -111,6 +110,7 @@ class User(UserMixin, db.DynamicDocument):
     my_debug_interface = db.BooleanField(default=False)
     my_email_summary = db.BooleanField(default=True)
     my_email_alerts_daily = db.BooleanField(default=True)
+    my_telegram_chat_id = db.StringField(default="")
 
     # Users can modify directly fields which start with my_ or in the list of public variables
     public_keys = [

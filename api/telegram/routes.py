@@ -24,7 +24,7 @@ from mongoengine.errors import ValidationError
 @admin_login_required
 def api_user_save_telegram_chat_id(user_id, chat_id):
     db_user = User.objects(id=user_id).first()
-    db_user.update(**{'telegram_chat_id': chat_id})
+    db_user.update(**{'my_telegram_chat_id': chat_id})
     db_user.reload()
 
-    return get_response_formatted({'user': db_user, 'telegram_id': id})
+    return get_response_formatted({'user': db_user, 'my_telegram_chat_id': chat_id})
