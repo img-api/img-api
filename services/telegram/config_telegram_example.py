@@ -5,6 +5,6 @@ telegram_config = {
 }
 
 imgapi_config = {
-    'api': "http://dev.tothemoon.life/api",
+    'api': "https://headingtomars.com/api",
     'token': "<IMGAPI_TOKEN>",
 }

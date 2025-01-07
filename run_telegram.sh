@@ -4,6 +4,6 @@ cd "${BASH_SOURCE%/*}"
 
 . .venv/bin/activate
 
-python services/telegram/service_fetch.py
+python services/telegram/service_telegram.py
 
 $SHELL

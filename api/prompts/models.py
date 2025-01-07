@@ -45,6 +45,9 @@ class DB_UserPrompt(DB_UserCheck, db.DynamicDocument):
 
     force_reindex = db.BooleanField(default=False)
 
+    message_id = db.IntField()
+    chat_id = db.IntField()
+
     def save(self, *args, **kwargs):
         if not self.creation_date:
             self.creation_date = datetime.now()
