@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 import mistune
 import requests
-from api import get_response_formatted, mail
+from api import cleanup_for_email, get_response_formatted, mail
 from api.company.models import DB_Company
 from api.config import (get_api_AI_service, get_api_entry, get_config_sender,
                         get_config_value, get_host_name, is_api_development)
@@ -134,7 +134,10 @@ def send_subscription_user_email(db_user, id, subject, email):
         if not db_user.is_admin:
             bcc = ['contact@engineer.blue']
 
-        msg = Message(subject.strip(), sender=get_config_sender(), recipients=[db_user.email.strip()], bcc=bcc)
+        msg = Message(cleanup_for_email(subject.strip()),
+                      sender=get_config_sender(),
+                      recipients=[cleanup_for_email(db_user.email)],
+                      bcc=bcc)
 
         msg.body = email.strip()
 

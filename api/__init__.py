@@ -107,6 +107,8 @@ def api_clean_recursive(content, output):
 
     return output
 
+def cleanup_for_email(text):
+    return text.replace("\n", ",").replace("\t", ",").strip()
 
 def api_clean(content):
     """ Cleans a dictionary of keys which are private. Also converts MONGO objects back to a dict that can be converted into json """
@@ -420,6 +422,7 @@ def register_api_blueprints(app):
             'user',
             'news',
             'jobs',
+            'test',
             'admin',
             'media',
             'actors',

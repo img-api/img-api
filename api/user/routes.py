@@ -6,8 +6,8 @@ import bcrypt
 import mistune
 import validators
 from api import (admin_login_required, api_key_login_or_anonymous,
-                 api_key_or_login_required, get_response_error_formatted,
-                 get_response_formatted, mail)
+                 api_key_or_login_required, cleanup_for_email,
+                 get_response_error_formatted, get_response_formatted, mail)
 from api.config import get_config_sender, get_config_value, get_host_name
 from api.galleries.models import DB_MediaList
 from api.print_helper import *
@@ -1168,7 +1168,10 @@ def api_user_validation_required(subject):
 def send_email_user(user, message, subject, link="", link_text="", html=None):
     print_big("EMAIL " + user.email)
 
-    msg = Message(subject, get_config_sender(), reply_to=user.email, recipients=[user.email])
+    msg = Message(cleanup_for_email(subject),
+                  sender=get_config_sender(),
+                  reply_to=cleanup_for_email(user.email),
+                  recipients=[cleanup_for_email(user.email)])
 
     name = user.first_name
     if not name:
