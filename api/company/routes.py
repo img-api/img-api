@@ -827,7 +827,7 @@ def api_company_get_query_prompts():
 
 @blueprint.route('/latest_prompts', methods=['GET', 'POST'])
 #@api_key_or_login_required
-@api_file_cache(expiration_secs=30)
+@api_file_cache(expiration_secs=300, ignore_dev=True)
 def api_company_get_query_prompts_latest():
     """
     Abstraction so we don't call this very long query:

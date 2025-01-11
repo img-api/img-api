@@ -4,16 +4,90 @@ import json
 import os
 import threading
 
+import mistune
 import requests
 
 from config_telegram import imgapi_config, telegram_config
 from telegram import (Bot, InlineKeyboardButton, InlineKeyboardMarkup,
                       ReplyKeyboardMarkup, ReplyKeyboardRemove, Update)
+from telegram.constants import ParseMode
 from telegram.ext import (Application, CallbackContext, CommandHandler,
                           ContextTypes, MessageHandler, filters)
 
 telegram_bot = None
 
+class TelegramRenderer(mistune.HTMLRenderer):
+    def text(self, text):
+        return mistune.escape(text)
+
+    def paragraph(self, text):
+        return text  # Telegram does not support <p>, return text as-is.
+
+    def emphasis(self, text):
+        return f"<i>{text}</i>"
+
+    def strong(self, text):
+        return f"<b>{text}</b>"
+
+    def inline_code(self, text):
+        return f"<code>{mistune.escape(text)}</code>"
+
+    def block_code(self, code, info=None):
+        return f"<pre>{mistune.escape(code)}</pre>"
+
+    def link(self, link, title, text):
+        return f'<a href="{mistune.escape(link)}">{text}</a>'
+
+    def strikethrough(self, text):
+        return f"<s>{text}</s>"
+
+    def underline(self, text):
+        return f"<u>{text}</u>"
+
+    def heading(self, text, level):
+        # Telegram does not support headings; return as bold text.
+        return f"<b>{text}</b>"
+
+    def list(self, body, ordered, level, start=None):
+        # Render lists as plain text with dashes or numbers.
+        lines = body.split("\n")
+        if ordered:
+            return "<br>\n".join(f"{i+1}. {line}" for i, line in enumerate(lines) if line.strip())
+        else:
+            return "<br>\n".join(f"- {line}" for line in lines if line.strip())
+
+    def list_item(self, text, level):
+        # List items are just returned as plain text lines.
+        return text.strip()
+
+    def block_quote(self, text):
+        # Render blockquotes as plain text prefixed with `> `
+        lines = text.split("\n")
+        return "\n".join(f"> {line}" for line in lines if line.strip())
+
+    def image(self, src, title, alt):
+        # Render images as plain text describing the image
+        return f"[Image: {alt or 'No description'}] {src}"
+
+    def table(self, header, body):
+        # Render tables as plain text
+        return f"Table:\n{header}\n{body}"
+
+    def table_row(self, content):
+        return content + "\n"
+
+    def table_cell(self, content, **kwargs):
+        return content + "\t"
+
+    def unknown_block(self, text):
+        # For unsupported blocks, render as plain text
+        return text
+
+    def unknown_inline(self, text):
+        # For unsupported inline elements, render as plain text
+        return text
+
+markdown = mistune.create_markdown(renderer=TelegramRenderer())
 
 class ImgAPI():
     user = None
@@ -270,6 +344,7 @@ async def main_channel(context: ContextTypes.DEFAULT_TYPE) -> None:
 async def chat_polling(context: ContextTypes.DEFAULT_TYPE) -> None:
     """Process all the messages."""
     global imgapi
+    global markdown
 
     try:
         result = imgapi.api_call("/telegram/polling?telegram=1&TEST")
@@ -284,7 +359,19 @@ async def chat_polling(context: ContextTypes.DEFAULT_TYPE) -> None:
             if 'message_id' in msg:
                 await context.bot.delete_message(chat_id, msg['message_id'])
 
-            await context.bot.send_message(chat_id, msg['reply'])
+            reply = msg['reply']
+
+            if len(reply) >= 2048:
+                reply[:2048]
+
+            print(" LENGTH " + str(len(reply)))
+            try:
+                html = markdown(reply)
+                await context.bot.send_message(chat_id, html, parse_mode="HTML")
+            except Exception as e:
+                print("CRASHED ON MARKDOWN " + str(e))
+                await context.bot.send_message(chat_id, reply, parse_mode="markdown")
+
     except Exception as e:
         print(str(e))
 

@@ -57,9 +57,10 @@ def api_create_telegram_chat(db_user, prompt, chat_data={}):
     system += "Use markdown and unicode emojis and icons as extra output for the text to be well formatted."
 
     assistant = cut_string(tickers + content, 256000)
+    assistant += ". Use markdown and unicode emojis and icons as extra output for the text to be well formatted."
 
     data = {
-        'type': 'CHAT',
+        'type': 'user_prompt',
         'prompt': prompt,
         'system': system,
         'assistant': assistant,

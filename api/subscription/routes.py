@@ -169,6 +169,7 @@ def api_create_prompt_subscription_email(db_user, articles_content):
     system = "Today is " + str(datetime.now().strftime("%Y/%m/%d, %H:%M")) + "\n"
     system += "The user is " + db_user.first_name + " " + db_user.last_name + "\n"
     system += "Your name is TOTHEMOON, you are an expert system that can provide financial advice due regulations in the country.\n"
+    system += "Don't mention about the value of the stocks or the number of shares since we don't have that information if it not specified.\n"
 
     assistant = cut_string(articles_content, 256000)
 
@@ -379,7 +380,7 @@ def api_process_user_subscription():
     check_subscription_status()
 
     # Tier 2 Process
-    last_process = datetime.today() - timedelta(days=7)
+    last_process = datetime.now() - timedelta(days=7)
 
     user_list = User.objects(current_subscription="tier2_monthly",
                              subscription__status="active",
@@ -389,7 +390,8 @@ def api_process_user_subscription():
 
     # Tier 3 Process
     tier_3 = []
-    last_process = datetime.today() - timedelta(days=1)
+    #last_process = datetime.now() - timedelta(days=1)
+    last_process = datetime.now()
     user_list = User.objects(current_subscription="tier3_monthly",
                              subscription__status="active",
                              __raw__=get_raw_query(last_process))

@@ -12,11 +12,12 @@ from flask import Response, json, request
 from flask_login import current_user
 
 from api import get_response_formatted
+from api.config import is_api_development
 from api.print_helper import *
 from api.tools import ensure_dir
 
 
-def api_file_cache(global_api=True, expiration_secs=86400, data_type="json"):
+def api_file_cache(global_api=True, expiration_secs=86400, data_type="json", ignore_dev=False):
     """
     Decorator that caches API responses to disk to reduce database load.
     Allows passing 'global_api' as a parameter to control specific behavior.
@@ -130,15 +131,17 @@ def api_file_cache(global_api=True, expiration_secs=86400, data_type="json"):
             # Handle 'global_api' if passed as a keyword argument
 
             # Try to load from the cache
-            output = read_from_disk_cache(global_api=global_api, expiration_secs=expiration_secs)
-            if output:
-                if data_type == "xml":
-                    return Response(output, mimetype='text/xml')
 
-                if data_type == "json":
-                    return get_response_formatted(output)
+            if not (is_api_development() and kwargs.get('ignore_dev', False)):
+                output = read_from_disk_cache(global_api=global_api, expiration_secs=expiration_secs)
+                if output:
+                    if data_type == "xml":
+                        return Response(output, mimetype='text/xml')
 
-                return Response(output, mimetype=data_type)
+                    if data_type == "json":
+                        return get_response_formatted(output)
+
+                    return Response(output, mimetype=data_type)
 
             # If no cache, call the original function
             response = func(*args, **kwargs)
