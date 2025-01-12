@@ -79,6 +79,8 @@ class User(UserMixin, db.DynamicDocument):
     postal_code = db.StringField(default="")
 
     referral = db.StringField(default="")
+    referral_date = db.DateTimeField()
+
     share_referral_code = db.StringField(default="")
 
     profile_mid = db.StringField()

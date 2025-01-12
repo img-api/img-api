@@ -7,8 +7,9 @@ import pathlib
 import time
 from datetime import datetime
 from functools import wraps
+from io import BytesIO
 
-from flask import Response, json, request
+from flask import Response, json, request, send_file
 from flask_login import current_user
 
 from api import get_response_formatted
@@ -135,6 +136,10 @@ def api_file_cache(global_api=True, expiration_secs=86400, data_type="json", ign
             if not (is_api_development() and kwargs.get('ignore_dev', False)):
                 output = read_from_disk_cache(global_api=global_api, expiration_secs=expiration_secs)
                 if output:
+                    if data_type == "mp4":
+                        file_stream = BytesIO(output)
+                        return send_file(file_stream, mimetype='video/mp4', as_attachment=False, download_name='sentiment.mp4')
+
                     if data_type == "xml":
                         return Response(output, mimetype='text/xml')
 
@@ -148,26 +153,33 @@ def api_file_cache(global_api=True, expiration_secs=86400, data_type="json", ign
 
             try:
                 # We don't trust our developers? Ofc not.
-                if 'json' in response.content_type:
-                    data = response.json
+                if not isinstance(response, BytesIO):
+                    if 'json' in response.content_type:
+                        data = response.json
 
-                    # Don't cache if the system doesn't want us to cache
-                    if data.get('no_cache') == '1':
-                        return response
+                        # Don't cache if the system doesn't want us to cache
+                        if data.get('no_cache') == '1':
+                            return response
 
-                    if data.get('status') != "success":
-                        return response
+                        if data.get('status') != "success":
+                            return response
 
-                    data['cache'] = True
-                    content_type = "json"
-                elif 'xml' in response.content_type:
-                    data = response.data
-                    content_type = "xml"
+                        data['cache'] = True
+                        content_type = "json"
+                    elif 'xml' in response.content_type:
+                        data = response.data
+                        content_type = "xml"
+                    else:
+                        data = response.data
+                        content_type = "bin"
+
+                    write_to_disk_cache(data, data_type, global_api=global_api)
+
                 else:
-                    data = response.data
-                    content_type = "bin"
+                    file_bytes = response.getvalue()
+                    write_to_disk_cache(file_bytes, data_type, global_api=global_api)
+                    return send_file(response, mimetype='video/mp4', as_attachment=False, download_name='sentiment.mp4')
 
-                write_to_disk_cache(data, data_type, global_api=global_api)
             except Exception as e:
                 print(f"FAILED TO CACHE API RESPONSE: {e}")
 

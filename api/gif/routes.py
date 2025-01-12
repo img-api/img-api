@@ -4,6 +4,7 @@ from urllib.parse import urlparse
 import ffmpeg
 import requests
 from api import get_response_formatted
+from api.file_cache import api_file_cache
 from api.gif import blueprint
 from api.gif.models import DB_TenorGif
 from api.media.models import File_Tracking
@@ -237,6 +238,7 @@ def api_gif_process_queue():
 
 
 @blueprint.route('/gif', methods=['GET', 'POST'])
+@api_file_cache(expiration_secs=86400, data_type="mp4")
 def api_gif_get_from_request():
     """ """
     from .sentiment import get_gif_for_sentiment
@@ -262,7 +264,4 @@ def api_gif_get_from_request():
 
     # Create a temporary file to store the gif data
     gif_data = BytesIO(response.content)
-    if format == "mp4":
-        return send_file(gif_data, mimetype='video/mp4', as_attachment=False, download_name='sentiment.mp4')
-
-    return send_file(gif_data, mimetype='image/gif', as_attachment=False, download_name='sentiment.gif')
+    return gif_data #send_file(gif_data, mimetype='video/mp4', as_attachment=False, download_name='sentiment.mp4')

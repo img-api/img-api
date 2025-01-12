@@ -739,8 +739,10 @@ def api_news_generate_sitemap():
 @admin_login_required
 def api_process_AI_in_news():
     """
-
+        Just call unprocessed articles and send them to AI.
+        The internal fetch hacks it's way into indexing the articles, but fetches should be their own microservice.
     """
+
     news = DB_News.objects(ai_summary=None, articles__not__size=0,
                            status="INDEX_START").order_by('-creation_date').limit(10)
     for item_news in news:

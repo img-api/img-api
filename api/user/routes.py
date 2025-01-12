@@ -143,9 +143,13 @@ def api_login_user():
         return user
 
     login_user(user, remember=True)
-
     token = user.generate_auth_token()
-    return get_response_formatted({'status': 'success', 'msg': 'hello user', 'token': token})
+
+    resp = get_response_formatted({'status': 'success', 'msg': 'hello user', 'token': token})
+
+    # Keep user logged in unless we want to logout
+    resp.set_cookie('stay_logged', '1')
+    return resp
 
 
 @blueprint.route('/create', methods=['GET', 'POST'])

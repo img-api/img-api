@@ -496,3 +496,8 @@ def api_subscription_test_latest_article_redirect_link():
         return get_response_error_formatted(404, "ARTICLE NOT FOUND")
 
     return redirect("/api/subscription/test/article/" + str(db_news.id))
+
+
+@blueprint.route('/referral/<string:referral_id>', methods=['GET', 'POST'])
+def api_referral(referral_id):
+    return redirect("/register?ref=" + referral_id)
