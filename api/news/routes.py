@@ -732,3 +732,19 @@ def api_news_generate_sitemap():
     xml_content = "".join(xml)
 
     return Response(xml_content, mimetype='text/xml')
+
+
+@blueprint.route('/process', methods=['GET', 'POST'])
+@api_key_or_login_required
+@admin_login_required
+def api_process_AI_in_news():
+    """
+
+    """
+    news = DB_News.objects(ai_summary=None, articles__not__size=0,
+                           status="INDEX_START").order_by('-creation_date').limit(10)
+    for item_news in news:
+        api_create_article_ai_summary(item_news, force_summary=True)
+
+    ret = {'news': news}
+    return get_response_formatted(ret)
