@@ -622,6 +622,7 @@ def api_build_company_state_query(db_company, forced=False):
     from datetime import timedelta
 
     from api.ai.routes import get_api_AI_availability
+    from api.prompts.routes import api_create_content_from_tickers
 
     if not db_company:
         return None
@@ -646,6 +647,8 @@ def api_build_company_state_query(db_company, forced=False):
     content = ""
     news, tkrs = get_portfolio_query(tickers_list=db_company.exchange_tickers)
 
+    company_finances = api_create_content_from_tickers(db_company.exchange_tickers, add_days="8,31,365")
+
     if not news:
         return None
 
@@ -667,6 +670,8 @@ def api_build_company_state_query(db_company, forced=False):
 
     #tickers = str.join(",", unique_tickers)
     #content += "## Tickers: " + tickers + "\n\n"
+
+    content += company_finances
 
     system = "Analyze the provided articles to assess the performance of the company mentioned and its potential impact on stock market trends. Focus on the following aspects:"
     system += "Company Performance:"
