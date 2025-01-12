@@ -1,6 +1,7 @@
 import os
 import shutil
 import time
+import uuid
 from datetime import datetime, timedelta
 
 from api.galleries.models import DB_UserGalleries
@@ -76,6 +77,9 @@ class User(UserMixin, db.DynamicDocument):
     country = db.StringField(default="")
     city = db.StringField(default="")
     postal_code = db.StringField(default="")
+
+    referral = db.StringField(default="")
+    share_referral_code = db.StringField(default="")
 
     profile_mid = db.StringField()
 
@@ -198,6 +202,8 @@ class User(UserMixin, db.DynamicDocument):
             'is_public': self.is_public,
             'is_media_public': self.is_media_public,
             'is_valid': self.is_email_validated,
+            'referral': self.referral,
+            'share_referral_code': self.get_share_referral_code(),
             'subscription': self.current_subscription,
             'creation_date': time.mktime(self.creation_date.timetuple()),
         }
@@ -366,6 +372,14 @@ class User(UserMixin, db.DynamicDocument):
             print_r(" Generate new gallery with this gallery_id " + str(gallery_id))
 
         return gallery
+
+    def get_share_referral_code(self):
+        if self.share_referral_code:
+            return self.share_referral_code
+
+        share_referral_code = str(uuid.uuid4())[:8]
+        self.update(**{'share_referral_code': share_referral_code})
+        return share_referral_code
 
     def save(self, *args, **kwargs):
         ret = super(User, self).save(*args, **kwargs)

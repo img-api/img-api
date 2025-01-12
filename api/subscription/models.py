@@ -18,3 +18,14 @@ class DB_Subscription(db.DynamicDocument):
     username = db.StringField()
 
     last_update_date = db.DateTimeField()
+
+
+class DB_Subscription_alert(db.DynamicDocument):
+    meta = {
+        'strict': False,
+    }
+
+    username = db.StringField()
+    news_id = db.StringField()
+
+    last_update_date = db.DateTimeField()

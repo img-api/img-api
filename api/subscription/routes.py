@@ -7,10 +7,10 @@ from api import cleanup_for_email, get_response_formatted, mail
 from api.company.models import DB_Company
 from api.config import (get_api_AI_service, get_api_entry, get_config_sender,
                         get_config_value, get_host_name, is_api_development)
+from api.news.models import DB_News
 from api.print_helper import *
 from api.prompts.models import DB_UserPrompt
 from api.query_helper import *
-from api.query_helper import mongo_to_dict_helper
 from api.subscription import blueprint
 from api.subscription.models import DB_Subscription
 from api.user.models import User
@@ -393,8 +393,7 @@ def api_process_user_subscription():
 
     # Tier 3 Process
     tier_3 = []
-    #last_process = datetime.now() - timedelta(days=1)
-    last_process = datetime.now()
+    last_process = datetime.now() - timedelta(hours=12)
     user_list = User.objects(current_subscription="tier3_monthly",
                              subscription__status="active",
                              __raw__=get_raw_query(last_process))
@@ -466,3 +465,34 @@ def api_subscription_prompt_callback_ai_summary():
 @blueprint.route('/redirect/<string:id>', methods=['GET', 'POST'])
 def api_subscription_redirect_link(id):
     return redirect("/pages/prompt?id=" + id)
+
+
+def api_subscription_alert(db_news):
+    print_g(f" CREATE NEWS ALERT FOR { db_news.source_title }")
+    return db_news
+
+
+@blueprint.route('/test/article/<string:news_query>', methods=['GET', 'POST'])
+def api_subscription_test(news_query):
+    """ /api/subscription/test_article/67680d5bf01e7761a3cef33b """
+    if is_mongo_id(news_query):
+        db_news = DB_News.objects(id=news_query).first()
+    else:
+        db_news = DB_News.objects(related_exchange_tickers__iendswith=":" +
+                                  news_query).order_by('-creation_date').limit(1).first()
+
+    if not db_news:
+        return get_response_error_formatted(404, "ARTICLE NOT FOUND")
+
+    ret = {'news': [api_subscription_alert(db_news)]}
+
+    return get_response_formatted(ret)
+
+
+@blueprint.route('/test/article', methods=['GET', 'POST'])
+def api_subscription_test_latest_article_redirect_link():
+    db_news = DB_News.objects(ai_summary__exists=1).order_by('-creation_date').limit(1).first()
+    if not db_news:
+        return get_response_error_formatted(404, "ARTICLE NOT FOUND")
+
+    return redirect("/api/subscription/test/article/" + str(db_news.id))

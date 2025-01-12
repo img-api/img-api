@@ -192,6 +192,7 @@ def api_create_user_local():
     from api.user.models import User
 
     print("======= CREATE USER LOCAL =============")
+    referral = ""
 
     if request.method == 'POST':
         form = request.json
@@ -209,6 +210,7 @@ def api_create_user_local():
         email = form['email'].strip().lower()
         username = form['username'].strip().lower()
         password = form['password']
+        referral = form['referral']
     else:
         first_name = request.args.get("first_name", "")
         last_name = request.args.get("last_name", "")
@@ -216,6 +218,7 @@ def api_create_user_local():
         email = request.args.get("email").strip().lower()
         username = request.args.get("username").strip()
         password = request.args.get("password")
+        referral = request.args.get("referral")
 
     if first_name: first_name = first_name.strip()
     if last_name: last_name = last_name.strip()
@@ -250,6 +253,7 @@ def api_create_user_local():
                     'status': 'success',
                     'msg': 'You were already registered, here is our token of gratitude',
                     'user': user.serialize(),
+                    'referral': referral,
                     'token': user.generate_auth_token()
                 }
 
@@ -267,6 +271,7 @@ def api_create_user_local():
         'last_name': last_name,
         'password': hashpass.hex(),
         'username': username,
+        'referral': referral,
         'email': email,
 
         # Active by default, we don't have validation on this system

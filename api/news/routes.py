@@ -12,8 +12,9 @@ from api.file_cache import api_file_cache
 from api.news import blueprint
 from api.news.models import DB_News
 from api.print_helper import *
-from api.query_helper import (build_query_from_request,
+from api.query_helper import (build_query_from_request, is_mongo_id,
                               validate_and_convert_dates)
+from api.subscription.routes import api_subscription_alert
 from flask import request
 from flask_login import current_user
 
@@ -477,6 +478,8 @@ def api_news_callback_ai_summary():
         update["status"] = "PROCESSED"
         try:
             news.update(**update, validate=False)
+
+            api_subscription_alert(news)
         except Exception as e:
             print_r("STOP")
             print_exception(e, "cRASHED VALIDATING")
