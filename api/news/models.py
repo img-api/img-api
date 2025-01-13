@@ -34,7 +34,7 @@ class DB_News(db.DynamicDocument):
 
     status = db.StringField()
     title = db.StringField()
-    source_title = db.StringField()
+    source_title = db.StringField(default="")
 
     creation_date = db.DateTimeField()
     last_visited_date = db.DateTimeField()

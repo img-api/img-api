@@ -6,8 +6,9 @@ from datetime import datetime, timedelta
 import pandas as pd
 import requests
 import requests_cache
-from api.company.models import DB_Company
+from api.company.routes import api_create_ai_summary
 from api.news.models import DB_DynamicNewsRawData, DB_News
+from api.news.routes import api_create_article_ai_summary
 from api.print_helper import *
 from api.query_helper import *
 from api.query_helper import copy_replace_schema
@@ -65,6 +66,8 @@ def ticker_update_financials(full_symbol, max_age_minutes=15, force=False):
         Our ticker time will be delayed 15 minutes + whatever yahoo wants to give us.
         We don't want to hammer the service
     """
+    from api.ticker.routes import ticker_get_history_date_days
+
     fin = DB_TickerSimple.objects(exchange_ticker=full_symbol).first()
 
     if not force and fin and fin.age_minutes() < max_age_minutes:
@@ -99,21 +102,42 @@ def ticker_update_financials(full_symbol, max_age_minutes=15, force=False):
             print_exception(e, "CRASH")
             return fin
 
-        financial_data = prepare_update_with_schema(yf_obj.info, new_schema)
+        fdata = prepare_update_with_schema(yf_obj.info, new_schema)
         ticker_save_financials(full_symbol, yf_obj)
         #ticker_save_history(full_symbol, yf_obj)
 
-        if 'trailingEps' in financial_data and financial_data['trailingEps']:
-            PE = round(financial_data['price'] / financial_data['trailingEps'], 2)
-            financial_data['PE'] = PE
+        if 'trailingEps' in fdata and fdata['trailingEps']:
+            PE = round(fdata['price'] / fdata['trailingEps'], 2)
+            fdata['PE'] = PE
 
-        financial_data['exchange_ticker'] = full_symbol
+        fdata['exchange_ticker'] = full_symbol
 
+        # We try to check
+
+        if fdata['day_high']:
+            try:
+                fdata['change_pct_1'] = round(
+                    ((fdata['price'] - fdata['previous_close']) / fdata['previous_close']) * 100, 2)
+            except Exception as e:
+                print_exception(e, "Crashed trying to load historical data")
+
+            if fin and fin.historical_age_minutes() > 60 * 12:
+                list_days = "8,15,31,365".split(',')
+                for test in list_days:
+                    try:
+                        res = ticker_get_history_date_days(full_symbol, int(test))
+                        if res:
+                            change = ((fdata['day_high'] - res['close']) / res['close']) * 100
+                            fdata['change_pct_' + str(test)] = round(change, 2)
+                    except Exception as e:
+                        print_exception(e, "Crashed trying to load historical data")
+
+                fdata['last_history_update'] = datetime.now()
         if not fin:
-            fin = DB_TickerSimple(**financial_data)
+            fin = DB_TickerSimple(**fdata)
             fin.save(validate=False)
         else:
-            fin.update(**financial_data, validate=False)
+            fin.update(**fdata, validate=False)
 
     except Exception as e:
         print_exception(e, "CRASH")
@@ -213,10 +237,10 @@ def ticker_save_financials(full_symbol, yf_obj, max_age_minutes=5):
         if not yf_obj.info['currentPrice']:
             return fin
 
-        financial_data = prepare_update_with_schema(yf_obj.info, internal_ticker_data_schema)
-        financial_data['exchange_ticker'] = full_symbol
+        fdata = prepare_update_with_schema(yf_obj.info, internal_ticker_data_schema)
+        fdata['exchange_ticker'] = full_symbol
 
-        fin = DB_TickerTimeSeries(**financial_data)
+        fin = DB_TickerTimeSeries(**fdata)
         fin.save(validate=False)
 
         return fin
@@ -292,7 +316,7 @@ def yticker_check_tickers(relatedTickers, item=None):
 
             et = db_company.exchange_tickers[-1]
             if et not in result:
-                result.append(et)
+                result.append(db_company)
 
         if item:
             item.update(**{'related_exchange_tickers': result})
@@ -345,13 +369,179 @@ def fix_news_ticker(db_ticker, db_news):
         print_exception(e, "CRASHED FIXING NEWS")
 
 
+def yticker_process_yahoo_news_article(item, info, ticker=None):
+    update = False
+
+    external_id = None
+    if 'uuid' in item: external_id = item['uuid']
+    if 'id' in item: external_id = item['id']
+
+    # HACK sometimes the content is inside a content structure? wtf
+    if 'content' in item:
+        item = item['content']
+
+    # Sometimes we get news that they don't have a list of tickers, but we know the ticker
+    # Since we called explicitely their API for news for a particular company.
+    # We append or force it to be our tickers.
+
+    if ticker:
+        if 'relatedTickers' not in item:
+            item['relatedTickers'] = [ticker]
+        elif ticker not in item['relatedTickers']:
+            item['relatedTickers'].append(ticker)
+
+    # Sometimes the External ID is an ID, sometimes a uuid...
+    # We will probably have problems with this eventually.
+
+    if external_id:
+        db_news = DB_News.objects(external_uuid=external_id).first()
+        if db_news:
+            # We don't update news that we already have in the system
+            #print_b(" ALREADY INDEXED ")
+            update = True
+
+            if not db_news.source_title:
+                db_news.update(**{'source_title': item['title']})
+
+            api_create_article_ai_summary(db_news)
+            if 'raw_tickers' not in db_news and 'relatedTickers' in item:
+                db_news.update(**{'raw_tickers': item['relatedTickers']})
+
+            return
+
+    raw_data_id = 0
+    try:
+        # It should go to disk or something, this is madness to save it on the DB
+
+        if 'id' in item:
+            del item['id']
+
+        news_data = DB_DynamicNewsRawData(**item)
+        news_data.save()
+        raw_data_id = str(news_data['id'])
+    except Exception as e:
+        print_exception(e, "SAVE RAW DATA")
+
+    if 'link' in item:
+        print_b(" PROCESS " + item['link'])
+        new_schema = {
+            'source_title': 'title',
+            'link': 'link',
+            'external_uuid': 'uuid',
+            'publisher': 'publisher',
+            'summary': 'summary',
+            'related_exchange_tickers': 'relatedTickers',
+        }
+
+        myupdate = prepare_update_with_schema(item, new_schema)
+    else:
+        print_r(" NO LINK ")
+        myupdate = {
+            'title': item['title'],
+            'summary': item['summary'],
+            'link': item['canonicalUrl']['url'],
+            'publisher': item['provider']['displayName'],
+            'thumbnail': item['thumbnail']['originalUrl'],
+            'external_uuid': external_id,
+            'thumbnail_caption': item['thumbnail']['caption'],
+        }
+
+    # Overwrite our creation time with the publisher time
+    try:
+        if 'relatedTickers' in item:
+            rt = item['relatedTickers']
+            myupdate['raw_tickers'] = rt
+            yticker_check_tickers(rt, myupdate)
+
+        if 'providerPublishTime' in item:
+            value = datetime.fromtimestamp(int(item['providerPublishTime']))
+            print_b(" DATE " + str(value))
+            myupdate['creation_date'] = value
+
+    except Exception as e:
+        print_exception(e, "CRASHED LOADING DATE")
+
+    try:
+        if info and 'currentPrice' in info:
+            myupdate['stock_price'] = info['currentPrice']
+
+    except Exception as e:
+        print_exception(e, " PRICE DURING NEWS ")
+
+    extra = {
+        'source': 'YFINANCE',
+        'status': 'WAITING_INDEX',
+        'raw_data_id': raw_data_id,
+    }
+
+    myupdate = {**myupdate, **extra}
+
+    if not update:
+        db_news = DB_News(**myupdate).save(validate=False)
+
+    yfetch_process_news(db_news)
+
+
+yahoo_company_schema = {
+    'website': 'website',
+    'long_name': 'longName',
+    'long_business_summary': 'longBusinessSummary',
+    'main_address': 'address1',
+    'main_address_1': 'address2',
+    'city': 'city',
+    'state': 'state',
+    'zipcode': 'zip',
+    'country': 'country',
+    'phone_number': 'phone',
+    'gics_sector': 'sector',
+    'quote_type': 'quoteType',
+    'gics_sub_industry': 'industry',
+}
+
+
+def yticker_pipeline_company_process(db_company):
+    if not db_company:
+        return None
+
+    full_symbol = db_company.get_primary_ticker()
+
+    yticker = standardize_ticker_format_to_yfinance(full_symbol)
+    yf_obj = fetch_tickers_info(yticker, no_cache=True)
+    try:
+        api_create_ai_summary(db_company)
+    except Exception as e:
+        print_exception(e, "CRASH")
+        pass
+
+    info = yf_obj.info
+
+    company_update = prepare_update_with_schema(info, yahoo_company_schema)
+
+    if not company_update['long_name']:
+        company_update['long_name'] = info['shortName']
+
+    ticker_save_financials(full_symbol, yf_obj)
+    ticker_save_history(full_symbol, yf_obj)
+
+    if 'companyOfficers' in info:
+        company_officers = info['companyOfficers']
+        #for officer in company_officers:
+        #    print_b(f"TODO: Create person {officer['name']} => {officer['title']}")
+
+    if not 'ai_summary' in db_company:
+        db_company.update(**company_update, validate=False)
+
+    for item in yf_obj.news:
+        try:
+            yticker_process_yahoo_news_article(item, info, ticker=full_symbol)
+        except Exception as e:
+            print_exception(e, "CRASHED")
+
+
 def yticker_pipeline_process(db_ticker, dry_run=False):
     """
         Our fetching pipeline will call different status
     """
-    from api.company.routes import api_create_ai_summary
-    from api.news.routes import api_create_article_ai_summary
-    from api.ticker.routes import get_full_symbol
 
     #print_b("PROCESSING: " + db_ticker.full_symbol())
 
@@ -377,24 +567,7 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
         pass
 
     info = yf_obj.info
-
-    new_schema = {
-        'website': 'website',
-        'long_name': 'longName',
-        'long_business_summary': 'longBusinessSummary',
-        'main_address': 'address1',
-        'main_address_1': 'address2',
-        'city': 'city',
-        'state': 'state',
-        'zipcode': 'zip',
-        'country': 'country',
-        'phone_number': 'phone',
-        'gics_sector': 'sector',
-        'quote_type': 'quoteType',
-        'gics_sub_industry': 'industry',
-    }
-
-    company_update = prepare_update_with_schema(info, new_schema)
+    company_update = prepare_update_with_schema(info, yahoo_company_schema)
 
     if not company_update['long_name']:
         company_update['long_name'] = info['shortName']
@@ -412,93 +585,11 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
     elif not 'ai_summary' in db_company:
         db_company.update(**company_update, validate=False)
 
-    try:
-        news = yf_obj.news
-        for item in news:
-            update = False
-            db_news = DB_News.objects(external_uuid=item['uuid']).first()
-            if db_news:
+    for item in yf_obj.news:
+        try:
+            yticker_process_yahoo_news_article(item, yf_obj.info, ticker=db_company.get_primary_ticker())
+        except Exception as e:
+            print_exception(e, "CRASH ON YAHOO NEWS PROCESSING")
 
-                # We don't update news that we already have in the system
-                #print_b(" ALREADY INDEXED ")
-                update = True
-
-                if not db_news.source_title:
-                    db_news.update(**{'source_title': item['title']})
-
-                try:
-                    api_create_article_ai_summary(db_news)
-
-                    # Work to figure out problems with tickers
-                    if 'raw_tickers' not in db_news and 'relatedTickers' in item:
-                        db_news.update(**{'raw_tickers': item['relatedTickers']})
-
-                    #fix_news_ticker(db_ticker, db_news)
-                except Exception as e:
-                    print_exception(e, "CRASHED")
-                    pass
-
-                continue
-
-            print_b(" PROCESS " + item['link'])
-
-            raw_data_id = 0
-            try:
-                # It should go to disk or something, this is madness to save it on the DB
-
-                news_data = DB_DynamicNewsRawData(**item)
-                news_data.save()
-                raw_data_id = str(news_data['id'])
-            except Exception as e:
-                print_exception(e, "SAVE RAW DATA")
-
-            new_schema = {
-                'source_title': 'title',
-                'link': 'link',
-                'external_uuid': 'uuid',
-                'publisher': 'publisher',
-                'related_exchange_tickers': 'relatedTickers',
-            }
-
-            myupdate = prepare_update_with_schema(item, new_schema)
-
-            # Overwrite our creation time with the publisher time
-            try:
-                if 'relatedTickers' in item:
-                    rt = item['relatedTickers']
-                    myupdate['raw_tickers'] = rt
-                    yticker_check_tickers(rt, myupdate)
-
-                if 'providerPublishTime' in item:
-                    value = datetime.fromtimestamp(int(item['providerPublishTime']))
-                    print_b(" DATE " + str(value))
-                    myupdate['creation_date'] = value
-
-            except Exception as e:
-                print_exception(e, "CRASHED LOADING DATE")
-
-            try:
-                if 'currentPrice' in info:
-                    myupdate['stock_price'] = info['currentPrice']
-
-            except Exception as e:
-                print_exception(e, " PRICE DURING NEWS ")
-
-            extra = {
-                'source': 'YFINANCE',
-                'status': 'WAITING_INDEX',
-                'raw_data_id': raw_data_id,
-            }
-
-            myupdate = {**myupdate, **extra}
-
-            if not update:
-                db_news = DB_News(**myupdate).save(validate=False)
-
-            yfetch_process_news(db_news)
-            db_ticker.set_state("PROCESSED")
-
-    except Exception as e:
-        print_exception(e, "CRASH ON YAHOO NEWS PROCESSING")
-
+    db_ticker.set_state("PROCESSED")
     return db_ticker

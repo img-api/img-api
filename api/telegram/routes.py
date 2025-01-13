@@ -107,6 +107,27 @@ def api_create_telegram_chat(db_user, prompt, chat_data={}):
     return data, db_prompt
 
 
+def api_yahoo_check_ticker(command):
+    from api.ticker.batch.yfinance.ytickers_pipeline import \
+        yticker_check_tickers
+
+    pattern = r"^/index\s+https?://finance\.yahoo\.com/quote/([^/?#]+)"
+    match = re.match(pattern, command)
+    if not match:
+        return False
+
+    ticker = match.group(1)
+    print("Extracted Ticker:", ticker)
+
+    ret = yticker_check_tickers([ticker], item=None)
+    try:
+        return ret[0]['company_name']
+    except:
+        pass
+
+    return ticker
+
+
 @blueprint.route('/chat/<string:chat_id>', methods=['POST'])
 @api_key_or_login_required
 @admin_login_required
@@ -118,6 +139,11 @@ def api_user_telegram_chat(chat_id):
     #ret = {'user': db_user.serialize()}
     #ret['message_id'] = json['message_id']
     #ret['reply'] = "Reply hello world!"
+
+    res = api_yahoo_check_ticker(json['text'])
+    if res:
+        ret = {"reply": "Found " + res, "message_id": json['message_id']}
+        return get_response_formatted(ret)
 
     api_create_telegram_chat(db_user, json['text'], json)
 

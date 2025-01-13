@@ -4,6 +4,7 @@ import pandas as pd
 from api import (admin_login_required, api_key_or_login_required, cache,
                  cache_make_key, get_response_error_formatted,
                  get_response_formatted)
+from api.company.models import DB_Company
 from api.file_cache import api_file_cache
 from api.print_helper import *
 from api.query_helper import (build_query_from_request, get_timestamp_verbose,
@@ -605,6 +606,15 @@ def api_find_full_symbol_historical_change_data(full_symbol):
     return get_response_formatted({'exchange_ticker': full_symbol, 'results': get_yearly_change(full_symbol)})
 
 
+@blueprint.route('/query/simple', methods=['GET', 'POST'])
+@api_file_cache(expiration_secs=600)
+def api_get_tickers():
+    tickers = build_query_from_request(DB_TickerSimple, global_api=True)
+
+    ret = {'tickers': tickers}
+    return get_response_formatted(ret)
+
+
 @blueprint.route('/history/<string:full_symbol>', methods=['GET', 'POST'])
 @api_file_cache(expiration_secs=86400)
 def api_find_full_symbol_historical_data(full_symbol):
@@ -771,9 +781,26 @@ def ticker_get_history_date_days(full_symbol, days):
 
     if not data:
         print_r(f" { full_symbol } Failed range from { str(time_frame_min)[:10] } to { str(time_frame_max)[:10] }")
-        data = DB_TickerHistoryTS.objects(exchange_ticker=full_symbol, creation_date__gte=time_frame_min).order_by('-creation_date').limit(1).first()
+        data = DB_TickerHistoryTS.objects(
+            exchange_ticker=full_symbol, creation_date__gte=time_frame_min).order_by('-creation_date').limit(1).first()
 
         if data:
             print_b(f" found later than min ")
 
     return data
+
+
+@blueprint.route('/index/<string:symbol>', methods=['GET', 'POST'])
+def api_index_new_ticker(symbol):
+    from .batch.yfinance.ytickers_pipeline import (
+        yticker_check_tickers, yticker_pipeline_company_process)
+
+    ret = yticker_check_tickers([symbol], item=None)
+    if not ret:
+        return get_response_formatted({})
+
+    for c in ret:
+        if isinstance(c, DB_Company):
+            yticker_pipeline_company_process(c)
+
+    return get_response_formatted({"index": ret})

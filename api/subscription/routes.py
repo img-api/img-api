@@ -494,6 +494,10 @@ def api_subscription_alert(db_news):
 
     for article in db_news:
         print_g(f" CREATE NEWS ALERT FOR { article.source_title }")
+        if len(article.related_exchange_tickers) == 0:
+            print_r(f" No tickers for article ")
+            continue
+
         print(mongo_to_dict_helper(article.related_exchange_tickers))
 
         for user in user_list:

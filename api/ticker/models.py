@@ -220,8 +220,23 @@ class DB_TickerSimple(db.DynamicDocument):
     bid = db.FloatField()
     bid_size = db.FloatField()
 
+    last_history_update = db.DateTimeField()
+    change_pct_1 = db.FloatField()
+    change_pct_8 = db.FloatField()
+    change_pct_15 = db.FloatField()
+    change_pct_31 = db.FloatField()
+    change_pct_365 = db.FloatField()
+
     def age_minutes(self, *args, **kwargs):
         age = (datetime.now() - self.last_update).total_seconds() / 60
+        #print(self.exchange_ticker + " => " + str(age))
+        return age
+
+    def historical_age_minutes(self, *args, **kwargs):
+        if not self.last_history_update:
+            return 99999
+
+        age = (datetime.now() - self.last_history_update).total_seconds() / 60
         #print(self.exchange_ticker + " => " + str(age))
         return age
 
@@ -246,9 +261,10 @@ class DB_TickerHistoryTS(db.DynamicDocument):
         'strict': False,
         "auto_create_index": True,
         "index_background": True,
-        'indexes': [
-            {'fields': ['creation_date', 'exchange_ticker'], 'unique': False}
-        ],
+        'indexes': [{
+            'fields': ['creation_date', 'exchange_ticker'],
+            'unique': False
+        }],
     }
 
     source = db.StringField()

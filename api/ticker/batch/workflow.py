@@ -212,3 +212,4 @@ def ticker_process_invalidate(ticker, max_age_minutes=5):
         print_exception(e, "CRASHED PROCESSING BATCH")
 
     return [db_ticker]
+

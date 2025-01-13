@@ -13,9 +13,6 @@ from api.file_cache import api_file_cache
 from api.print_helper import *
 from api.query_helper import (build_query_from_request, get_timestamp_verbose,
                               is_mongo_id)
-from api.ticker.batch.yfinance.ytickers_pipeline import \
-    ticker_update_financials
-from api.ticker.routes import ticker_get_history_date_days
 from api.ticker.tickers_helpers import ticker_exchanges_cleanup_dups
 from flask import request, send_file
 from mongoengine.queryset.visitor import Q
@@ -857,6 +854,9 @@ def api_get_ticker_financials(ticker_id):
     """
         Returns a list of tickers that the user is watching.
     """
+    from api.ticker.batch.yfinance.ytickers_pipeline import \
+        ticker_update_financials
+    from api.ticker.routes import ticker_get_history_date_days
 
     db_company = DB_Company.objects(exchange_tickers=ticker_id).first()
     forced = request.args.get("forced", None)
@@ -873,13 +873,15 @@ def api_get_ticker_financials(ticker_id):
             if not ticker_data:
                 continue
 
+            # TODO: We might have this info already cached on ticker_data since now we generate it on the fly.
+            # With a timeout of 24h
             add_days = request.args.get("add", None)
             if add_days:
                 list_days = add_days.split(',')
                 for test in list_days:
                     res = ticker_get_history_date_days(full_symbol, int(test))
 
-                    if res:
+                    if res and res['close']:
                         change = ((ticker_data['day_high'] - res['close']) / res['close']) * 100
                         res['change_pct'] = change
                         ticker_data['days_' + test] = res
@@ -1094,7 +1096,7 @@ def api_company_aggregate_dups():
             exchanges = list(set(exchanges))
             exchange_tickers = list(set(exchange_tickers))
 
-            first.update(** { 'exchanges': exchanges, 'exchange_tickers': exchange_tickers })
+            first.update(**{'exchanges': exchanges, 'exchange_tickers': exchange_tickers})
 
             new_id = str(first.id)
             for i in res['ids']:
@@ -1112,6 +1114,5 @@ def api_company_aggregate_dups():
 
     except Exception as e:
         print_exception(e, "CRASHED MERGING")
-
 
     return get_response_formatted(ret)

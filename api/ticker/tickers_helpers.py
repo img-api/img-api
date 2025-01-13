@@ -215,6 +215,7 @@ suffix_to_exchange = {
     '.ST': 'STO',  # Nasdaq Stockholm
     '.CO': 'CPH',  # Nasdaq Copenhagen
     '.OL': 'OSL',  # Oslo Børs
+    '.TW': 'TAI', # Taiwan
     '.IS': 'ISE',  # Euronext Dublin
     '.PA': 'EPA',  # Euronext Paris
     '.AS': 'AMS',  # Euronext Amsterdam

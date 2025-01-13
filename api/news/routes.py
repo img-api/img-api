@@ -479,7 +479,7 @@ def api_news_callback_ai_summary():
         try:
             news.update(**update, validate=False)
 
-            api_subscription_alert(news)
+            api_subscription_alert([news])
         except Exception as e:
             print_r("STOP")
             print_exception(e, "cRASHED VALIDATING")
