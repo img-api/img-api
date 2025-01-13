@@ -11,6 +11,7 @@ from api.print_helper import *
 from api.prompts.models import DB_UserPrompt
 from api.query_helper import *
 from api.telegram import blueprint
+from api.telegram.models import DB_TelegramMessageQueue
 from api.user.models import User
 from bson.objectid import ObjectId
 from flask import Flask, json, jsonify, redirect, request
@@ -175,14 +176,11 @@ def api_telegram_callback_ai_summary():
 @api_key_or_login_required
 @admin_login_required
 def api_telegram_callback_polling():
-    prompts = DB_UserPrompt.objects(status="WAITING_TELEGRAM")
-    if not prompts:
-        print_r("Nothing to update telegram with")
-        return get_response_formatted({})
-
     is_telegram = request.args.get("telegram", None)
 
     ret = []
+
+    prompts = DB_UserPrompt.objects(status="WAITING_TELEGRAM")
     for db_prompt in prompts:
         if not db_prompt.chat_id:
             db_prompt.update(**{'status': "MISSING CHANNEL"}, is_admin=True)
@@ -200,4 +198,43 @@ def api_telegram_callback_polling():
             update = {'status': "SENT_TO_TELEGRAM"}
             db_prompt.update(**update, is_admin=True)
 
+    db_messages = DB_TelegramMessageQueue.objects(status="WAIT_QUEUE")
+    for db_msg in db_messages:
+        if not db_msg.chat_id:
+            db_msg.update(**{'status': "MISSING CHANNEL"})
+            continue
+
+        result = {
+            'chat_id': db_msg.chat_id,
+            'reply': db_msg.title + " " + db_msg.message,
+        }
+
+        ret.append(result)
+
+        if is_telegram:
+            update = {'status': "SENT_TO_TELEGRAM"}
+            db_msg.update(**update)
+
     return get_response_formatted({'messages': ret})
+
+
+def api_telegram_create_message(user, title, message, image_id=None):
+
+    if not user.my_telegram_chat_id:
+        print_r(f" { user.username } Missing chat id ")
+        return
+
+    now = datetime.now()
+    data = {
+        'title': title,
+        'message': message,
+        'creation_date': now,
+        'last_update_date': now,
+        'username': user.username,
+        'chat_id': str(user.my_telegram_chat_id),
+    }
+
+    db_msg_queue = DB_TelegramMessageQueue(**data)
+    db_msg_queue.save()
+
+    return db_msg_queue

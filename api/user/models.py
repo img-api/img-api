@@ -116,6 +116,8 @@ class User(UserMixin, db.DynamicDocument):
     my_debug_interface = db.BooleanField(default=False)
     my_email_summary = db.BooleanField(default=True)
     my_email_alerts_daily = db.BooleanField(default=True)
+    my_instant_alerts = db.BooleanField(default=True)
+
     my_telegram_chat_id = db.StringField(default="")
 
     # Users can modify directly fields which start with my_ or in the list of public variables

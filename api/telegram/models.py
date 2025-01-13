@@ -13,3 +13,20 @@ class DB_Telegram(db.DynamicDocument):
 
     username = db.StringField()
     last_update_date = db.DateTimeField()
+
+
+class DB_TelegramMessageQueue(db.DynamicDocument):
+    meta = {
+        'strict': False,
+    }
+
+    username = db.StringField()
+    chat_id = db.StringField()
+
+    status = db.StringField(default="WAIT_QUEUE")
+
+    title = db.StringField()
+    image_id = db.StringField()
+    message = db.StringField()
+    creation_date = db.DateTimeField()
+    last_update_date = db.DateTimeField()

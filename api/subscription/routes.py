@@ -467,8 +467,54 @@ def api_subscription_redirect_link(id):
     return redirect("/pages/prompt?id=" + id)
 
 
+def api_subscription_dispatch_alert(user, article, tickers):
+    """
+        Send to telegram / discord / whatsapp / email... whatever the user has selected
+    """
+    from api.telegram.routes import api_telegram_create_message
+
+    if user.my_telegram_chat_id:
+        print(" DISPATCH TELEGRAM " + str(user.my_telegram_chat_id))
+
+        msg = article.get_summary() + "\n"
+        if article.ai_summary:
+            msg += article.ai_summary
+
+        api_telegram_create_message(user, title=article.get_no_bullshit(), message=msg)
+
+
 def api_subscription_alert(db_news):
-    print_g(f" CREATE NEWS ALERT FOR { db_news.source_title }")
+    from api.query_helper import mongo_to_dict_helper
+    from api.ticker.models import DB_TickerUserWatchlist
+    from api.ticker.routes import get_watchlist_or_create
+
+    user_list = User.objects(subscription__status="active", my_instant_alerts=True)
+    if not user_list:
+        return {'error', 'NO USERS FOUND'}
+
+    for article in db_news:
+        print_g(f" CREATE NEWS ALERT FOR { article.source_title }")
+        print(mongo_to_dict_helper(article.related_exchange_tickers))
+
+        for user in user_list:
+            print_b(f"-------- PROCESS USER { user.username } ------------")
+
+            #watchlist = DB_TickerUserWatchlist.objects(username=user.username)
+            #for w in watchlist:
+            #    print(mongo_to_dict_helper(w))
+
+            watchlist = DB_TickerUserWatchlist.objects(username=user.username,
+                                                       exchange_tickers__in=article.related_exchange_tickers).limit(1)
+
+            if not watchlist:
+                print_r(" Article Not found in watchlist ")
+                continue
+
+            tickers = list(set(watchlist.first().exchange_tickers) & set(article.related_exchange_tickers))
+            print_g(" Found articles in watchlist " + str(tickers))
+
+            api_subscription_dispatch_alert(user, article, tickers)
+
     return db_news
 
 
@@ -476,12 +522,12 @@ def api_subscription_alert(db_news):
 def api_subscription_test(news_query):
     """ /api/subscription/test_article/67680d5bf01e7761a3cef33b """
     if is_mongo_id(news_query):
-        db_news = DB_News.objects(id=news_query).first()
+        db_news = DB_News.objects(id=news_query)
     else:
         db_news = DB_News.objects(related_exchange_tickers__iendswith=":" +
-                                  news_query).order_by('-creation_date').limit(1).first()
+                                  news_query).order_by('-creation_date').limit(1)
 
-    if not db_news:
+    if not db_news.first():
         return get_response_error_formatted(404, "ARTICLE NOT FOUND")
 
     ret = {'news': [api_subscription_alert(db_news)]}
@@ -491,7 +537,8 @@ def api_subscription_test(news_query):
 
 @blueprint.route('/test/article', methods=['GET', 'POST'])
 def api_subscription_test_latest_article_redirect_link():
-    db_news = DB_News.objects(ai_summary__exists=1).order_by('-creation_date').limit(1).first()
+    db_news = DB_News.objects(ai_summary__exists=1,
+                              related_exchange_tickers__size=1).order_by('-creation_date').limit(1).first()
     if not db_news:
         return get_response_error_formatted(404, "ARTICLE NOT FOUND")
 
