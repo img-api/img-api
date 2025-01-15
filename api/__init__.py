@@ -3,6 +3,7 @@ import time
 from datetime import datetime
 from functools import wraps
 
+import chromadb
 import werkzeug
 from flask import Response, json, jsonify, redirect, request
 from flask_caching import Cache
@@ -16,7 +17,9 @@ from api.user.models import User, user_loader
 from .api_redis import init_redis
 from .print_helper import *
 
-API_VERSION = "0.51pa"
+chroma_client = chromadb.Client()
+
+API_VERSION = "0.53pa"
 
 cache = Cache(config={'CACHE_TYPE': 'SimpleCache'})
 api_ignore_list = ['tracking']

@@ -750,3 +750,22 @@ def api_process_AI_in_news():
 
     ret = {'news': news}
     return get_response_formatted(ret)
+
+@blueprint.route('/index/chromadb', methods=['GET', 'POST'])
+@api_key_or_login_required
+@admin_login_required
+def api_reindex_in_chromadb():
+    """
+        We call this function to index articles that we haven't added to our chroma search
+    """
+    from .chromadb import chromadb_index_document
+
+    news = DB_News.objects(ai_summary__exists=1, is_chromadb__ne=True).order_by('-creation_date').limit(5000)
+
+    ret = []
+    for item_news in news:
+        ret.append(chromadb_index_document(item_news))
+        item_news.update(** { 'is_chromadb': True })
+
+    ret = {'chroma': ret}
+    return get_response_formatted(ret)

@@ -82,6 +82,8 @@ class DB_News(db.DynamicDocument):
     last_cache_date = db.DateTimeField()
     no_comments = db.IntField()
 
+    is_chromadb = db.BooleanField(default=False)
+
     def age_minutes(self, *args, **kwargs):
         age = (datetime.now() - self.creation_date).total_seconds() / 60
         return age
