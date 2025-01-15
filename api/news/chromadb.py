@@ -48,15 +48,11 @@ def chromadb_index_document(article):
 
     doc_id = "news_" + str(article.id)
 
-    results = collection.get(ids=[doc_id])
+    #results = collection.get(ids=[doc_id])
 
     document, metadata = convert_article(article)
-    if results['ids']:
-        # If the ID exists, update the document
-        collection.update(ids=[doc_id], documents=[article], metadatas=[new_metadata])
-        print(f"Document with ID '{doc_id}' updated.")
-        return
 
-    collection.add(ids=[doc_id], documents=[document], metadatas=[metadata])
+    # If the ID exists, update the document
+    collection.upsert(ids=[doc_id], documents=[document], metadatas=[metadata])
 
     return {'id': doc_id, 'doc': document, 'meta': metadata}
