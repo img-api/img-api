@@ -209,6 +209,8 @@ suffix_to_exchange = {
     '.TO': 'TSX',  # Toronto Stock Exchange
     '.L': 'LON',  # London Stock Exchange
     '.HK': 'HKG',  # Hong Kong Stock Exchange
+    '.NS': 'NSI',  #
+    '.TO': 'TOR', #
     '.SW': 'SIX',  # SIX Swiss Exchange
     '.F': 'FRA',  # Frankfurt Stock Exchange
     '.HE': 'HEL',  # Nasdaq Helsinki

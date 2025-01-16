@@ -881,10 +881,12 @@ def api_get_ticker_financials(ticker_id):
                 for test in list_days:
                     res = ticker_get_history_date_days(full_symbol, int(test))
 
-                    if res and res['close']:
+                    try:
                         change = ((ticker_data['day_high'] - res['close']) / res['close']) * 100
                         res['change_pct'] = change
                         ticker_data['days_' + test] = res
+                    except:
+                        pass
 
             fin[full_symbol] = ticker_data
 

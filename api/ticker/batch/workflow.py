@@ -104,7 +104,11 @@ def ticker_process_news_sites(BATCH_SIZE=5):
 
     for item in news:
         try:
-            print(" PROCESSING ITEM " + str(item.source_title))
+            if item.source_title:
+                print(" PROCESSING ITEM " + str(item.source_title))
+            else:
+                print(" PROCESSING ITEM - MISSING TITLE ")
+
 
             if item.force_reindex:
                 item.update(**{'force_reindex': False})
