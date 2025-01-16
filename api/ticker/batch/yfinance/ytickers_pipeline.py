@@ -268,8 +268,8 @@ def yticker_check_tickers(relatedTickers, item=None):
                 result.append(db_ticker.full_symbol())
                 continue
 
-            stock = extract_ticker_from_symbol(local_ticker)
-            yf_obj = fetch_tickers_info(stock, no_cache=False)
+            yticker = standardize_ticker_format_to_yfinance(local_ticker)
+            yf_obj = fetch_tickers_info(yticker, no_cache=True)
             if not yf_obj:
                 continue
 
@@ -318,7 +318,7 @@ def yticker_check_tickers(relatedTickers, item=None):
 
             et = db_company.exchange_tickers[-1]
             if et not in result:
-                result.append(db_company)
+                result.append(et)
 
         if item:
             item.update(**{'related_exchange_tickers': result})

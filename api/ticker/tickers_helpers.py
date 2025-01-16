@@ -211,6 +211,7 @@ suffix_to_exchange = {
     '.HK': 'HKG',  # Hong Kong Stock Exchange
     '.NS': 'NSI',  #
     '.TO': 'TOR', #
+    '.L': 'LSE',
     '.SW': 'SIX',  # SIX Swiss Exchange
     '.F': 'FRA',  # Frankfurt Stock Exchange
     '.HE': 'HEL',  # Nasdaq Helsinki

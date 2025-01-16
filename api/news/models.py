@@ -63,6 +63,7 @@ class DB_News(db.DynamicDocument):
     # Tickers that are
     related_exchange_tickers = db.ListField(db.StringField(), default=list)
     named_exchange_tickers = db.DynamicDocument()
+    raw_tickers = db.ListField(db.StringField(), default=list)
 
     # Source -  The source will define the processing backend. For example yfinance will fetch the URL
     #           and navigate until getting the full news source.
@@ -123,7 +124,8 @@ class DB_News(db.DynamicDocument):
         res = {}
         for ticker in self.related_exchange_tickers:
             ticker_cleanup = standardize_ticker_format(ticker)
-            db_company = DB_Company.objects(exchange_tickers=ticker_cleanup).first()
+            db_company = DB_Company.objects(
+                exchange_tickers=ticker_cleanup).first()
 
             if db_company:
                 res[ticker] = db_company.long_name
@@ -132,6 +134,13 @@ class DB_News(db.DynamicDocument):
 
     def precalculate_cache(self):
         from api.comments.routes import get_comments_count
+        from api.ticker.batch.yfinance.ytickers_pipeline import \
+            yticker_check_tickers
+
+        # Patch to fix related exchange tickers
+        if len(self.raw_tickers) > len(self.related_exchange_tickers):
+            print_r(" Fix ticker discovery ")
+            ets = yticker_check_tickers(self.raw_tickers, item=self)
 
         if self.last_cache_date and self.age_cache_minutes() < 5:
             return
@@ -162,14 +171,15 @@ class DB_News(db.DynamicDocument):
         if not self.creation_date:
             self.creation_date = datetime.now()
 
-        self.related_exchange_tickers = ticker_exchanges_cleanup_dups(self.related_exchange_tickers)
+        self.related_exchange_tickers = ticker_exchanges_cleanup_dups(
+            self.related_exchange_tickers)
 
         ret = super(DB_News, self).save(*args, **kwargs)
         return ret
 
     def delete(self, *args, **kwargs):
-        #abs_path = self.get_media_path() + self.file_path
-        #if os.path.exists(abs_path):
+        # abs_path = self.get_media_path() + self.file_path
+        # if os.path.exists(abs_path):
         #    os.remove(abs_path)
 
         print(" DELETED News Data ")
@@ -178,14 +188,14 @@ class DB_News(db.DynamicDocument):
     def set_state(self, state_msg):
         """ Update a processing state """
 
-        #print_b(self.link + " " + self.status + " => " + state_msg)
+        # print_b(self.link + " " + self.status + " => " + state_msg)
 
         self.update(**{
             'force_reindex': False,
             'status': state_msg,
             'last_visited_date': datetime.now()
         },
-                    validate=False)
+            validate=False)
 
         self.reload()
         return self
@@ -250,4 +260,3 @@ class DB_News(db.DynamicDocument):
 
     def get_raw_article(self):
         return str.join("\n", self.articles)
-
