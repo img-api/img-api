@@ -259,7 +259,11 @@ def api_create_content_from_tickers(tickers, add_days="8,31,365"):
                 day_change = round(((data['price'] - data['previous_close']) / data['previous_close']) * 100, 2)
 
             content += f"Price {data['price']} and todays change {day_change}%\n"
-            content += f"PE: { data['PE'] } VOL: { int(data['volume']) } trailingEps: { data['trailingEps'] }\n"
+
+            try:
+                content += f"PE: { data['PE'] } VOL: { int(data['volume']) } trailingEps: { data['trailingEps'] }\n"
+            except:
+                pass
 
             for test in list_days:
                 res = ticker_get_history_date_days(full_symbol, int(test))

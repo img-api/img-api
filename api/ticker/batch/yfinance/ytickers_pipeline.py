@@ -120,7 +120,8 @@ def ticker_update_financials(full_symbol, max_age_minutes=15, force=False):
                     fdata['change_pct_1'] = round(
                         ((fdata['price'] - fdata['previous_close']) / fdata['previous_close']) * 100, 2)
             except Exception as e:
-                print_exception(e, "Crashed trying to load historical data")
+                pass
+                #print_exception(e, "Crashed trying to load historical data")
 
             if fin and fin.historical_age_minutes() > 60 * 12:
                 list_days = "8,15,31,365".split(',')
