@@ -249,6 +249,9 @@ def api_create_content_from_tickers(tickers, add_days="8,31,365"):
 
         try:
             data = ticker_update_financials(full_symbol, force=False)
+            if not data:
+                continue
+
             content += f"** {full_symbol} **\n"
 
             day_change = 0
