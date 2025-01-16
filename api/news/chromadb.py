@@ -53,9 +53,7 @@ def convert_article(article):
     except:
         keywords = ""
 
-    document = (
-        str(article.source_title) + " " + str(article.ai_summary) + " " + str(keywords)
-    )
+    document = (str(article.source_title) + " " + str(article.ai_summary) + " " + str(keywords))
 
     et = ",".join(list(article.related_exchange_tickers))
     metadata = {
@@ -78,3 +76,9 @@ def chromadb_index_document(article):
     collection.upsert(ids=[doc_id], documents=[document], metadatas=[metadata])
 
     return {"id": doc_id, "doc": document, "meta": metadata}
+
+
+def chromadb_search(query, limit=10):
+    results = collection.query(query_texts=[query], n_results=limit)
+
+    return results

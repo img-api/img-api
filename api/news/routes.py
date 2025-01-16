@@ -751,6 +751,7 @@ def api_process_AI_in_news():
     ret = {'news': news}
     return get_response_formatted(ret)
 
+
 @blueprint.route('/index/chromadb', methods=['GET', 'POST'])
 #@api_key_or_login_required
 #@admin_login_required
@@ -770,7 +771,15 @@ def api_reindex_in_chromadb():
     ret = []
     for item_news in news:
         ret.append(chromadb_index_document(item_news))
-        item_news.update(** { 'is_chromadb': True })
+        item_news.update(**{'is_chromadb': True})
 
     ret = {'chroma': ret}
     return get_response_formatted(ret)
+
+
+@blueprint.route('/vector_search/<string:search_terms>', methods=['GET', 'POST'])
+def api_vector_search_news(search_terms):
+    from .chromadb import chromadb_search
+
+    ret = chromadb_search(search_terms)
+    return get_response_formatted({'result': ret})
