@@ -30,10 +30,10 @@ SENTIMENT_SCORES = {
 # Giphy API key (you need to replace this with your own Giphy API key)
 def extract_sentiments(text):
     # Split the text into words and filter out the sentiment-related words
-    words = re.findall(r'\b\w+\b', text.lower())  # Extract words, ignoring punctuation
+    # Extract words, ignoring punctuation
+    words = re.findall(r'\b\w+\b', text.lower())
     sentiments = [word for word in words if word in SENTIMENT_SCORES]
     return sentiments
-
 
 
 # Function to compute the total sentiment score
@@ -48,7 +48,8 @@ def compute_sentiment_score(sentiment_words):
         min_score = min(score, min_score)
         max_score = max(score, max_score)
 
-    score = sum(SENTIMENT_SCORES[word] for word in sentiment_words) / len(sentiment_words)
+    score = sum(SENTIMENT_SCORES[word]
+                for word in sentiment_words) / len(sentiment_words)
     return score, min_score, max_score
 
 
@@ -80,8 +81,8 @@ def get_gif_for_sentiment(sentiment):
             gif_first = data['results'][0]
             mp4 = gif_first['media_formats']['mp4']['url']
 
-            print_g(" SENTIMENT " + sentiment)
-            print_b(" MP4 => " + mp4)
+            # print_g(" SENTIMENT " + sentiment)
+            # print_b(" MP4 => " + mp4)
 
             return data, mp4, "mp4"
 
@@ -90,7 +91,6 @@ def get_gif_for_sentiment(sentiment):
 
     else:
         print_r(" MISSING TENOR KEY ")
-
 
     GIPHY_API_KEY = current_app.config.get("GIPHY_API_KEY", None)
     if not GIPHY_API_KEY:
@@ -125,7 +125,7 @@ def parse_sentiment(text):
 
     if match:
         sentiment = match.group(1)
-        #print(f"Extracted sentiment: {sentiment}")
+        # print(f"Extracted sentiment: {sentiment}")
 
         sentiment_words = extract_sentiments(text)
         score = compute_sentiment_score(sentiment_words)
@@ -137,7 +137,8 @@ def parse_sentiment(text):
 # Main function
 def main_test():
     # Example text
-    text = input("Enter a sentence containing a stock market sentiment (e.g., 'sentiment: bullish'): ")
+    text = input(
+        "Enter a sentence containing a stock market sentiment (e.g., 'sentiment: bullish'): ")
 
     sentiment = parse_sentiment(text)
     if sentiment:
