@@ -277,10 +277,13 @@ def api_create_content_from_tickers(tickers, add_days="8,31,365"):
                 if not res:
                     continue
 
-                change = round(
-                    ((data['day_high'] - res['close']) / res['close']) * 100, 2)
+                try:
+                    change = round(
+                        ((data['day_high'] - res['close']) / res['close']) * 100, 2)
 
-                content += f"Change {test} days {change}%\n"
+                    content += f"Change {test} days {change}%\n"
+                except:
+                    pass
         except Exception as e:
             print_exception(e, "Crashed loading ticker prices")
 
