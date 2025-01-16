@@ -21,42 +21,45 @@ from flask_login import current_user
 import chromadb
 from chromadb.config import Settings
 
-chroma_client = chromadb.HttpClient(host="localhost", port = 8000, settings=Settings(allow_reset=True, anonymized_telemetry=False))
+chroma_client = chromadb.HttpClient(
+    host="localhost",
+    port=8000,
+    settings=Settings(allow_reset=True, anonymized_telemetry=False),
+)
 chroma_client.heartbeat()
 
-from chromadb.utils import embedding_functions
+# from chromadb.utils import embedding_functions
 
-default_ef = embedding_functions.DefaultEmbeddingFunction()
+# default_ef = embedding_functions.DefaultEmbeddingFunction()
 
-val = default_ef(["foo"])
-print(val)
+# val = default_ef(["foo"])
+# print(val)
 
-sentence_transformer_ef = embedding_functions.SentenceTransformerEmbeddingFunction(
-    model_name="all-MiniLM-L6-v2"
-)
+# sentence_transformer_ef = embedding_functions.SentenceTransformerEmbeddingFunction(
+#    model_name="all-MiniLM-L6-v2"
+# )
 
 collection = chroma_client.get_or_create_collection("api_news")
 
-#sentence_transformer_ef = embedding_functions.SentenceTransformerEmbeddingFunction(
-#    model_name="all-MiniLM-L6-v2"
-#)
 
 def chromadb_delete_all():
-    collection.delete(where={})
+    chroma_client.delete_collection("api_news")
 
 
 def convert_article(article):
 
     try:
-        keywords = article['AI']['gif_keywords']
+        keywords = article["AI"]["gif_keywords"]
     except:
         keywords = ""
 
-    document = str(article.source_title) + " " + str(article.ai_summary) + " " + str(keywords)
+    document = (
+        str(article.source_title) + " " + str(article.ai_summary) + " " + str(keywords)
+    )
 
     et = ",".join(list(article.related_exchange_tickers))
     metadata = {
-        'related_exchange_tickers': et,
+        "related_exchange_tickers": et,
     }
 
     return document, metadata
@@ -67,11 +70,11 @@ def chromadb_index_document(article):
 
     doc_id = "news_" + str(article.id)
 
-    #results = collection.get(ids=[doc_id])
+    # results = collection.get(ids=[doc_id])
 
     document, metadata = convert_article(article)
 
     # If the ID exists, update the document
     collection.upsert(ids=[doc_id], documents=[document], metadatas=[metadata])
 
-    return {'id': doc_id, 'doc': document, 'meta': metadata}
+    return {"id": doc_id, "doc": document, "meta": metadata}

@@ -758,9 +758,14 @@ def api_reindex_in_chromadb():
     """
         We call this function to index articles that we haven't added to our chroma search
     """
-    from .chromadb import chromadb_index_document
+    from .chromadb import chromadb_delete_all, chromadb_index_document
 
-    news = DB_News.objects(ai_summary__exists=1, is_chromadb__ne=True).order_by('-creation_date').limit(5000)
+    if request.args.get("reset", None):
+        updated_count = DB_News.objects(ai_summary__exists=1, is_chromadb=True).update(set__is_chromadb=False)
+        chromadb_delete_all()
+        return get_response_formatted({'count': updated_count})
+
+    news = DB_News.objects(ai_summary__exists=1, is_chromadb__ne=True).order_by('-creation_date').limit(100)
 
     ret = []
     for item_news in news:
