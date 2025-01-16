@@ -467,7 +467,7 @@ def standardize_ticker_format_to_yfinance(ticker: str) -> str:
     if ':' in ticker:
         exchange, stock = ticker.split(':')
 
-        if exchange in ['OQX']:
+        if exchange in ['OQX', 'OQB', 'NAS']:
             return ticker
 
         # Standardize the exchange name using the prefix mapping
