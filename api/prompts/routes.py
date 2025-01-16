@@ -251,6 +251,7 @@ def api_create_content_from_tickers(tickers, add_days="8,31,365"):
             data = ticker_update_financials(full_symbol, force=False)
             content += f"** {full_symbol} **\n"
 
+            day_change = 0
             if 'price' in data and 'previous_close' in data and data['previous_close'] != 0:
                 day_change = round(((data['price'] - data['previous_close']) / data['previous_close']) * 100, 2)
 
