@@ -79,16 +79,19 @@ def api_create_prompt_local():
 @blueprint.route('/query', methods=['GET', 'POST'])
 @api_key_or_login_required
 def api_prompt_get_query():
-    prompts = build_query_from_request(DB_UserPrompt, global_api=False, append_public=False, extra_args=None)
+    prompts = build_query_from_request(
+        DB_UserPrompt, global_api=False, append_public=False, extra_args=None)
     return get_response_formatted({'prompts': prompts})
 
 
 @blueprint.route('/latest_system', methods=['GET', 'POST'])
 @api_key_or_login_required
 def api_prompt_get_system_query():
-    extra_args = {'username__exists': 1, 'username': current_user.username, 'order_by': '-creation_date', 'limit': 1}
+    extra_args = {'username__exists': 1, 'username': current_user.username,
+                  'order_by': '-creation_date', 'limit': 1}
 
-    prompts = build_query_from_request(DB_UserPrompt, global_api=False, append_public=False, extra_args=extra_args)
+    prompts = build_query_from_request(
+        DB_UserPrompt, global_api=False, append_public=False, extra_args=extra_args)
     return get_response_formatted({'prompts': prompts})
 
 
@@ -121,13 +124,15 @@ def api_remove_a_prompt_by_id(prompt_id):
         if not prompt_type:
             res = DB_UserPrompt.objects(username=current_user.username)
         else:
-            res = DB_UserPrompt.objects(username=current_user.username, type=prompt_type)
+            res = DB_UserPrompt.objects(
+                username=current_user.username, type=prompt_type)
 
         ret = {'status': "deleted", 'prompts': res}
         res.delete()
         return get_response_formatted(ret)
 
-    prompts = DB_UserPrompt.objects(id=prompt_id, username=current_user.username).first()
+    prompts = DB_UserPrompt.objects(
+        id=prompt_id, username=current_user.username).first()
 
     if not prompts:
         return get_response_error_formatted(404, {'error_msg': "The prompt was not found for the current user"})
@@ -145,8 +150,8 @@ def api_remove_a_prompt_by_id_request():
 
 
 @blueprint.route('/ai_callback', methods=['GET', 'POST'])
-#@api_key_or_login_required
-#@admin_login_required
+# @api_key_or_login_required
+# @admin_login_required
 def api_prompt_callback_ai_summary():
     json = request.json
 
@@ -160,7 +165,8 @@ def api_prompt_callback_ai_summary():
         return get_response_formatted({})
 
     if 'type' in json:
-        print_b(" NEWS AI_CALLBACK " + json['id'] + " " + str(db_prompt.prompt))
+        print_b(" NEWS AI_CALLBACK " +
+                json['id'] + " " + str(db_prompt.prompt))
 
         update = {}
 
@@ -174,7 +180,8 @@ def api_prompt_callback_ai_summary():
             update = {'ai_summary': json['result']}
 
         update['last_visited_date'] = datetime.now()
-        update['last_visited_verbose'] = datetime.now().strftime("%Y/%m/%d, %H:%M:%S")
+        update['last_visited_verbose'] = datetime.now().strftime(
+            "%Y/%m/%d, %H:%M:%S")
 
         if is_api_development():
             update['dev'] = True
@@ -255,12 +262,12 @@ def api_create_content_from_tickers(tickers, add_days="8,31,365"):
             content += f"** {full_symbol} **\n"
 
             day_change = 0
-            if 'price' in data and 'previous_close' in data and data['previous_close'] != 0:
-                day_change = round(((data['price'] - data['previous_close']) / data['previous_close']) * 100, 2)
-
-            content += f"Price {data['price']} and todays change {day_change}%\n"
-
             try:
+                content += f"Price {data['price']} "
+                day_change = round(
+                    ((data['price'] - data['previous_close']) / data['previous_close']) * 100, 2)
+
+                content += f"Todays change {day_change}%\n"
                 content += f"PE: { data['PE'] } VOL: { int(data['volume']) } trailingEps: { data['trailingEps'] }\n"
             except:
                 pass
@@ -270,7 +277,8 @@ def api_create_content_from_tickers(tickers, add_days="8,31,365"):
                 if not res:
                     continue
 
-                change = round(((data['day_high'] - res['close']) / res['close']) * 100, 2)
+                change = round(
+                    ((data['day_high'] - res['close']) / res['close']) * 100, 2)
 
                 content += f"Change {test} days {change}%\n"
         except Exception as e:
@@ -298,7 +306,8 @@ def api_create_content_from_news(news, append_tickers=False):
                 content += "| Date " + article_date + "\n"
                 date = article_date
 
-            unique_tickers = set(article.related_exchange_tickers) | unique_tickers
+            unique_tickers = set(
+                article.related_exchange_tickers) | unique_tickers
             content += "| " + str(index) + " from " + article.publisher + "\n"
 
             if article.stock_price and len(article.related_exchange_tickers) == 1:
@@ -328,14 +337,17 @@ def api_build_article_query(db_prompt):
     news = None
     tkrs = None
 
-    extra_args = {'interest_score__gte': 7, 'order_by': '-creation_date', 'reversed': 1}
+    extra_args = {'interest_score__gte': 7,
+                  'order_by': '-creation_date', 'reversed': 1}
 
     if 'PORTFOLIO' in db_prompt.selection:
         news, tkrs = get_portfolio_query(my_args=extra_args)
         if not news:
-            news, tkrs = get_portfolio_query(tickers_list=["NASDAQ:INTC", "NASDAQ:NVDA", "NASDAQ:AAPL"])
+            news, tkrs = get_portfolio_query(
+                tickers_list=["NASDAQ:INTC", "NASDAQ:NVDA", "NASDAQ:AAPL"])
     else:
-        news, tkrs = get_portfolio_query(tickers_list=db_prompt.selection, my_args=extra_args)
+        news, tkrs = get_portfolio_query(
+            tickers_list=db_prompt.selection, my_args=extra_args)
 
     content = api_create_content_from_news(news)
     return content
@@ -354,7 +366,8 @@ def api_get_prompt_article(article_id):
 
     article = DB_News.objects(id=article_id).first()
 
-    news, tkrs = get_portfolio_query(tickers_list=article.related_exchange_tickers)
+    news, tkrs = get_portfolio_query(
+        tickers_list=article.related_exchange_tickers)
 
     assistant = "| We are discussing the following article with Title: "
     assistant += article.get_title()
@@ -370,11 +383,13 @@ def api_get_prompt_article(article_id):
 
 
 def api_create_prompt_ai_summary(db_prompt, priority=False, force_summary=False):
-    articles_content = "Portfolio state articles: " + api_build_article_query(db_prompt)
+    articles_content = "Portfolio state articles: " + \
+        api_build_article_query(db_prompt)
 
     prompt = db_prompt.prompt[:4096]
 
-    system = "Today is " + str(datetime.now().strftime("%Y/%m/%d, %H:%M")) + "\n"
+    system = "Today is " + \
+        str(datetime.now().strftime("%Y/%m/%d, %H:%M")) + "\n"
 
     if 'system' in db_prompt:
         system += db_prompt['system']
@@ -386,7 +401,8 @@ def api_create_prompt_ai_summary(db_prompt, priority=False, force_summary=False)
     if 'article_id' in db_prompt:
         assistant = api_get_prompt_article(db_prompt['article_id'])
     else:
-        assistant = cut_string(articles_content, 131072) + cut_string(chat_content, 131072)
+        assistant = cut_string(articles_content, 131072) + \
+            cut_string(chat_content, 131072)
 
     data = {
         'type': 'user_prompt',
@@ -419,10 +435,10 @@ def api_create_prompt_ai_summary(db_prompt, priority=False, force_summary=False)
         response.raise_for_status()
 
         json_response = response.json()
-        #print_json(json_response)
+        # print_json(json_response)
 
         db_prompt.update(**{
-            #'raw': json_response,
+            # 'raw': json_response,
             'ai_upload_date': datetime.now(),
             'ai_queue_size': json_response['queue_size']
         })
@@ -443,7 +459,7 @@ def api_llama_get_state():
 
     try:
         json_response = response.json()
-        #print_json(json_response)
+        # print_json(json_response)
 
         return json_response
     except Exception as e:
@@ -509,7 +525,8 @@ def api_let_AI_search_for_information(db_prompt, priority=False):
     }
 
     data['prefix'] = "CHAT_" + db_prompt.username
-    data['callback_url'] = get_api_entry() + "/prompts/ai_callback_function_search"
+    data['callback_url'] = get_api_entry(
+    ) + "/prompts/ai_callback_function_search"
     data['hostname'] = socket.gethostname()
 
     if is_api_development():
@@ -523,7 +540,7 @@ def api_let_AI_search_for_information(db_prompt, priority=False):
         response.raise_for_status()
 
         json_response = response.json()
-        #print_json(json_response)
+        # print_json(json_response)
 
         db_prompt.update(**{
             'raw': json_response,
@@ -539,8 +556,8 @@ def api_let_AI_search_for_information(db_prompt, priority=False):
 
 
 @blueprint.route('/ai_callback_function_search', methods=['GET', 'POST'])
-#@api_key_or_login_required
-#@admin_login_required
+# @api_key_or_login_required
+# @admin_login_required
 def api_prompt_ai_callback_function_call():
     json = request.json
 
@@ -554,7 +571,8 @@ def api_prompt_ai_callback_function_call():
         return get_response_formatted({})
 
     if 'type' in json:
-        print_b(" NEWS AI_CALLBACK " + json['id'] + " " + str(db_prompt.prompt))
+        print_b(" NEWS AI_CALLBACK " +
+                json['id'] + " " + str(db_prompt.prompt))
 
         update = {}
 
@@ -563,7 +581,8 @@ def api_prompt_ai_callback_function_call():
             update = {'tools': json['dict']}
 
         update['last_visited_date'] = datetime.now()
-        update['last_visited_verbose'] = datetime.now().strftime("%Y/%m/%d, %H:%M:%S")
+        update['last_visited_verbose'] = datetime.now().strftime(
+            "%Y/%m/%d, %H:%M:%S")
 
         if is_api_development():
             update['dev'] = True
