@@ -141,6 +141,9 @@ class DB_News(db.DynamicDocument):
         if len(self.raw_tickers) > len(self.related_exchange_tickers):
             print_r(" Fix ticker discovery ")
             ets = yticker_check_tickers(self.raw_tickers, item=self)
+            if not ets:
+                print_r(" HACK TICKERS " + str(self.raw_tickers))
+                self.update(**{ 'related_exchange_tickers': self.raw_tickers })
 
         if self.last_cache_date and self.age_cache_minutes() < 5:
             return
