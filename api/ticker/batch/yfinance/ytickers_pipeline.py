@@ -570,7 +570,7 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
     info = yf_obj.info
     company_update = prepare_update_with_schema(info, yahoo_company_schema)
 
-    if not company_update['long_name']:
+    if not company_update['long_name'] and 'shortName' in info:
         company_update['long_name'] = info['shortName']
 
     ticker_save_financials(db_ticker.full_symbol(), yf_obj)
