@@ -114,10 +114,11 @@ def ticker_update_financials(full_symbol, max_age_minutes=15, force=False):
 
         # We try to check
 
-        if fdata['day_high']:
+        if fdata['day_high'] :
             try:
-                fdata['change_pct_1'] = round(
-                    ((fdata['price'] - fdata['previous_close']) / fdata['previous_close']) * 100, 2)
+                if 'price' in fdata and fdata['previous_close']:
+                    fdata['change_pct_1'] = round(
+                        ((fdata['price'] - fdata['previous_close']) / fdata['previous_close']) * 100, 2)
             except Exception as e:
                 print_exception(e, "Crashed trying to load historical data")
 
@@ -517,7 +518,7 @@ def yticker_pipeline_company_process(db_company):
 
     company_update = prepare_update_with_schema(info, yahoo_company_schema)
 
-    if not company_update['long_name']:
+    if not company_update['long_name'] and 'shortName' in info:
         company_update['long_name'] = info['shortName']
 
     ticker_save_financials(full_symbol, yf_obj)
