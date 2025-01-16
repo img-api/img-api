@@ -32,3 +32,11 @@ sudo apt install imagemagick -y
 
 echo "REDIS"
 sudo apt install redis -y
+
+echo "DOCKER"
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh ./get-docker.sh
+
+echo "CHROMA"
+sudo docker run -d --rm --name chromadb -p 8000:8000 -v ./chroma:/chroma/chroma -e IS_PERSISTENT=TRUE -e ANONYMIZED_TELEMETRY=TRUE chromadb/chroma:0.6.3
+

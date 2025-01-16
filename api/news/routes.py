@@ -752,8 +752,8 @@ def api_process_AI_in_news():
     return get_response_formatted(ret)
 
 @blueprint.route('/index/chromadb', methods=['GET', 'POST'])
-@api_key_or_login_required
-@admin_login_required
+#@api_key_or_login_required
+#@admin_login_required
 def api_reindex_in_chromadb():
     """
         We call this function to index articles that we haven't added to our chroma search

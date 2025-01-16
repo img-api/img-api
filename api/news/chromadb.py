@@ -5,8 +5,7 @@ from datetime import datetime
 
 import requests
 from api import (admin_login_required, api_key_or_login_required,
-                 chroma_client, get_response_error_formatted,
-                 get_response_formatted)
+                 get_response_error_formatted, get_response_formatted)
 from api.company.models import DB_Company
 from api.config import get_api_AI_service, get_api_entry, is_api_development
 from api.file_cache import api_file_cache
@@ -19,8 +18,28 @@ from api.subscription.routes import api_subscription_alert
 from flask import request
 from flask_login import current_user
 
+import chromadb
+from chromadb.config import Settings
+
+chroma_client = chromadb.HttpClient(host="localhost", port = 8000, settings=Settings(allow_reset=True, anonymized_telemetry=False))
+chroma_client.heartbeat()
+
+from chromadb.utils import embedding_functions
+
+default_ef = embedding_functions.DefaultEmbeddingFunction()
+
+val = default_ef(["foo"])
+print(val)
+
+sentence_transformer_ef = embedding_functions.SentenceTransformerEmbeddingFunction(
+    model_name="all-MiniLM-L6-v2"
+)
+
 collection = chroma_client.get_or_create_collection("api_news")
 
+#sentence_transformer_ef = embedding_functions.SentenceTransformerEmbeddingFunction(
+#    model_name="all-MiniLM-L6-v2"
+#)
 
 def chromadb_delete_all():
     collection.delete(where={})
