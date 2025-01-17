@@ -75,7 +75,7 @@ def ticker_process_news_sites(BATCH_SIZE=5):
     ai_timeout = datetime.fromtimestamp(get_timestamp_verbose("30 minutes"))
 
     item_news = DB_News.objects(ai_summary=None, last_visited_date__lte=ai_timeout,
-                            articles__not__size=0).order_by('-creation_date').limit(10)
+                                articles__not__size=0).order_by('-creation_date').limit(10)
 
     for article in item_news:
         try:
@@ -105,18 +105,20 @@ def ticker_process_news_sites(BATCH_SIZE=5):
     for item in news:
         try:
             if item.source_title:
-                print(" PROCESSING ITEM " + str(item.source_title))
+                print(str(item.source) + " PROCESSING ITEM " + str(item.source_title))
+            elif item.title:
+                item.update(**{'source_title': item.title})
+                print(str(item.source) + " PROCESSING ITEM TITLE " + str(item.title))
             else:
-                print(" PROCESSING ITEM - MISSING TITLE ")
-
+                print(str(item.source) + " PROCESSING ITEM - MISSING TITLE " + str(item.id))
 
             if item.force_reindex:
                 item.update(**{'force_reindex': False})
 
             item.set_state("INDEX_START")
 
-            if item.source == "YFINANCE":
-                yfetch_process_news(item)
+            #if item.source == "YFINANCE":
+            yfetch_process_news(item)
 
         except Exception as e:
             item.set_state("ERROR: FETCH CRASHED, SEE LOGS!")
@@ -216,4 +218,3 @@ def ticker_process_invalidate(ticker, max_age_minutes=5):
         print_exception(e, "CRASHED PROCESSING BATCH")
 
     return [db_ticker]
-

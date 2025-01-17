@@ -770,7 +770,11 @@ def api_get_company_prompt(ticker):
 #@api_key_or_login_required
 #@admin_login_required
 def api_prompt_callback_company():
-    json = request.json
+    try:
+        json = request.json
+    except:
+        print_r(" WTF ")
+        return get_response_formatted({})
 
     if 'id' not in json:
         return get_response_error_formatted(400, {'error_msg': "An id is required"})

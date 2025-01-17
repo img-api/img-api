@@ -12,8 +12,8 @@ from api.file_cache import api_file_cache
 from api.news import blueprint
 from api.news.models import DB_News
 from api.print_helper import *
-from api.query_helper import (build_query_from_request, is_mongo_id,
-                              validate_and_convert_dates)
+from api.query_helper import (build_query_from_request, date_to_unix,
+                              is_mongo_id, validate_and_convert_dates)
 from api.subscription.routes import api_subscription_alert
 from flask import request
 from flask_login import current_user
@@ -46,6 +46,10 @@ def chromadb_delete_all():
     chroma_client.delete_collection("api_news")
 
 
+def iso_date(epoch_seconds):
+    return datetime.datetime.fromtimestamp(epoch_seconds).isoformat()
+
+
 def convert_article(article):
 
     try:
@@ -58,6 +62,7 @@ def convert_article(article):
     et = ",".join(list(article.related_exchange_tickers))
     metadata = {
         "related_exchange_tickers": et,
+        "date": date_to_unix(article.creation_date),
     }
 
     return document, metadata

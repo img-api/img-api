@@ -755,7 +755,10 @@ def build_query_from_url(args=None):
                         value = float(value)
 
                     elif parms[1] in ['in', 'nin', 'all']:
-                        value = value.split(",")
+                        if isinstance(value, str):
+                            value = value.split(",")
+                        else:
+                            value = list(value)
 
                 newkey = {key: get_adaptive_value(key, value)}
                 query = (query & Q(**newkey)) if query else Q(**newkey)

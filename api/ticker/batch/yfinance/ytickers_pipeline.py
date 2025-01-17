@@ -114,7 +114,7 @@ def ticker_update_financials(full_symbol, max_age_minutes=15, force=False):
 
         # We try to check
 
-        if fdata['day_high'] :
+        if fdata['day_high']:
             try:
                 if 'price' in fdata and fdata['previous_close']:
                     fdata['change_pct_1'] = round(
@@ -437,16 +437,23 @@ def yticker_process_yahoo_news_article(item, info, ticker=None):
 
         myupdate = prepare_update_with_schema(item, new_schema)
     else:
-        print_r(" NO LINK ")
         myupdate = {
             'title': item['title'],
             'summary': item['summary'],
             'link': item['canonicalUrl']['url'],
-            'publisher': item['provider']['displayName'],
-            'thumbnail': item['thumbnail']['originalUrl'],
             'external_uuid': external_id,
-            'thumbnail_caption': item['thumbnail']['caption'],
         }
+
+        try:
+            extras = {
+                'publisher': item['provider']['displayName'],
+                'thumbnail': item['thumbnail']['originalUrl'],
+                'thumbnail_caption': item['thumbnail']['caption']
+            }
+
+            myupdate.update(extras)
+        except Exception as e:
+            print_exception(e, "CRASHED LOADING EXTRAS")
 
     # Overwrite our creation time with the publisher time
     try:

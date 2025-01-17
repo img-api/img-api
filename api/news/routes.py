@@ -61,6 +61,33 @@ def api_news_search_some_text(search_terms):
     return get_response_formatted(ret)
 
 
+@blueprint.route('/company/<string:ticker>', methods=['GET', 'POST'])
+@api_file_cache(expiration_secs=300)
+def api_news_get_query_company_ticker_search(ticker):
+    """
+    """
+    from .chromadb import chromadb_search
+
+    company = DB_Company.objects(exchange_tickers=ticker).first()
+
+    if not company:
+        return get_response_error_formatted(404, {'error_msg': "Company not found"})
+
+    search_ticker = ticker.split(":")[-1]
+    extra_args = {"order_by": '-creation_date', "limit": 10, 'related_exchange_tickers__iendswith': search_ticker}
+
+    search = company.long_name + " " + str(company.exchange_tickers)
+    ret = chromadb_search(search)
+    print(str(ret))
+
+    news = build_query_from_request(DB_News, global_api=True, extra_args=extra_args)
+    for article in news:
+        article.precalculate_cache()
+
+    ret = {'news': news}
+    return get_response_formatted(ret)
+
+
 @blueprint.route('/query', methods=['GET', 'POST'])
 @api_file_cache(expiration_secs=300)
 def api_news_get_query():
@@ -222,9 +249,10 @@ def api_create_article_ai_summary(article, priority=False, force_summary=False):
         return
 
     prompt = "Remove everything that is not relevant to the title: |"
-    if 'source_title' in article:
+    if 'source_title' in article and len(article['source_title'].strip()) > 0:
         prompt += article['source_title']
     elif 'title' in article:
+        article.update(**{'source_title': article['title']})
         prompt += article['title']
 
     prompt += "|. After cleanning up, summarize and format the article in max two paragraphs, "
@@ -411,8 +439,11 @@ def api_news_get_gif():
 #@admin_login_required
 def api_news_callback_ai_summary():
     """ """
-
-    json = request.json
+    try:
+        json = request.json
+    except:
+        print_r(" MISSING CALL ")
+        return get_response_formatted({})
 
     if 'id' not in json:
         return get_response_error_formatted(400, {'error_msg': "An id is required"})
