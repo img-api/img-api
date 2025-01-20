@@ -369,10 +369,10 @@ def configure_media_folder(app):
     if not media_path:
         media_path = app.root_path + "/DATA/MEDIA_FILES/"
 
-        print("!-------------------------------------------------------------!")
-        print("  WARNING MEDIA PATH IS NOT BEING DEFINED ")
-        print("  PATH: " + media_path)
-        print("!-------------------------------------------------------------!")
+#        print("!-------------------------------------------------------------!")
+#        print("  WARNING MEDIA PATH IS NOT BEING DEFINED ")
+#        print("  PATH: " + media_path)
+#        print("!-------------------------------------------------------------!")
 
     app.config['MEDIA_PATH'] = media_path
     ensure_dir(media_path)
@@ -443,7 +443,7 @@ def register_api_blueprints(app):
         module = import_module('api.{}.routes'.format(module_name))
         app.register_blueprint(module.blueprint)
 
-        print(" Registering API " + str(module_name))
+        #print(" Registering API " + str(module_name))
 
     configure_media_folder(app)
     configure_news_media_folder(app)

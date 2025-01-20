@@ -1,7 +1,7 @@
 import copy
 import re
 import socket
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import requests
 from api import (admin_login_required, api_key_or_login_required,
@@ -14,7 +14,6 @@ from api.news.models import DB_News
 from api.print_helper import *
 from api.query_helper import (build_query_from_request, date_to_unix,
                               is_mongo_id, validate_and_convert_dates)
-from api.subscription.routes import api_subscription_alert
 from flask import request
 from flask_login import current_user
 
@@ -60,6 +59,12 @@ def convert_article(article):
     document = (str(article.source_title) + " " + str(article.ai_summary) + " " + str(keywords))
 
     et = ",".join(list(article.related_exchange_tickers))
+
+    # TODO: Why there is not creation date here? It doesn't make sense, it is always on save.
+    if not article.creation_date:
+        article.creation_date = datetime.now()
+        article.update(**{'creation_date': article.creation_date})
+
     metadata = {
         "related_exchange_tickers": et,
         "date": date_to_unix(article.creation_date),
@@ -69,7 +74,7 @@ def convert_article(article):
 
 
 def chromadb_index_document(article):
-    print_b(f"CHROMA INDEX {str(article.id)} ")
+    #print_b(f"CHROMA INDEX {str(article.id)} ")
 
     doc_id = "news_" + str(article.id)
 
@@ -77,13 +82,16 @@ def chromadb_index_document(article):
 
     document, metadata = convert_article(article)
 
-    # If the ID exists, update the document
+    # If the ID exists, update the documentregi
     collection.upsert(ids=[doc_id], documents=[document], metadatas=[metadata])
 
     return {"id": doc_id, "doc": document, "meta": metadata}
 
 
-def chromadb_search(query, limit=10):
+def chromadb_search(query, limit=10, days=14):
     results = collection.query(query_texts=[query], n_results=limit)
+
+    min_date = (datetime.now() - timedelta(days=days)).timestamp()
+    res = collection.get(where={"date": {"$gt": min_date}})
 
     return results

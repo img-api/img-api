@@ -447,13 +447,18 @@ def yticker_process_yahoo_news_article(item, info, ticker=None):
         try:
             extras = {
                 'publisher': item['provider']['displayName'],
+            }
+
+            myupdate.update(extras)
+
+            thumbs = {
                 'thumbnail': item['thumbnail']['originalUrl'],
                 'thumbnail_caption': item['thumbnail']['caption']
             }
 
-            myupdate.update(extras)
+            myupdate.update(thumbs)
         except Exception as e:
-            print_exception(e, "CRASHED LOADING EXTRAS")
+            print_r(str(e) + "CRASHED LOADING EXTRAS")
 
     # Overwrite our creation time with the publisher time
     try:
@@ -575,30 +580,40 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
         print_exception(e, "CRASH")
         pass
 
-    info = yf_obj.info
-    company_update = prepare_update_with_schema(info, yahoo_company_schema)
+    try:
+        info = yf_obj.info
 
-    if not company_update['long_name'] and 'shortName' in info:
-        company_update['long_name'] = info['shortName']
+        company_update = prepare_update_with_schema(info, yahoo_company_schema)
 
-    ticker_save_financials(db_ticker.full_symbol(), yf_obj)
-    ticker_save_history(db_ticker.full_symbol(), yf_obj)
+        if not company_update['long_name'] and 'shortName' in info:
+            company_update['long_name'] = info['shortName']
 
-    if 'companyOfficers' in info:
-        company_officers = info['companyOfficers']
-        #for officer in company_officers:
-        #    print_b(f"TODO: Create person {officer['name']} => {officer['title']}")
+        ticker_save_financials(db_ticker.full_symbol(), yf_obj)
+        ticker_save_history(db_ticker.full_symbol(), yf_obj)
 
-    if not db_company:
-        print_b("NO COMPANY WTF")
-    elif not 'ai_summary' in db_company:
-        db_company.update(**company_update, validate=False)
+        if 'companyOfficers' in info:
+            company_officers = info['companyOfficers']
+            #for officer in company_officers:
+            #    print_b(f"TODO: Create person {officer['name']} => {officer['title']}")
 
-    for item in yf_obj.news:
-        try:
-            yticker_process_yahoo_news_article(item, yf_obj.info, ticker=db_company.get_primary_ticker())
-        except Exception as e:
-            print_exception(e, "CRASH ON YAHOO NEWS PROCESSING")
+        if not db_company:
+            print_b("NO COMPANY WTF")
+        elif not 'ai_summary' in db_company:
+            db_company.update(**company_update, validate=False)
+
+    except Exception as e:
+        print_b(str(e) + "FAILED FETCHING INFO")
+        pass
+
+    try:
+        for item in yf_obj.news:
+            try:
+                yticker_process_yahoo_news_article(item, yf_obj.info, ticker=db_company.get_primary_ticker())
+            except Exception as e:
+                print_exception(e, "CRASH ON YAHOO NEWS PROCESSING")
+    except Exception as e:
+        print_b(str(e) + "FAILED PROCESSING NEWS ")
+        pass
 
     db_ticker.set_state("PROCESSED")
     return db_ticker

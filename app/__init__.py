@@ -19,4 +19,4 @@ def register_app_blueprints(app):
         module = import_module('app.{}.routes'.format(module_name))
         app.register_blueprint(module.blueprint)
 
-        print(" Registering API " + str(module_name))
+        #print(" Registering API " + str(module_name))

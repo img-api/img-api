@@ -49,6 +49,9 @@ def yfetch_process_news(item, web_driver=None):
 
     articles = []
 
+    if not 'publisher' in item:
+        item['publisher'] = "Internet"
+
     print_g(" PUBLISHER " + item['publisher'])
     if item["publisher"] in ['TEST']:
         return

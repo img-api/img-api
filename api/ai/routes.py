@@ -76,3 +76,5 @@ def get_api_AI_availability(my_queue="process"):
         print_exception(e, "CRASH READING RESPONSE")
 
     return -1
+
+

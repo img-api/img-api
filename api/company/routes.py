@@ -346,7 +346,11 @@ def api_company_get_ai_summary():
 #@api_key_or_login_required
 def api_company_callback_ai_summary():
     """ """
-    json = request.json
+    try:
+        json = request.json
+    except:
+        print_r(" MISSING JSON ")
+        return get_response_formatted({})
 
     business = DB_Company.objects(id=json['id']).first()
 
@@ -1122,3 +1126,60 @@ def api_company_aggregate_dups():
         print_exception(e, "CRASHED MERGING")
 
     return get_response_formatted(ret)
+
+
+@blueprint.route('/index/chromadb', methods=['GET', 'POST'])
+#@api_key_or_login_required
+#@admin_login_required
+def api_company_reindex_in_chromadb():
+    """
+        We call this function to index articles that we haven't added to our chroma search
+    """
+    from .chromadb import (chromadb_company_index_document,
+                           chromadb_delete_all_company)
+
+    if request.args.get("reset", None):
+        updated_count = DB_Company.objects(ai_summary__exists=1, is_chromadb=True).update(set__is_chromadb=False)
+        chromadb_delete_all_company()
+        return get_response_formatted({'count': updated_count})
+
+    companies = DB_Company.objects(ai_summary__exists=1, is_chromadb__ne=True).order_by('-creation_date').limit(10000)
+
+    ret = []
+    count = 0
+    for item in companies:
+        print_b(f"{count} CHROMA INDEX {str(item.id)} ")
+        count += 1
+        ret.append(chromadb_company_index_document(item))
+        item.update(**{'is_chromadb': True})
+
+    ret = {'chroma': ret}
+    return get_response_formatted(ret)
+
+
+@blueprint.route('/vector_search/<string:search_terms>', methods=['GET', 'POST'])
+def api_vector_search_company(search_terms):
+    from .chromadb import chromadb_company_search
+
+    ret = chromadb_company_search(search_terms)
+    return get_response_formatted({'result': ret})
+
+
+@blueprint.route('/article/<string:news_id>', methods=['GET', 'POST'])
+def api_vector_classify_article(news_id):
+    from api.news.models import DB_News
+
+    from .chromadb import chromadb_company_search
+
+    article = DB_News.objects(id=news_id).first()
+
+    if not article:
+        return get_response_formatted({'msg': "no article found"})
+
+    doc = str(article.source_title) + " "
+    #doc += article.get_summary() + " "
+    #doc += str(article.ai_summary) + " "
+    #doc += article.get_raw_article()
+
+    ret = chromadb_company_search(doc)
+    return get_response_formatted({'article': doc, 'result': ret})

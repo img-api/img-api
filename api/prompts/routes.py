@@ -302,12 +302,13 @@ def api_create_content_from_news(news, append_tickers=False):
     for index, article in enumerate(news):
 
         try:
-            article_date = str(article.creation_date.strftime("%Y/%m/%d"))
-            print_g(article_date + " >> " + article.get_title())
+            if article.creation_date:
+                article_date = str(article.creation_date.strftime("%Y/%m/%d"))
+                print_g(article_date + " >> " + article.get_title())
 
-            if date != article_date:
-                content += "| Date " + article_date + "\n"
-                date = article_date
+                if date != article_date:
+                    content += "| Date " + article_date + "\n"
+                    date = article_date
 
             unique_tickers = set(
                 article.related_exchange_tickers) | unique_tickers

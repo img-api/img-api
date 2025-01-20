@@ -32,8 +32,8 @@ class DB_Company(db.DynamicDocument):
     wikipedia = db.StringField()
 
     name = db.StringField()
-    long_name = db.StringField()
-    long_business_summary = db.StringField()
+    long_name = db.StringField(default="")
+    long_business_summary = db.StringField(default="")
 
     email = db.StringField()
     main_address = db.StringField()
@@ -59,6 +59,8 @@ class DB_Company(db.DynamicDocument):
 
     # Tickers that belong to a company and an exchange
     exchange_tickers = db.ListField(db.StringField(), default=list)
+
+    is_chromadb = db.BooleanField(default=False)
 
     SAFE_KEYS = [
         "safe_name", "company_name", "country", "gics_sector", "gics_sub_industry", "name", "email", "main_address",

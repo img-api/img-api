@@ -71,7 +71,8 @@ def api_news_get_query_company_ticker_search(ticker):
     company = DB_Company.objects(exchange_tickers=ticker).first()
 
     if not company:
-        return get_response_error_formatted(404, {'error_msg': "Company not found"})
+        return get_response_formatted({'news': [], 'warning': "company not found"})
+
 
     search_ticker = ticker.split(":")[-1]
     extra_args = {"order_by": '-creation_date', "limit": 10, 'related_exchange_tickers__iendswith': search_ticker}
@@ -84,7 +85,7 @@ def api_news_get_query_company_ticker_search(ticker):
     for article in news:
         article.precalculate_cache()
 
-    ret = {'news': news}
+    ret = {'news': news, 'chroma': ret}
     return get_response_formatted(ret)
 
 
