@@ -83,5 +83,6 @@ python-telegram-bot[job-queue]
 
 chromadb==0.6.3
 sentence_transformers
+spacy
 
 

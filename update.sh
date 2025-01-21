@@ -15,3 +15,5 @@ echo "UPDATING IMG-API"
 git pull --rebase
 pip3 install -r requirements.txt --upgrade
 
+python -m spacy download en_core_web_sm
+

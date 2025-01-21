@@ -12,7 +12,9 @@ from mongoengine import *
 
 class DB_Company(db.DynamicDocument):
     meta = {
-        'strict': False,
+        'strict':
+        False,
+
     }
 
     safe_name = db.StringField()
@@ -282,3 +284,9 @@ class DB_CompanyPrompt(db.DynamicDocument):
             self.update(**update, validate=False)
 
         return True
+
+
+collection = DB_Company._get_collection()
+
+# Create text index on the company_name field
+collection.create_index([("company_name", "text")])

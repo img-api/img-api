@@ -1169,7 +1169,8 @@ def api_vector_search_company(search_terms):
 def api_vector_classify_article(news_id):
     from api.news.models import DB_News
 
-    from .chromadb import chromadb_company_search
+    from .chromadb import (chromadb_company_search,
+                           extract_companies_and_tickers)
 
     article = DB_News.objects(id=news_id).first()
 
@@ -1177,9 +1178,44 @@ def api_vector_classify_article(news_id):
         return get_response_formatted({'msg': "no article found"})
 
     doc = str(article.source_title) + " "
-    #doc += article.get_summary() + " "
-    #doc += str(article.ai_summary) + " "
-    #doc += article.get_raw_article()
+    doc += article.get_summary() + " "
+    doc += str(article.ai_summary) + " "
+    doc += article.get_raw_article()
 
     ret = chromadb_company_search(doc)
-    return get_response_formatted({'article': doc, 'result': ret})
+
+    companies, tickers = extract_companies_and_tickers(doc)
+
+    spa = {'companies': companies, 'tickers': tickers}
+
+    validated = []
+    unvalid = []
+    for company in companies:
+        query = Q()
+        for term in company.split():
+            query &= Q(company_name__regex=r'\b' + term + r'\b', company_name__icontains=term)
+
+        results = DB_Company.objects(query)
+        for c in results:
+            match = None
+
+            try:
+                match = re.match(c.regex, company)
+                if match:
+                    print(f"Valid: {c.company_name}")
+                    validated.append([c.company_name, company, c.regex])
+            except:
+                pass
+
+            if not match:
+                unvalid.append([c.company_name, company, c.regex])
+
+    spa['validated'] = validated
+    spa['unvalid'] = unvalid
+
+    #db.collection.find(
+    #    { $text: { $search: "word" } },
+    #    { score: { $meta: "textScore" } }
+    #).sort({ score: { $meta: "textScore" } })
+
+    return get_response_formatted({'article': doc[:256], 'spacy': spa, 'result': ret})
