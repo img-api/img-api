@@ -74,7 +74,7 @@ def api_news_get_query_company_ticker_search(ticker):
         return get_response_formatted({'news': [], 'warning': "company not found"})
 
 
-    search_ticker = ticker.split(":")[-1]
+    search_ticker = ":" + ticker.split(":")[-1]
     extra_args = {"order_by": '-creation_date', "limit": 10, 'related_exchange_tickers__iendswith': search_ticker}
 
     search = company.long_name + " " + str(company.exchange_tickers)
