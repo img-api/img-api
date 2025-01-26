@@ -124,8 +124,7 @@ class DB_News(db.DynamicDocument):
         res = {}
         for ticker in self.related_exchange_tickers:
             ticker_cleanup = standardize_ticker_format(ticker)
-            db_company = DB_Company.objects(
-                exchange_tickers=ticker_cleanup).first()
+            db_company = DB_Company.objects(exchange_tickers=ticker_cleanup).first()
 
             if db_company:
                 res[ticker] = db_company.long_name
@@ -143,7 +142,7 @@ class DB_News(db.DynamicDocument):
             ets = yticker_check_tickers(self.raw_tickers, item=self)
             if not ets:
                 print_r(" HACK TICKERS " + str(self.raw_tickers))
-                self.update(**{ 'related_exchange_tickers': self.raw_tickers })
+                self.update(**{'related_exchange_tickers': self.raw_tickers})
 
         if self.last_cache_date and self.age_cache_minutes() < 5:
             return
@@ -174,8 +173,7 @@ class DB_News(db.DynamicDocument):
         if not self.creation_date:
             self.creation_date = datetime.now()
 
-        self.related_exchange_tickers = ticker_exchanges_cleanup_dups(
-            self.related_exchange_tickers)
+        self.related_exchange_tickers = ticker_exchanges_cleanup_dups(self.related_exchange_tickers)
 
         ret = super(DB_News, self).save(*args, **kwargs)
         return ret
@@ -198,7 +196,7 @@ class DB_News(db.DynamicDocument):
             'status': state_msg,
             'last_visited_date': datetime.now()
         },
-            validate=False)
+                    validate=False)
 
         self.reload()
         return self
@@ -257,6 +255,10 @@ class DB_News(db.DynamicDocument):
 
     def get_paragraph(self):
         return self.get_arguments_param("paragraph", None)
+
+    def get_ai_summary(self):
+        if self.ai_summary: return self.ai_summary
+        return self.get_arguments_param("summary", self['summary'])
 
     def get_summary(self):
         return self.get_arguments_param("summary", self.ai_summary)

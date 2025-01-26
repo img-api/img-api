@@ -73,19 +73,18 @@ def api_news_get_query_company_ticker_search(ticker):
     if not company:
         return get_response_formatted({'news': [], 'warning': "company not found"})
 
-
     search_ticker = ":" + ticker.split(":")[-1]
     extra_args = {"order_by": '-creation_date', "limit": 10, 'related_exchange_tickers__iendswith': search_ticker}
 
     search = company.long_name + " " + str(company.exchange_tickers)
-    ret = chromadb_search(search)
-    print(str(ret))
+    #ret = chromadb_search(search)
+    #print(str(ret))
 
     news = build_query_from_request(DB_News, global_api=True, extra_args=extra_args)
     for article in news:
         article.precalculate_cache()
 
-    ret = {'news': news, 'chroma': ret}
+    ret = {'news': news}
     return get_response_formatted(ret)
 
 
@@ -815,3 +814,55 @@ def api_vector_search_news(search_terms):
 
     ret = chromadb_search(search_terms)
     return get_response_formatted({'result': ret})
+
+
+@blueprint.route('/test/tickers/<string:news_id>', methods=['GET', 'POST'])
+def api_test_news_tickers(news_id):
+    """ News get ID
+    ---
+    """
+    news = DB_News.objects(id=news_id).first()
+
+    if not news:
+        return get_response_error_formatted(404, {'error_msg': "News not found"})
+
+    data = {
+        'title': news.get_title(),
+        'summary': news.get_ai_summary(),
+    }
+
+    ret = {}
+
+    try:
+        response = requests.post("http://manel.headingmars.com:8000/tickers", json=data)
+        response.raise_for_status()
+
+        json_response = response.json()
+
+        ret['response'] = json_response
+
+        res = {}
+        res_unvalidated = []
+        if 'tickers' in json_response:
+            tlist = json_response['tickers'].split(",")
+            for t in tlist:
+                t = t.strip()
+
+                db_company = DB_Company.objects(exchange_tickers__endswith=":" + t).first()
+                if db_company:
+                    obj = {
+                        'name': db_company.long_name,
+                        'id': str(db_company.id),
+                        'tickers': db_company.exchange_tickers
+                    }
+                    res[t] = obj
+                else:
+                    res_unvalidated.append(t)
+
+        ret['validated_tickers'] = res
+        ret['unvalidated_tickers'] = res_unvalidated
+
+    except Exception as e:
+        return get_response_error_formatted(500, {'error_msg': str(e), 'data': data})
+
+    return get_response_formatted(ret)
