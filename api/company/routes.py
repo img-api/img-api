@@ -1,4 +1,5 @@
 import io
+import re
 import socket
 from datetime import datetime
 
@@ -57,6 +58,35 @@ def api_company_get_query_long():
 
 def company_get_suggestions(text, only_tickers=False):
     """ """
+    from api.ticker.tickers_helpers import standardize_ticker_format
+
+    company = None
+    words = text.strip().split(" ")
+    if len(words) == 1: # Possible ticker the user is looking for
+        ticker = words[0]
+        pattern = r"^[A-Za-z0-9]+[.:]?[A-Za-z0-9]*$"
+
+        if re.match(pattern, ticker):
+            full_symbol = standardize_ticker_format(ticker)
+            query = Q(exchange_tickers=full_symbol)
+            company = DB_Company.objects(query).first()
+            if not company:
+                from api.ticker.batch.yfinance.ytickers_pipeline import \
+                    yticker_check_tickers
+                from api.ticker.connector_yfinance import fetch_tickers_info
+
+                print_r("! Someone wants to index this company " + full_symbol)
+                info = fetch_tickers_info(ticker)
+                if info:
+                    yticker_check_tickers([ticker])
+
+            else:
+                if only_tickers:
+                    return [full_symbol]
+
+                return [company]
+
+
 
     # Don't destroy the database
     if only_tickers and len(text) < 3:

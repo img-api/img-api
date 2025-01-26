@@ -211,6 +211,7 @@ suffix_to_exchange = {
     '.HK': 'HKG',  # Hong Kong Stock Exchange
     '.NS': 'NSI',  #
     '.TO': 'TOR', #
+    '.SR': 'SAU', # Saudi Arabaia
     '.L': 'LSE',
     '.SW': 'SIX',  # SIX Swiss Exchange
     '.F': 'FRA',  # Frankfurt Stock Exchange
@@ -435,7 +436,7 @@ def standardize_ticker_format(ticker: str) -> str:
     # Case 3: Handle "TICKER" format with no exchange (assume NASDAQ or other default logic)
     else:
         # Here we assume a default exchange if none is provided, let's assume NASDAQ
-        return f"NASDAQ:{ticker}"
+        return f"{ticker}"
 
 
 def standardize_format_exchange_ticker(exchange: str, ticker: str):
