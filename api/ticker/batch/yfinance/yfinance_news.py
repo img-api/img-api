@@ -100,9 +100,13 @@ def yfetch_process_news(item, web_driver=None):
         item.save(validate=False)
         item.set_state("INDEXED")
 
+        try:
+            item.precalculate_cache()
+        except Exception as e:
+            print_exception(e, "CRASHED")
+
     else:
         item.set_state("ERROR: ARTICLES NOT FOUND")
-
 
 
 def date_from_unix(string):

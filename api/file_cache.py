@@ -50,7 +50,7 @@ def api_file_cache(global_api=True, expiration_secs=86400, data_type="json", ign
             return None
 
         key = key or make_cache_key(global_api)
-        debug_cache = request.args.get("debug_cache")
+        debug_cache = request.args.get("debug_cache", True)
 
         try:
             if global_api:
