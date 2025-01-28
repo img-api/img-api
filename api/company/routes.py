@@ -62,7 +62,7 @@ def company_get_suggestions(text, only_tickers=False):
 
     company = None
     words = text.strip().split(" ")
-    if len(words) == 1: # Possible ticker the user is looking for
+    if len(words) == 1:  # Possible ticker the user is looking for
         ticker = words[0]
         pattern = r"^[A-Za-z0-9]+[.:]?[A-Za-z0-9]*$"
 
@@ -85,8 +85,6 @@ def company_get_suggestions(text, only_tickers=False):
                     return [full_symbol]
 
                 return [company]
-
-
 
     # Don't destroy the database
     if only_tickers and len(text) < 3:
@@ -494,6 +492,9 @@ def api_create_ai_regex_tool(company, invalidate=False):
 #@api_key_or_login_required
 def api_company_callback_ai_callback_prompt():
     """ """
+    #print("Raw data:", request.data.decode('utf-8'))
+    #print("Headers:", request.headers)
+
     json = request.json
 
     business = DB_Company.objects(id=json['id']).first()
@@ -1247,5 +1248,12 @@ def api_vector_classify_article(news_id):
     #    { $text: { $search: "word" } },
     #    { score: { $meta: "textScore" } }
     #).sort({ score: { $meta: "textScore" } })
+
+    update = {'NER': validated}
+
+    if unvalid:
+        update['NER_unvalid'] = unvalid
+
+    article.update(**update)
 
     return get_response_formatted({'article': doc[:256], 'spacy': spa, 'result': ret})

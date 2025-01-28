@@ -258,7 +258,7 @@ def api_gif_get_from_request():
     if not gif:
         return {"error": "Failed to download the gif"}, 500
 
-    response = requests.get(gif)
+    response = requests.get(gif, timeout = 1)
     if response.status_code != 200:
         return {"error": "Failed to download the gif"}, 500
 

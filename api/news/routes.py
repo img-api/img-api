@@ -816,24 +816,29 @@ def api_vector_search_news(search_terms):
     return get_response_formatted({'result': ret})
 
 
-@blueprint.route('/test/tickers/<string:news_id>', methods=['GET', 'POST'])
-def api_test_news_tickers(news_id):
-    """ News get ID
-    ---
-    """
-    news = DB_News.objects(id=news_id).first()
-
-    if not news:
-        return get_response_error_formatted(404, {'error_msg': "News not found"})
-
+def fetch_NER_microservice(news):
     data = {
         'title': news.get_title(),
         'summary': news.get_ai_summary(),
     }
 
+
+def api_test_news_tickers_call(news_id):
+    """ News get ID
+    ---
+    """
+    news = DB_News.objects(id=news_id).first()
+    if not news:
+        return None
+
     ret = {}
 
     try:
+        data = {
+            'title': news.get_title(),
+            'summary': news.get_summary(),
+        }
+
         response = requests.post("http://manel.headingmars.com:8000/tickers", json=data)
         response.raise_for_status()
 
@@ -862,7 +867,26 @@ def api_test_news_tickers(news_id):
         ret['validated_tickers'] = res
         ret['unvalidated_tickers'] = res_unvalidated
 
+        update = {'NER': res}
+        if res_unvalidated:
+            update['NER_unvalid'] = res_unvalidated
+
+        news.update(**update)
+
     except Exception as e:
-        return get_response_error_formatted(500, {'error_msg': str(e), 'data': data})
+        print_exception(e, "CRASHED READING TICKERS")
+        return None
+
+    return ret
+
+
+@blueprint.route('/test/tickers/<string:news_id>', methods=['GET', 'POST'])
+def api_test_news_tickers(news_id):
+    """ News get ID
+    ---
+    """
+    ret = api_test_news_tickers_call(news_id)
+    if not ret:
+        return get_response_error_formatted(404, {'error_msg': "Problems fetching article"})
 
     return get_response_formatted(ret)
