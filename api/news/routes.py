@@ -81,8 +81,9 @@ def api_news_get_query_company_ticker_search(ticker):
     #print(str(ret))
 
     news = build_query_from_request(DB_News, global_api=True, extra_args=extra_args)
-    for article in news:
-        article.precalculate_cache()
+
+    #for article in news:
+    #    article.precalculate_cache()
 
     ret = {'news': news}
     return get_response_formatted(ret)
