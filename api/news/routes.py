@@ -510,6 +510,7 @@ def api_news_callback_ai_summary():
         try:
             news.update(**update, validate=False)
 
+            api_test_news_tickers_call(news)
             api_subscription_alert([news])
         except Exception as e:
             print_r("STOP")
@@ -816,27 +817,20 @@ def api_vector_search_news(search_terms):
     return get_response_formatted({'result': ret})
 
 
-def fetch_NER_microservice(news):
-    data = {
-        'title': news.get_title(),
-        'summary': news.get_ai_summary(),
-    }
-
-
-def api_test_news_tickers_call(news_id):
+def api_test_news_tickers_call(news):
     """ News get ID
     ---
     """
-    news = DB_News.objects(id=news_id).first()
-    if not news:
-        return None
 
     ret = {}
 
     try:
+        if not news.ai_summary:
+            return
+
         data = {
             'title': news.get_title(),
-            'summary': news.get_summary(),
+            'summary': news.get_ai_summary(),
         }
 
         response = requests.post("http://manel.headingmars.com:8000/tickers", json=data)
@@ -885,8 +879,29 @@ def api_test_news_tickers(news_id):
     """ News get ID
     ---
     """
-    ret = api_test_news_tickers_call(news_id)
-    if not ret:
+    news = DB_News.objects(id=news_id).first()
+    if not news:
         return get_response_error_formatted(404, {'error_msg': "Problems fetching article"})
 
+    ret = api_test_news_tickers_call(news)
+    if not ret:
+        return get_response_error_formatted(404, {'error_msg': "Problems processing article"})
+
     return get_response_formatted(ret)
+
+
+@blueprint.route('/NER', methods=['GET', 'POST'])
+def api_test_news_tickers_ners():
+    """ News get ID
+    ---
+    """
+    news = DB_News.objects(ai_summary__exists=1, NER__exists=0).limit(5)
+
+    ret = []
+    for article in news:
+        ret.append(api_test_news_tickers_call(article))
+
+    if not ret:
+        return get_response_error_formatted(404, {'error_msg': "Problems processing article"})
+
+    return get_response_formatted({ 'return': ret })
