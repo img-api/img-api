@@ -3,7 +3,8 @@ from datetime import datetime, timedelta
 
 import mistune
 import requests
-from api import (api_key_login_or_anonymous, cleanup_for_email,
+from api import (admin_login_required, api_key_login_or_anonymous,
+                 api_key_or_login_required, cleanup_for_email,
                  get_response_formatted, mail)
 from api.company.models import DB_Company
 from api.config import (get_api_AI_service, get_api_entry, get_config_sender,
@@ -21,6 +22,14 @@ from flask_login import AnonymousUserMixin, current_user
 from flask_mail import Mail, Message
 from mongoengine import *
 from mongoengine.errors import ValidationError
+
+
+@blueprint.route('/list', methods=['GET', 'POST'])
+@api_key_or_login_required
+@admin_login_required
+def api_return_all_emails():
+    ret = {"mail_list": DB_Email_Subscription.objects()}
+    return get_response_formatted(ret)
 
 
 @blueprint.route('/subscribe/<string:subscription_type>', methods=['GET', 'POST'])
