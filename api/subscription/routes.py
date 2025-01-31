@@ -3,7 +3,8 @@ from datetime import datetime, timedelta
 
 import mistune
 import requests
-from api import cleanup_for_email, get_response_formatted, mail
+from api import (api_key_login_or_anonymous, cleanup_for_email,
+                 get_response_formatted, mail)
 from api.company.models import DB_Company
 from api.config import (get_api_AI_service, get_api_entry, get_config_sender,
                         get_config_value, get_host_name, is_api_development)
@@ -12,7 +13,7 @@ from api.print_helper import *
 from api.prompts.models import DB_UserPrompt
 from api.query_helper import *
 from api.subscription import blueprint
-from api.subscription.models import DB_Subscription
+from api.subscription.models import DB_Email_Subscription, DB_Subscription
 from api.user.models import User
 from bson.objectid import ObjectId
 from flask import Flask, json, jsonify, redirect, request
@@ -20,6 +21,31 @@ from flask_login import AnonymousUserMixin, current_user
 from flask_mail import Mail, Message
 from mongoengine import *
 from mongoengine.errors import ValidationError
+
+
+@blueprint.route('/subscribe/<string:subscription_type>', methods=['GET', 'POST'])
+@api_key_login_or_anonymous
+def api_subscribe(subscription_type):
+    """ Subscribe to email delivery """
+
+    jrequest = request.json
+
+    email = DB_Email_Subscription.objects(email=jrequest['email']).first()
+    sub = {}
+    sub['is_subscribed_' + subscription_type] = True
+
+    if current_user.is_authenticated:
+        sub['username'] = current_user.username
+
+    if not email:
+        sub['email'] = jrequest['email']
+        subscription = DB_Email_Subscription(**jrequest)
+        subscription.save()
+    else:
+        subscription.update(**sub)
+
+    ret = {"email": [subscription]}
+    return get_response_formatted(ret)
 
 
 def generate_email_subject(email_data):

@@ -16,7 +16,6 @@ class DB_Subscription(db.DynamicDocument):
     }
 
     username = db.StringField()
-
     last_update_date = db.DateTimeField()
 
 
@@ -29,3 +28,17 @@ class DB_Subscription_alert(db.DynamicDocument):
     news_id = db.StringField()
 
     last_update_date = db.DateTimeField()
+
+
+class DB_Email_Subscription(db.DynamicDocument):
+    meta = {
+        'strict': False,
+    }
+
+    email = db.StringField()
+    username = db.StringField()
+
+    last_update_date = db.DateTimeField()
+    is_subscribed_marketing = db.BooleanField(default=True)
+    is_subscribed_email = db.BooleanField(default=True)
+    is_subscribed_newsletter = db.BooleanField(default=True)
