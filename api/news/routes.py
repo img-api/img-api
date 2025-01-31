@@ -844,7 +844,7 @@ def api_test_news_tickers_call(news):
         res = {}
         res_unvalidated = []
         if 'tickers' in json_response:
-            tlist = json_response['tickers'].split(",")
+            tlist = json_response['tickers']
             for t in tlist:
                 t = t.strip()
 
