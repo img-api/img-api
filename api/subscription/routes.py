@@ -24,12 +24,40 @@ from mongoengine import *
 from mongoengine.errors import ValidationError
 
 
-@blueprint.route('/list', methods=['GET', 'POST'])
+@blueprint.route('/email/list', methods=['GET', 'POST'])
 @api_key_or_login_required
 @admin_login_required
 def api_return_all_emails():
     ret = {"mail_list": DB_Email_Subscription.objects()}
     return get_response_formatted(ret)
+
+
+@blueprint.route('/email/clear', methods=['GET', 'POST'])
+@api_key_or_login_required
+@admin_login_required
+def api_delete_all_emails():
+
+    mydelete = DB_Email_Subscription.objects()
+    mydelete.delete()
+    ret = {"deleted": mydelete}
+    return get_response_formatted(ret)
+
+
+def report_email(email, subscription_type):
+    from api.user.routes import send_email_user
+
+    try:
+        mdate = str(datetime.now())[:16]
+        subject = subscription_type + " " + email + " " + get_host_name()
+        message = f"# NEW { subscription_type } \n"
+        message += "``` " + email + " ``` \n\n"
+        message += f"**{socket.gethostname()}**\n"
+        message += mdate
+        admin_user = User.objects(username="admin").first()
+        send_email_user(admin_user, message, subject, html=mistune.html(message))
+
+    except Exception as e:
+        print_exception(e, " CRASH SENDING EMAIL ")
 
 
 @blueprint.route('/subscribe/<string:subscription_type>', methods=['GET', 'POST'])
@@ -39,19 +67,51 @@ def api_subscribe(subscription_type):
 
     jrequest = request.json
 
-    email = DB_Email_Subscription.objects(email=jrequest['email']).first()
+    subscription = DB_Email_Subscription.objects(email=jrequest['email']).first()
     sub = {}
     sub['is_subscribed_' + subscription_type] = True
 
     if current_user.is_authenticated:
         sub['username'] = current_user.username
 
-    if not email:
+    if not subscription:
         sub['email'] = jrequest['email']
         subscription = DB_Email_Subscription(**jrequest)
         subscription.save()
+
+        res = report_email(sub['email'], subscription_type)
+
     else:
         subscription.update(**sub)
+
+    ret = {"email": [subscription]}
+    return get_response_formatted(ret)
+
+
+@blueprint.route('/unsubscribe/<string:subscription_type>', methods=['GET', 'POST'])
+@api_key_login_or_anonymous
+def api_unsubscribe(subscription_type):
+    """ Subscribe to email delivery """
+
+    if request.is_json:
+        jrequest = request.json
+        subscription = DB_Email_Subscription.objects(email=jrequest['email']).first()
+        if current_user.is_authenticated:
+            sub['username'] = current_user.username
+
+    else:
+        if not current_user.is_authenticated:
+            return get_response_formatted(ret)
+
+        subscription = DB_Email_Subscription.objects(username=current_user.username).first()
+
+    if not subscription:
+        return get_response_formatted(ret)
+
+    sub = {}
+    sub['is_subscribed_' + subscription_type] = False
+    subscription.update(**sub)
+    subscription.reload()
 
     ret = {"email": [subscription]}
     return get_response_formatted(ret)

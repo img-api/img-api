@@ -39,6 +39,8 @@ class DB_Email_Subscription(db.DynamicDocument):
     username = db.StringField()
 
     last_update_date = db.DateTimeField()
+    is_validated = db.BooleanField(default=False)
+
     is_subscribed_marketing = db.BooleanField(default=True)
     is_subscribed_email = db.BooleanField(default=True)
     is_subscribed_newsletter = db.BooleanField(default=True)
