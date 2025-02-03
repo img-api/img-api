@@ -246,7 +246,7 @@ def api_gif_process_queue():
 
 
 @blueprint.route('/gif', methods=['GET', 'POST'])
-@api_file_cache(expiration_secs=86400, data_type="mp4")
+#@api_file_cache(expiration_secs=86400, data_type="mp4")
 def api_gif_get_from_request():
     """ """
     from .sentiment import get_gif_for_sentiment
