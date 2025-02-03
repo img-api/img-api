@@ -92,15 +92,15 @@ def ticker_process_news_sites(BATCH_SIZE=5):
         query = Q(status='WAITING_INDEX')
         news = DB_News.objects(query)[:BATCH_SIZE]
 
-    if news.count() == 0:
-        print_r(" PROCESSING INDEXED NEWS THAT FAILED FOR SOME REASON ")
-        query = Q(status='INDEXED') & Q(ai_summary=None)
-        news = DB_News.objects(query)[:BATCH_SIZE]
+    #if news.count() == 0:
+    #    print_r(" PROCESSING INDEXED NEWS THAT FAILED FOR SOME REASON 1 ")
+    #    query = Q(status='INDEXED') & Q(ai_summary=None)
+    #    news = DB_News.objects(query)[:BATCH_SIZE]
 
-    if news.count() == 0:
-        print_r(" PROCESSING INDEXED NEWS THAT FAILED FOR SOME REASON ")
-        query = Q(ai_summary=None)
-        news = DB_News.objects(query)[:BATCH_SIZE * 10]
+    #if news.count() == 0:
+    #    print_r(" PROCESSING INDEXED NEWS THAT FAILED FOR SOME REASON 2 ")
+    #    query = Q(ai_summary=None)
+    #    news = DB_News.objects(query)[:BATCH_SIZE * 10]
 
     for item in news:
         try:
@@ -180,6 +180,7 @@ def ticker_process_batch(end=None, dry_run=False, BATCH_SIZE=10):
             yticker_pipeline_process(db_ticker, dry_run=dry_run)
         except Exception as e:
             print_exception(e, "CRASHED PROCESSING BATCH")
+            db_ticker.delete()
 
     #kill_chrome()
     return tickers

@@ -126,6 +126,13 @@ def api_batch_process():
 
 
 @blueprint.route('/index/batch/process_news', methods=['GET', 'POST'])
+def api_empty():
+    client_ip = request.remote_addr
+    print(str(client_ip))
+    return get_response_formatted({})
+
+
+@blueprint.route('/index/process_news', methods=['GET', 'POST'])
 #@api_key_or_login_required
 def api_batch_news_process():
     """

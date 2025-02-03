@@ -110,6 +110,11 @@ class DB_Ticker(db.DynamicDocument):
     def query_exchange_ticker(full_symbol):
         from api.ticker.tickers_helpers import standardize_ticker_format
 
+        if full_symbol.endswith(":"):
+            p = full_symbol.split(":")
+            query = Q(ticker=p[0])
+            return query
+
         if ":" not in full_symbol:
             full_symbol = standardize_ticker_format(full_symbol)
 
@@ -129,12 +134,15 @@ class DB_Ticker(db.DynamicDocument):
         full_symbol = standardize_ticker_format(old_symbol)
 
         if full_symbol != old_symbol:
-            exchange, stock = full_symbol.split(':')
-            update = {
-                'exchange': exchange,
-                'ticker': stock,
-            }
-            self.update(**update)
+            try:
+                exchange, stock = full_symbol.split(':')
+                update = {
+                    'exchange': exchange,
+                    'ticker': stock,
+                }
+                self.update(**update)
+            except Exception as e:
+                print(" FAILED SPLITTING " + full_symbol)
 
         return full_symbol
 

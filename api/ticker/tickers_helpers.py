@@ -210,6 +210,7 @@ suffix_to_exchange = {
     '.L': 'LON',  # London Stock Exchange
     '.HK': 'HKG',  # Hong Kong Stock Exchange
     '.NS': 'NSI',  #
+    '.DE': 'GER', # Germany
     '.TO': 'TOR', #
     '.SR': 'SAU', # Saudi Arabaia
     '.L': 'LSE',
@@ -406,6 +407,11 @@ def standardize_exchange_format(exchange: str) -> str:
 
 def standardize_ticker_format(ticker: str) -> str:
 
+    # Case 1: Handle "EXCHANGE:TICKER" format
+    if ticker.endswith(":"):
+        # Hack
+        return ticker.split(":")[0]
+
     # Remove extension to symbol like NYSE:KREF^A
     if "^" in ticker:
         ticker, end = ticker.split('^')
@@ -468,6 +474,10 @@ def ticker_exchanges_cleanup_dups(exchange_tickers):
 def standardize_ticker_format_to_yfinance(ticker: str) -> str:
 
     # Case 1: Handle "EXCHANGE:TICKER" format
+    if ticker.endswith(":"):
+        # Hack
+        return ticker.split(":")[0]
+
     if ':' in ticker:
         exchange, stock = ticker.split(':')
 
@@ -489,7 +499,7 @@ def standardize_ticker_format_to_yfinance(ticker: str) -> str:
     # Case 3: Handle "TICKER" format with no exchange (assume NASDAQ or other default logic)
     else:
         # Here we assume a default exchange if none is provided, let's assume National Market System
-        return f"NMS:{ticker}"
+        return f"{ticker}"
 
 
 # Test cases

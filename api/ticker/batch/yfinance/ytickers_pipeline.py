@@ -70,7 +70,7 @@ def ticker_update_financials(full_symbol, max_age_minutes=15, force=False):
 
     fin = DB_TickerSimple.objects(exchange_ticker=full_symbol).first()
 
-    if not force and fin and fin.age_minutes() < max_age_minutes:
+    if not force and fin and fin.bid != None and fin.age_minutes() < max_age_minutes:
         fin['age_min'] = fin.age_minutes()
         return fin
 
@@ -259,7 +259,7 @@ def yticker_check_tickers(relatedTickers, item=None):
         result = []
         for local_ticker in relatedTickers:
 
-            if '.' in local_ticker:
+            if '.' in local_ticker or local_ticker.endswith(":"):
                 print(" DEBUG ")
 
             query = DB_Ticker.query_exchange_ticker(local_ticker)
@@ -273,10 +273,14 @@ def yticker_check_tickers(relatedTickers, item=None):
             if not yf_obj:
                 continue
 
-            info = yf_obj.info
-            if not info:
-                print_r(" NO Info fould for ticker? ")
-                return
+            try:
+                info = yf_obj.info
+                if not info:
+                    print_r(" NO Info fould for ticker? ")
+                    return
+            except Exception as e:
+                print_exception(e, "CRASH")
+                continue
 
             if 'symbol' not in info:
                 print_r(" No ticker? ")
@@ -451,10 +455,7 @@ def yticker_process_yahoo_news_article(item, info, ticker=None):
 
             myupdate.update(extras)
 
-            thumbs = {
-                'thumbnail': item['thumbnail']['originalUrl'],
-                'thumbnail_caption': item['thumbnail']['caption']
-            }
+            thumbs = {'thumbnail': item['thumbnail']['originalUrl'], 'thumbnail_caption': item['thumbnail']['caption']}
 
             myupdate.update(thumbs)
         except Exception as e:

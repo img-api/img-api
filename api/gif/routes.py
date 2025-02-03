@@ -11,7 +11,7 @@ from api.media.models import File_Tracking
 from api.print_helper import *
 from api.query_helper import build_query_from_request
 from api.tools import ensure_dir, generate_file_md5
-from flask import request, send_file
+from flask import redirect, request, send_file
 
 
 @blueprint.route('/query', methods=['GET', 'POST'])
@@ -28,16 +28,16 @@ def api_gif_get_query():
     return get_response_formatted(ret)
 
 
-@blueprint.route('/match', methods=['GET', 'POST'])
-def api_gif_get_query_match_best():
-    keywords = request.args.get("keywords", "sad")
-    keywords = keywords.replace(" ", ",")
-    tags_to_match = keywords.split(",")
+def build_GIF_pipeline(keywords):
+    if isinstance(keywords, str):
+        keywords = keywords.replace(", ", ",") # Replace case keyword, test
+        keywords = keywords.replace(" ", ",")  # Convert each word in a different entry
+        keywords = keywords.split(",")         # Array
 
-    pipeline = [{
+    match_pipeline = [{
         "$match": {
             "tags": {
-                "$in": tags_to_match
+                "$in": keywords
             }
         }
     }, {
@@ -51,7 +51,7 @@ def api_gif_get_query_match_best():
                         "input": "$tags",
                         "as": "tag",
                         "cond": {
-                            "$in": ["$$tag", tags_to_match]
+                            "$in": ["$$tag", keywords]
                         }
                     }
                 }
@@ -63,14 +63,22 @@ def api_gif_get_query_match_best():
         }
     }]
 
+    res = File_Tracking.objects.aggregate(match_pipeline)
+    return res
+
+
+@blueprint.route('/match', methods=['GET', 'POST'])
+def api_gif_get_query_match_best():
+    keywords = request.args.get("keywords", "sad")
     result = []
-    res = File_Tracking.objects.aggregate(pipeline)
+    res = build_GIF_pipeline(keywords)
+
     for r in res:
         result.append({'id': str(r['_id']), 'tags': list(r['tags']), 'match_count': r['match_count']})
 
     # Return Redirect to URL -  http://domain/api/media/get/674cbbd8b5301d1a588aaceb
 
-    return get_response_formatted({'gifs': [result]})
+    return get_response_formatted({'gifs': result})
 
 
 def api_internal_gif_upload(f_request, media_info, file_name, file_extension, file_type="video", gif_username="GIF"):
@@ -245,6 +253,13 @@ def api_gif_get_from_request():
 
     keywords = request.args.get("keywords", "SAD")
 
+    source = request.args.get("source", None)
+
+    if not source:
+        res = build_GIF_pipeline(keywords)
+        for gif in res:
+            return redirect("/api/media/get/" + str(gif['_id']))
+
     raw_data, gif, format = get_gif_for_sentiment(keywords)
 
     api_capture_tenor_data(raw_data)
@@ -258,10 +273,18 @@ def api_gif_get_from_request():
     if not gif:
         return {"error": "Failed to download the gif"}, 500
 
-    response = requests.get(gif, timeout = 1)
+    response = requests.get(gif, timeout=1)
     if response.status_code != 200:
         return {"error": "Failed to download the gif"}, 500
 
     # Create a temporary file to store the gif data
     gif_data = BytesIO(response.content)
-    return gif_data #send_file(gif_data, mimetype='video/mp4', as_attachment=False, download_name='sentiment.mp4')
+    return gif_data  #send_file(gif_data, mimetype='video/mp4', as_attachment=False, download_name='sentiment.mp4')
+
+
+@blueprint.route('/search', methods=['GET', 'POST'])
+def api_gif_search_from_request():
+    """ """
+    keywords = request.args.get("keywords", "SAD")
+
+    return keywords

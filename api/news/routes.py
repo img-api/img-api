@@ -15,7 +15,7 @@ from api.print_helper import *
 from api.query_helper import (build_query_from_request, is_mongo_id,
                               validate_and_convert_dates)
 from api.subscription.routes import api_subscription_alert
-from flask import request
+from flask import abort, request
 from flask_login import current_user
 
 
@@ -870,7 +870,7 @@ def api_test_news_tickers_call(news):
 
     except Exception as e:
         print_exception(e, "CRASHED READING TICKERS")
-        return None
+        return abort(500, { 'crash': str(e), 'data': data} )
 
     return ret
 
