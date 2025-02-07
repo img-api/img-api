@@ -811,3 +811,9 @@ def api_index_new_ticker(symbol):
             yticker_pipeline_company_process(c)
 
     return get_response_formatted({"index": ret})
+
+
+@blueprint.route('/forceindex', methods=['GET', 'POST'])
+def api_forceindex():
+    DB_TickerHistoryTS.create_index([('exchange_ticker', 1), ('creation_date', -1)])
+    return get_response_formatted({"index": "DONE"})

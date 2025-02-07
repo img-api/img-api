@@ -410,7 +410,7 @@ def yticker_process_yahoo_news_article(item, info, ticker=None):
                 db_news.update(**{'source_title': item['title']})
 
             api_create_article_ai_summary(db_news)
-            if 'raw_tickers' not in db_news and 'relatedTickers' in item:
+            if 'relatedTickers' in item:
                 db_news.update(**{'raw_tickers': item['relatedTickers']})
 
             return
