@@ -7,8 +7,7 @@ export LANG=C.UTF-8
 
 . .venv/bin/activate  # Activate virtual environment
 
-gunicorn --workers 32 --threads 1 \
-  --user imgapi --group imgapi \
+gunicorn --workers 4 --threads 8 \
   --bind 0.0.0.0:8001 \
   --chdir "$(pwd)" \
   --pythonpath "$(pwd)/.venv/lib/python3.11/site-packages" \
