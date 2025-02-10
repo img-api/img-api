@@ -85,4 +85,4 @@ chromadb==0.6.3
 sentence_transformers
 spacy
 
-
+imapclient
