@@ -192,11 +192,15 @@ def ticker_process_invalidate_full_symbol(full_symbol):
     exchange, ticker = split_full_symbol(full_symbol)
 
     query = Q(ticker=ticker) & Q(exchange=exchange)
-    tickers = DB_Ticker.objects(query)
+    tickers = DB_Ticker.objects(query).limit(2)
+
+    count = 0
     for db_ticker in tickers:
-        db_ticker.set_state("PIPELINE_START")
+        print_b(f" {count} :: { db_ticker.exchange }:{ db_ticker.ticker }")
+        count += 1
 
         try:
+            db_ticker.set_state("PIPELINE_START")
             yticker_pipeline_process(db_ticker)
         except Exception as e:
             print_exception(e, "CRASHED PROCESSING BATCH")

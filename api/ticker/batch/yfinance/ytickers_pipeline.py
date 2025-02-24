@@ -558,7 +558,7 @@ def yticker_pipeline_process(db_ticker, dry_run=False):
         Our fetching pipeline will call different status
     """
 
-    #print_b("PROCESSING: " + db_ticker.full_symbol())
+    print_b("PROCESSING: " + db_ticker.full_symbol())
 
     yticker = standardize_ticker_format_to_yfinance(db_ticker.full_symbol())
 

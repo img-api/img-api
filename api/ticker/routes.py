@@ -148,6 +148,7 @@ def api_batch_news_process():
 def api_update_ticker(full_symbol):
     """ We invalidate a ticker so we load everything.
     """
+    from api.ticker.batch.workflow import ticker_process_invalidate_full_symbol
     from flask_login import current_user
 
     from .tickers_helpers import extract_ticker_from_symbol
@@ -158,6 +159,7 @@ def api_update_ticker(full_symbol):
     ticker = extract_ticker_from_symbol(full_symbol)
 
     processed = ticker_process_invalidate(ticker)
+    ticker_process_invalidate_full_symbol(full_symbol)
     return get_response_formatted({'processed': processed})
 
 
@@ -817,3 +819,49 @@ def api_index_new_ticker(symbol):
 def api_forceindex():
     DB_TickerHistoryTS.create_index([('exchange_ticker', 1), ('creation_date', -1)])
     return get_response_formatted({"index": "DONE"})
+
+
+
+@blueprint.route('/cleanup', methods=['GET', 'POST'])
+def api_force_cleanup_duplicates():
+
+    tickers = DB_Ticker.objects()
+
+    dups = {}
+
+    count = 0
+    for t in tickers:
+        if not t.ticker:
+            t.delete()
+            continue
+
+        f = t.full_symbol()
+        #print_b(f" PROCESS { f }")
+        if f not in dups:
+            dups[f] = [t]
+            count += 1
+        else:
+            dups[f].append(t)
+
+    deleted = 0
+    for key, lst in dups.items():
+        if len(lst) == 1:
+            continue
+
+        #print_r(f" DEDUPE { key }")
+        candidate = None
+        for i in lst:
+            if candidate or not i.get_company():
+                i.delete()
+                deleted += 1
+                continue
+
+            candidate = i
+
+    return get_response_formatted({"deleted": deleted, 'tickers': count})
+
+
+
+
+
+

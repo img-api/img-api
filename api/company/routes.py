@@ -1051,7 +1051,7 @@ def api_sitemap_tickers():
             company_name = urllib.parse.quote_plus(company.company_name + " " + symbol)
 
         for et in company.exchange_tickers:
-            xml_content += f"<url><loc>https://headingtomars.com/ticker/{ et }#{ company_name }</loc></url>"
+            xml_content += f"<url><loc>https://headingtomars.com/ticker/{ et }#{ company_name }</loc><changefreq>weekly</changefreq></url>"
 
     xml_content += "</urlset>"
 
