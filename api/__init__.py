@@ -16,7 +16,7 @@ from api.user.models import User, user_loader
 from .api_redis import init_redis
 from .print_helper import *
 
-API_VERSION = "0.54pa"
+API_VERSION = "0.55pa"
 
 cache = Cache(config={'CACHE_TYPE': 'SimpleCache'})
 api_ignore_list = ['tracking']

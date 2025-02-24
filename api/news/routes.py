@@ -746,7 +746,7 @@ def api_news_group_for_sitemap(xml_content, my_group, path):
 
         id_ = article['_id'].replace(" ", "_").replace("*", "")
         encoded = urllib.parse.quote_plus(id_)
-        xml_content.append(f"<url><loc>https://headingtomars.com/{ path }/{ encoded }</loc></url>")
+        xml_content.append(f"<url><loc>https://headingtomars.com/{ path }/{ encoded }</loc><changefreq>daily</changefreq></url>")
 
     return xml_content
 

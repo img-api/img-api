@@ -44,3 +44,6 @@ class DB_Email_Subscription(db.DynamicDocument):
     is_subscribed_marketing = db.BooleanField(default=True)
     is_subscribed_email = db.BooleanField(default=True)
     is_subscribed_newsletter = db.BooleanField(default=True)
+
+    is_subscribed_CFN_newsletter = db.BooleanField(default=False)
+    is_subscribed_CFN_merch = db.BooleanField(default=False)
