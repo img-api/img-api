@@ -4,46 +4,114 @@
 #   infra/deploy.sh [branch]        (default: main, for both repos)
 #
 # One-time setup first: infra/PROD_MIGRATION.md
-# Each step stops the deploy on failure; the live site only changes at the
-# "switch" steps, and the script prints how to roll back.
+#
+# Safety: nothing here touches media files or the database. If any step fails,
+# the script rolls back whatever it already changed (code, venv, frontend) and
+# says so. The live site only changes at the two "Switch" steps.
 set -euo pipefail
 
 BRANCH="${1:-main}"
-PROD=/home/imgapi/img-api
-RELEASE=/home/imgapi/img-api-react-release/build
-UI_REPO=/home/smartinez/img-api-react
+# Overridable only so the script can be rehearsed in a sandbox (see infra/test_deploy.sh)
+PROD=${DEPLOY_PROD:-/home/imgapi/img-api}
+RELEASE=${DEPLOY_RELEASE:-/home/imgapi/img-api-react-release/build}
+UI_REPO=${DEPLOY_UI_REPO:-/home/smartinez/img-api-react}
+UI_REF=${DEPLOY_UI_REF:-origin/$BRANCH}
 NODE_BIN=/home/smartinez/.nvm/versions/node/v22.23.4/bin
 SERVICE=img-api
-PORT=47120
-SITE=https://img-api.com
+PORT=${DEPLOY_PORT:-47120}
+SITE=${DEPLOY_SITE:-https://img-api.com}
+SUDO=${DEPLOY_SUDO-sudo}
+SYSTEMCTL=${DEPLOY_SYSTEMCTL-sudo systemctl}
+OWNER=${DEPLOY_OWNER-imgapi:imgapi}
+SMOKE="$(dirname "$(realpath "$0")")/smoke.sh"
 STAMP=$(date +%Y%m%d-%H%M%S)
+KEEP_VENVS=3
+KEEP_UI_BACKUPS=5
 
-AS_IMGAPI="sudo -u imgapi -H"
+AS_IMGAPI=${DEPLOY_AS-sudo -u imgapi -H}
 GIT="$AS_IMGAPI git -C $PROD"
 
-say()  { printf '\n== %s\n' "$*"; }
-fail() { printf '\nDEPLOY STOPPED: %s\n' "$*" >&2; exit 1; }
+say() { printf '\n== %s\n' "$*"; }
+set_owner() {  # flag path
+    [ -z "$OWNER" ] && return 0
+    $SUDO chown "$1" "$OWNER" "$2"
+}
 
-# --- Preflight ---------------------------------------------------------------
+# --- Rollback ------------------------------------------------------------------
+# Each stage records what it changed; on any failure we undo it in reverse.
+CODE_CHANGED=0
+VENV=""
+API_SWITCHED=0
+UI_SWITCHED=0
+UI_BACKUP=""
+BUILD_DIR=""
+DONE=0
+
+restore_code() {
+    if [ -n "$PREV_BRANCH" ]; then
+        $GIT checkout -q "$PREV_BRANCH" && $GIT reset -q --keep "$PREV_SHA"
+    else
+        $GIT checkout -q "$PREV_SHA"
+    fi
+}
+
+on_exit() {
+    local status=$?
+    [ -n "$BUILD_DIR" ] && git -C "$UI_REPO" worktree remove --force "$BUILD_DIR" 2>/dev/null || true
+    if [ "$DONE" = 1 ]; then return; fi
+    if [ "$CODE_CHANGED" = 0 ]; then echo "Nothing was changed." >&2; return; fi
+    set +e
+    printf '\nDEPLOY FAILED (exit %s). Rolling back:\n' "$status" >&2
+    if [ "$UI_SWITCHED" = 1 ]; then
+        $SUDO rsync -a --delete "$UI_BACKUP/" "$RELEASE/" && echo "  frontend restored from $UI_BACKUP" >&2
+    fi
+    if [ "$API_SWITCHED" = 1 ]; then
+        if [ -n "$PREV_VENV" ]; then
+            $SUDO ln -sfn "$PREV_VENV" "$PROD/.venv-current" && set_owner -h "$PROD/.venv-current"
+        else
+            $SUDO rm -f "$PROD/.venv-current"   # first deploy: there was no previous venv
+        fi
+    fi
+    if [ "$CODE_CHANGED" = 1 ]; then
+        restore_code && echo "  code restored to $PREV_SHA" >&2
+    fi
+    if [ "$API_SWITCHED" = 1 ]; then
+        if [ -n "$PREV_VENV" ]; then
+            $SYSTEMCTL restart "$SERVICE" && echo "  API restarted on $PREV_VENV" >&2
+        else
+            $SYSTEMCTL stop "$SERVICE" && echo "  first deploy: gunicorn stopped (Apache/mod_wsgi untouched)" >&2
+        fi
+    fi
+    if [ -n "$VENV" ] && [ "$(readlink -f "$PROD/.venv-current" 2>/dev/null)" != "$VENV" ]; then
+        $SUDO rm -rf "$VENV" && echo "  removed unused venv $VENV" >&2
+    fi
+    echo "  Nothing in media files or the database was touched." >&2
+}
+trap on_exit EXIT
+
+# --- Preflight -------------------------------------------------------------------
 say "Preflight"
-systemctl cat "$SERVICE" >/dev/null 2>&1 || fail "systemd unit '$SERVICE' is not installed. See infra/PROD_MIGRATION.md step 1."
+$SYSTEMCTL cat "$SERVICE" >/dev/null 2>&1 || { echo "systemd unit '$SERVICE' is not installed. See infra/PROD_MIGRATION.md step 1." >&2; exit 1; }
 
 if [ -n "$($GIT status --porcelain --untracked-files=no)" ]; then
     $GIT status --short --untracked-files=no | head -20 >&2
-    fail "prod git in $PROD has uncommitted changes (above). Commit them to the repo or stash them on prod first (PROD_MIGRATION.md step 0). Nothing was changed."
+    echo "prod git in $PROD has uncommitted changes (above). Stash them first (PROD_MIGRATION.md step 0). Nothing was changed." >&2
+    exit 1
 fi
 
 PREV_SHA=$($GIT rev-parse HEAD)
+PREV_BRANCH=$($GIT symbolic-ref -q --short HEAD || true)
 PREV_VENV=$(readlink -f "$PROD/.venv-current" 2>/dev/null || true)
 
-# --- Backend code ----------------------------------------------------------------
+# --- Backend code --------------------------------------------------------------------
 say "Backend: fast-forward $PROD to origin/$BRANCH"
 $GIT fetch -q origin
+CODE_CHANGED=1
 $GIT checkout -q "$BRANCH"
-$GIT merge -q --ff-only "origin/$BRANCH" || fail "origin/$BRANCH is not a fast-forward of prod's $BRANCH."
+$GIT merge -q --ff-only "origin/$BRANCH"
 NEW_SHA=$($GIT rev-parse --short HEAD)
 
-# --- Backend venv + tests (live site untouched) --------------------------------
+# --- Backend venv + tests (live site untouched) ----------------------------------
 VENV="$PROD/.venv-$STAMP-$NEW_SHA"
 say "Backend: new venv $VENV"
 $AS_IMGAPI python3.11 -m venv "$VENV"
@@ -51,70 +119,66 @@ $AS_IMGAPI "$VENV/bin/pip" install -q --upgrade pip
 $AS_IMGAPI "$VENV/bin/pip" install -q -r "$PROD/requirements.txt"
 
 say "Backend: tests (throwaway database imgapi_pytest)"
-(cd "$PROD" && $AS_IMGAPI "$VENV/bin/python" -m pytest -q -p no:cacheprovider) || {
-    $GIT checkout -q "$PREV_SHA"
-    fail "tests failed; prod code reset to $PREV_SHA, live API untouched."
-}
+(cd "$PROD" && $AS_IMGAPI "$VENV/bin/python" -m pytest -q -p no:cacheprovider)
 
-# --- Frontend build (live site untouched) ---------------------------------------
+# --- Frontend build (live site untouched) -----------------------------------------
 BUILD_DIR=$(mktemp -d /tmp/img-api-ui-XXXXXX)
-say "Frontend: build origin/$BRANCH in $BUILD_DIR"
-git -C "$UI_REPO" fetch -q origin
-git -C "$UI_REPO" worktree add -q --detach "$BUILD_DIR" "origin/$BRANCH"
-trap 'git -C "$UI_REPO" worktree remove --force "$BUILD_DIR" 2>/dev/null || true' EXIT
+say "Frontend: build $UI_REF in $BUILD_DIR"
+[ "${DEPLOY_UI_FETCH:-1}" = 1 ] && git -C "$UI_REPO" fetch -q origin
+git -C "$UI_REPO" worktree add -q --detach --force "$BUILD_DIR" "$UI_REF"
 (
     cd "$BUILD_DIR"
     export PATH="$NODE_BIN:$PATH"
     npm ci --silent
     npx vite build
 )
-[ -f "$BUILD_DIR/build/index.html" ] || fail "frontend build produced no build/index.html"
+[ -f "$BUILD_DIR/build/index.html" ] || { echo "frontend build produced no build/index.html" >&2; exit 1; }
 
-# --- Switch: API -----------------------------------------------------------------
+# --- Switch: API -------------------------------------------------------------------
 say "Switch API to $VENV"
-sudo ln -sfn "$VENV" "$PROD/.venv-current"
-sudo chown -h imgapi:imgapi "$PROD/.venv-current"
-sudo systemctl restart "$SERVICE"
+API_SWITCHED=1
+$SUDO ln -sfn "$VENV" "$PROD/.venv-current"
+set_owner -h "$PROD/.venv-current"
+$SYSTEMCTL restart "$SERVICE"
 for _ in $(seq 1 30); do
     curl -sf -o /dev/null "http://127.0.0.1:$PORT/api/hello_world/" && break
     sleep 1
 done
-curl -sf -o /dev/null "http://127.0.0.1:$PORT/api/hello_world/" || fail "API did not come up on :$PORT. Roll back: see below."
+say "Smoke test gunicorn directly (127.0.0.1:$PORT)"
+"$SMOKE" "http://127.0.0.1:$PORT" --api
 
-# --- Switch: frontend ------------------------------------------------------------
-say "Switch frontend (backup: $RELEASE.prev-$STAMP)"
-sudo cp -a "$RELEASE" "$RELEASE.prev-$STAMP"
-sudo rsync -a --delete "$BUILD_DIR/build/" "$RELEASE/"
-sudo chown -R imgapi:imgapi "$RELEASE"
+# --- Switch: frontend --------------------------------------------------------------
+UI_BACKUP="$RELEASE.prev-$STAMP"
+say "Switch frontend (backup: $UI_BACKUP)"
+$SUDO cp -a "$RELEASE" "$UI_BACKUP"
+UI_SWITCHED=1
+$SUDO rsync -a --delete "$BUILD_DIR/build/" "$RELEASE/"
+set_owner -R "$RELEASE"
 
-# --- Smoke test the public site --------------------------------------------------
+# --- Smoke test the public site ----------------------------------------------------
 say "Smoke test $SITE"
-check() {  # url expected_status [grep]
-    local code
-    code=$(curl -s -o /tmp/img-api-smoke.$$ -w '%{http_code}' "$SITE$1")
-    if [ "$code" != "$2" ] || { [ -n "${3:-}" ] && ! grep -q "$3" /tmp/img-api-smoke.$$; }; then
-        echo "  FAIL $1 -> $code (expected $2${3:+ and '$3'})"; return 1
-    fi
-    echo "  ok   $1 -> $code"
-}
-ok=1
-check /api/hello_world/ 200 '"hello world"' || ok=0
-check /api/user/get/me 401 || ok=0
-check /api/media/category/NEW 200 '"success"' || ok=0
-check /api/galleries/public/get 200 '"success"' || ok=0
-check / 200 'id="root"' || ok=0
-rm -f /tmp/img-api-smoke.$$
+"$SMOKE" "$SITE"
 
-# Keep the 3 newest venvs
-ls -dt "$PROD"/.venv-2* 2>/dev/null | tail -n +4 | xargs -r sudo rm -rf
+DONE=1
+
+# --- Housekeeping (never removes the live or the previous venv / frontend) ----------
+LIVE_VENV=$(readlink -f "$PROD/.venv-current")
+prune() {  # keep pattern protected...: delete all but the newest <keep>, never the protected paths
+    local keep=$1 pattern=$2; shift 2
+    local path
+    for path in $(ls -dt $pattern 2>/dev/null | tail -n +$((keep + 1))); do
+        case " $* " in *" $path "*) continue ;; esac
+        $SUDO rm -rf "$path"
+    done
+}
+prune "$KEEP_VENVS" "$PROD/.venv-2*" "$LIVE_VENV" "${PREV_VENV:-}"
+prune "$KEEP_UI_BACKUPS" "$RELEASE.prev-*" "$UI_BACKUP"
 
 cat <<EOF
 
-Roll back if needed:
-  sudo -u imgapi git -C $PROD checkout $PREV_SHA
-  ${PREV_VENV:+sudo ln -sfn $PREV_VENV $PROD/.venv-current && }sudo systemctl restart $SERVICE
-  sudo rsync -a --delete $RELEASE.prev-$STAMP/ $RELEASE/
+Deployed $NEW_SHA ($BRANCH).
+Roll back by hand if something shows up later:
+  sudo -u imgapi git -C $PROD checkout ${PREV_BRANCH:-$PREV_SHA}${PREV_BRANCH:+ && sudo -u imgapi git -C $PROD reset --keep $PREV_SHA}
+  ${PREV_VENV:+$SUDO ln -sfn $PREV_VENV $PROD/.venv-current && }$SYSTEMCTL restart $SERVICE
+  $SUDO rsync -a --delete $UI_BACKUP/ $RELEASE/
 EOF
-
-[ "$ok" = 1 ] || fail "smoke test failed (see above)."
-say "Deployed $NEW_SHA ($BRANCH)"

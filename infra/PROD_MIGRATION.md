@@ -26,7 +26,10 @@ that brings the files back to roughly origin/main. Its files match the repo
     sudo systemctl daemon-reload
     sudo systemctl enable img-api
 
-Then run the first deploy: `infra/deploy.sh main`. It creates the venv,
+Rehearse the deploy script first (sandbox, never touches prod):
+`infra/test_deploy.sh`. Then run the first deploy: `infra/deploy.sh main`.
+If any step fails, the script rolls back what it changed (code, venv, frontend)
+by itself and says so; it never touches media files or the database. It creates the venv,
 starts gunicorn on 127.0.0.1:47120 and updates the frontend. Apache still
 serves the API through mod_wsgi until step 2, which now loads the new code
 from the old Python 3.10 venv the next time Apache restarts its processes.
@@ -47,18 +50,25 @@ In both `/etc/apache2/sites-enabled/024-imgapi.conf` and
 
 with:
 
-    ProxyPass        /api http://127.0.0.1:47120/api
-    ProxyPassReverse /api http://127.0.0.1:47120/api
+    ProxyPass        /api/ http://127.0.0.1:47120/api/
+    ProxyPassReverse /api/ http://127.0.0.1:47120/api/
     # Password-reset links use request.scheme; gunicorn trusts this from 127.0.0.1
     RequestHeader set X-Forwarded-Proto "https"
 
-(use "http" in the port-80 vhost). Keep `ProxyPreserveHost On`, the
+(use "http" in the port-80 vhost). Keep the trailing slashes: without them
+`/api` also matches `/api_v1/...`, which the vhost sends elsewhere. Keep `ProxyPreserveHost On`, the
 `DocumentRoot` and the `Alias /static/MEDIA_FILES` block as they are: Apache
 keeps serving the frontend and the media files directly.
 
 Remove the inactive `024-imgapi*.conf.pre2204` copies while there.
 
+Check gunicorn on its own first, then switch and check the public site:
+
+    infra/smoke.sh http://127.0.0.1:47120 --api
     sudo apache2ctl configtest && sudo systemctl reload apache2
+    infra/smoke.sh https://img-api.com
+
+If the second smoke test fails, roll back (below) straight away.
 
 Rollback: put the WSGI block back and reload. The old `.venv310` stays
 untouched until you delete it.
