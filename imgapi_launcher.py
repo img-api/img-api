@@ -28,6 +28,10 @@ if os.path.exists(config_path):
 else:
     print("Config file not found")
 
+# Tests (and one-off tools) can point at another database without a config file
+if os.environ.get('IMGAPI_MONGODB_HOST'):
+    app.config['MONGODB_SETTINGS'] = {'host': os.environ['IMGAPI_MONGODB_HOST']}
+
 # The secret key comes from the config file (or IMGAPI_SECRET_KEY).
 # The fallback is only good for local development.
 if os.environ.get('IMGAPI_SECRET_KEY'):
