@@ -52,3 +52,18 @@ def test_next_prev_uses_owner_stream(client, viewer):
     finally:
         for m in (first, second):
             client.get("/api/media/remove/" + m)
+
+
+@pytest.mark.skipif(subprocess.run(["which", "ffmpeg"], capture_output=True).returncode != 0, reason="no ffmpeg")
+def test_post_reports_favs_for_logged_in_user(client):
+    media_id = upload(client, "favs.mp4")
+    post = lambda c: c.get("/api/media/posts/" + media_id + "/get").json["media_files"][0]
+    try:
+        assert post(client)["favs"] is False
+        assert client.get("/api/user/media/" + media_id + "/toggle/favs").json["status"] == "success"
+        assert post(client)["favs"] is True
+        assert "favs" not in post(app.test_client())  # anonymous visitors don't get it
+        client.get("/api/user/media/" + media_id + "/toggle/favs")
+        assert post(client)["favs"] is False
+    finally:
+        client.get("/api/media/remove/" + media_id)

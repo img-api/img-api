@@ -866,6 +866,11 @@ def api_get_media_post(media_id):
 
     return_list = [media_file.serialize()]
 
+    # Tell a logged-in user whether this post is in their favs (the star on the post page)
+    if current_user.is_authenticated:
+        favs = current_user.galleries.get_media_list_by_name_or_id("favs")
+        return_list[0]['favs'] = bool(favs and favs.is_on_list(str(media_file.id)))
+
     return get_response_formatted({'status': 'success', "media_files": return_list})
 
 
