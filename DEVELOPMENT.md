@@ -1,55 +1,46 @@
+# Development
 
-# VISUAL STUDIO CODE
+## Dev stack: https://dev.img-api.com
 
-Our development instance is running here:
-http://dev.gputop.com:8080/?folder=/home/dev/img-api
+Run by PM2 from `infra/ecosystem.dev.config.cjs`:
 
-# API Entry points
+| process           | what                                         | where           |
+|-------------------|----------------------------------------------|-----------------|
+| `img-api-dev-api` | this repo, gunicorn with `--reload`          | 127.0.0.1:5112  |
+| `img-api-dev-ui`  | `/home/smartinez/img-api-react`, Vite        | 127.0.0.1:47131 |
 
-## Site map
-This will give you all the API entry points to explore the syntax and format
-https://dev.gputop.com/api/admin/site-map
+Apache serves `dev.img-api.com`: `/api/` goes to the API, `/static/MEDIA_FILES`
+is served from disk, everything else goes to Vite (with hot reload).
 
-## Hello world
-Check if the API responds to calls:
-https://dev.gputop.com/api/hello_world/
+    infra/restart.sh    # start or restart both
+    infra/status.sh     # processes + HTTP checks
+    infra/logs.sh       # tail both logs
 
-It will return a standard message with the message "hello world".
-Every call has a status so we can show success or failure with an error.
-The UI will always have to check for this status.
+Dev never touches prod data:
 
-```
-    {
-        api: "0.50pa",
-        current_user: "contact@engineer.blue",
-        msg: "hello world",
-        status: "success",
-        time: "2024-08-27 08:53:43.564692",
-        timestamp: 1724748823
-    }
-```
+- Database `imgapi_dev` (a copy of prod's `test`), chosen by `~/.imgapi-dev.json`
+  through `IMGAPI_CONFIG`.
+- Media in `~/img-api-dev-data/media`: a hard-linked copy of
+  `/home/imgapi/IMGAPI_DATA`. It takes no extra disk, and prod's files are
+  read-only for us, so deleting or uploading in dev doesn't change prod.
 
-# COMPANY API
+## Tests
 
-## How to query documentation
-https://docs.mongoengine.org/guide/querying.html
+    .venv/bin/python -m pytest -q          # backend, throwaway database imgapi_pytest
+    cd ../img-api-react && npx playwright test   # e2e against dev.img-api.com, phone + desktop
+    infra/test_deploy.sh                   # rehearses the prod deploy in a sandbox
 
-## Queries examples
-https://dev.gputop.com/api/company/query?founded=1994
+The Playwright run seeds an `e2e_owner` user with three posts in `imgapi_dev`
+(and refuses any base URL that isn't dev).
 
-## Find company by name
-https://gputop.com/api/company/query?company_name__icontains=nordisk
+## Deploying to img-api.com
 
+See `infra/PROD_MIGRATION.md` (one-time move to gunicorn) and `infra/deploy.sh`.
 
-https://gputop.com/api/company/query?exchange_tickers=XNYS:ALB
+## API
 
-## Get all companies
-https://dev.gputop.com/api/company/get/ALL
-
-## Delete all companies in development
-https://dev.gputop.com/api/company/rm/ALL
-
-# FETCHES
-
-This slow query will find all the companies it can and index everything.
-https://dev.gputop.com/api/index/discovery
+- Hello world: `/api/hello_world/`
+- Newest public media: `/api/media/category/NEW`
+- A post, with next/previous: `/api/media/posts/<id>/get?next=posts` (or `?next=<gallery>`)
+- A media file: `/api/media/get/<id>` (redirects to `/static/MEDIA_FILES/...`),
+  poster frame `/api/media/get/<id>.v512.JPG`
