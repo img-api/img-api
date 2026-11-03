@@ -46,9 +46,8 @@ def api_create_prompt_local():
 
     jrequest['prompt'] = markdownify(jrequest['prompt']).strip()
 
-    match jrequest.get('subtype', None):
-        case "EMAIL_SUMMARY":
-            api_save_user_prompt(jrequest)
+    if jrequest.get('subtype') == "EMAIL_SUMMARY":
+        api_save_user_prompt(jrequest)
 
     if 'system' in jrequest and jrequest['system']:
         jrequest['system'] = markdownify(jrequest['system']).strip()

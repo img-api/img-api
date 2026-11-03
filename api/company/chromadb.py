@@ -4,7 +4,13 @@ import socket
 from datetime import datetime
 
 import requests
-import spacy
+try:
+    import spacy
+    nlp = spacy.load("en_core_web_sm")
+    SPACY_AVAILABLE = True
+except (ImportError, OSError):
+    nlp = None
+    SPACY_AVAILABLE = False
 from api import (admin_login_required, api_key_or_login_required,
                  get_response_error_formatted, get_response_formatted)
 from api.company.models import DB_Company
@@ -30,8 +36,6 @@ chroma_client.heartbeat()
 
 collection = chroma_client.get_or_create_collection("api_company")
 col_comp_info = chroma_client.get_or_create_collection("api_company_info")
-
-nlp = spacy.load("en_core_web_sm")
 
 
 def chromadb_delete_all_company():
@@ -96,13 +100,14 @@ def chromadb_company_search(query, limit=10):
 
 
 def extract_companies_and_tickers(article):
-    # Load spaCy's English language model
+    if not SPACY_AVAILABLE or nlp is None:
+        # Fallback: regex-only extraction when spacy not installed
+        companies = set()
+    else:
+        doc = nlp(article)
+        companies = [ent.text for ent in doc.ents if ent.label_ == "ORG"]
 
-    # Process the article text
-    doc = nlp(article)
-
-    # Extract entities recognized as ORGANIZATION
-    companies = [ent.text for ent in doc.ents if ent.label_ == "ORG"]
+    # Extract entities recognized as ORGANIZATION (when spacy available)
 
     # Regex to find tickers (e.g., $AAPL or plain AAPL)
     tickers = re.findall(r'\$?[A-Z]{1,5}', article)
