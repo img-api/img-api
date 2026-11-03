@@ -1,18 +1,33 @@
 """ Next/previous on a single post walks the post owner's photostream. """
 import io
+import os
 import subprocess
+import tempfile
 
 import pytest
 
 from imgapi_launcher import app
 from test.unit.apiapp import client  # noqa: F401  (fixture, logged in as "dummy")
-from test.unit.apiapp.test_smoke import make_video
 
 VIEWER = "username=viewer&email=viewer@engineer.blue&password=test1234"
 
 
+def distinct_video(seed):
+    """ A short test video whose bytes depend on seed (the server de-duplicates by checksum) """
+    path = tempfile.mktemp(suffix=".mp4")
+    subprocess.run(["ffmpeg", "-loglevel", "error", "-f", "lavfi", "-i", f"color=c=0x{seed * 40 % 256:02x}4080:size=160x90:rate=10",
+                    "-t", "1", "-pix_fmt", "yuv420p", "-c:v", "libx264", path], check=True)
+    with open(path, "rb") as f:
+        data = f.read()
+    os.remove(path)
+    return data
+
+
+_seed = iter(range(1, 1000))
+
+
 def upload(client, name):
-    data = dict(image=(io.BytesIO(make_video()), name))
+    data = dict(image=(io.BytesIO(distinct_video(next(_seed))), name))
     ret = client.post("/api/media/upload", content_type="multipart/form-data", data=data)
     assert ret.json["status"] == "success", ret.json
     media_id = ret.json["media_files"][0]["media_id"]
@@ -67,3 +82,29 @@ def test_post_reports_favs_for_logged_in_user(client):
         assert post(client)["favs"] is False
     finally:
         client.get("/api/media/remove/" + media_id)
+
+
+@pytest.mark.skipif(subprocess.run(["which", "ffmpeg"], capture_output=True).returncode != 0, reason="no ffmpeg")
+def test_gallery_navigation_hides_private_media_from_visitors(client, viewer):
+    from api.galleries.models import DB_MediaList
+
+    a, b, c = (upload(client, n) for n in ("gal_a.mp4", "gal_b.mp4", "gal_c.mp4"))
+    try:
+        assert client.get("/api/media/posts/" + b + "/set_privacy/private").json["status"] == "success"
+        for m in (a, b, c):
+            assert client.get("/api/user/media/" + m + "/append/navtest").json["status"] == "success"
+
+        nxt = lambda cl, query: cl.get("/api/media/posts/" + a + "/get?" + query)
+
+        # The owner sees every item in order; visitors skip the private one
+        assert nxt(client, "next=navtest").json["media_files"][0]["media_id"] == b
+        assert nxt(viewer, "next=navtest").json["media_files"][0]["media_id"] == c
+        assert nxt(app.test_client(), "next=navtest").json["media_files"][0]["media_id"] == c
+
+        # A visitor asking for a gallery that doesn't exist gets a 404 and nothing is written
+        lists_before = DB_MediaList.objects.count()
+        assert nxt(viewer, "next=no_such_gallery").status_code == 404
+        assert DB_MediaList.objects.count() == lists_before
+    finally:
+        for m in (a, b, c):
+            client.get("/api/media/remove/" + m)

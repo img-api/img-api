@@ -44,35 +44,32 @@ class DB_MediaList(db.DynamicDocument, DB_UserCheck):
 
     private_keys = []
 
-    def find_media_pos(self, media_id, position):
-        for idx, item in enumerate(self.media_list):
-            if item.media_id == media_id:
-                pos = (idx + position) % len(self.media_list)
-                return pos
-
-        return 0
-
     def get_media_position(self, media_id, position):
+        """ The next (position > 0) or previous (position < 0) media in this list.
+            Skips deleted media and media the current user isn't allowed to see. """
         from api.media.models import File_Tracking
 
-        media_file = None
+        count = len(self.media_list)
+        if not count:
+            return None
 
+        start = next((idx for idx, item in enumerate(self.media_list) if item.media_id == media_id), 0)
+        step = 1 if position >= 0 else -1
         remove_cleanup = []
 
-        pos = self.find_media_pos(media_id, position)
-
         try:
-            while position < len(self.media_list):
-                item = self.media_list[pos]
+            for k in range(1, count):
+                item = self.media_list[(start + step * k) % count]
                 media_file = File_Tracking.objects(id=item.media_id).first()
 
                 if not media_file:
                     remove_cleanup.append(item.media_id)
+                    continue
 
-                if media_file: return media_file
+                if not media_file.is_public and not media_file.is_current_user():
+                    continue
 
-                position += 1
-                pos = (pos + position) % len(self.media_list)
+                return media_file
 
             return None
         finally:

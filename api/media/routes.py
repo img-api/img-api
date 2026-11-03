@@ -836,22 +836,26 @@ def api_get_media_post(media_id):
     media_list = None
 
     # Next/previous walk the post owner's photostream, also when someone else is logged in.
-    if current_user.is_authenticated and current_user.username == media_file.username:
+    is_owner = current_user.is_authenticated and current_user.username == media_file.username
+    if is_owner:
         user = current_user
     else:
         user = media_file.get_owner()  # None when the media is private
         if not user:
             return get_response_error_formatted(403, {'error_msg': "User is private."})
 
-    if get_next:
-        position = 1
-        if (get_next != "posts"):
-            media_list = user.get_media_list(get_next, raw_db=True)
+    list_name = get_next or get_prev
+    if list_name:
+        position = 1 if get_next else -1
 
-    if get_prev:
-        position = -1
-        if (get_prev != "posts"):
-            media_list = user.get_media_list(get_prev, raw_db=True)
+    if list_name and list_name != "posts":
+        if is_owner:
+            media_list = user.get_media_list(list_name, raw_db=True)
+        else:
+            # Read-only for visitors: never auto-create a gallery on someone else's GET
+            media_list = user.galleries.get_media_list_by_name_or_id(list_name)
+            if not media_list:
+                return get_response_error_formatted(404, {'error_msg': "Gallery not found."})
 
     if position != 0:
         if media_list:
