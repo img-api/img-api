@@ -1,0 +1,27 @@
+# img-api production API (gunicorn). Install once, see infra/PROD_MIGRATION.md:
+#   sudo cp infra/img-api.service /etc/systemd/system/ && sudo systemctl daemon-reload
+#
+# systemd rather than PM2 because prod runs as the imgapi user (it owns the
+# media files), and this starts at boot without a per-user PM2 setup.
+[Unit]
+Description=img-api (gunicorn)
+After=network.target mongod.service redis-server.service
+
+[Service]
+User=imgapi
+Group=imgapi
+WorkingDirectory=/home/imgapi/img-api
+# HOME makes the app read /home/imgapi/.imgapi.json (DB, SECRET_KEY)
+Environment=HOME=/home/imgapi
+Environment=IMGAPI_MEDIA_PATH=/home/imgapi/IMGAPI_DATA/
+Environment=LC_ALL=C.UTF-8
+Environment=LANG=C.UTF-8
+# .venv-current is a symlink that infra/deploy.sh points at the newest venv
+ExecStart=/home/imgapi/img-api/.venv-current/bin/gunicorn \
+    --bind 127.0.0.1:47120 --workers 4 --threads 16 --timeout 120 \
+    --access-logfile - imgapi_launcher:app
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
