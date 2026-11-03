@@ -70,7 +70,7 @@ def check_email(email):
         return False
 
     # As it is, it will support more than one plus in the string, FIX is required
-    match = re.match('^[_a-z0-9-\+]+(\.[_a-z0-9-\+]+)*@[a-z0-9-]+(\.[a-z0-9-]+)*(\.[a-z]{2,4})$', email)
+    match = re.match(r'^[_a-z0-9-\+]+(\.[_a-z0-9-\+]+)*@[a-z0-9-]+(\.[a-z0-9-]+)*(\.[a-z]{2,4})$', email)
     if match == None:
         return False
 

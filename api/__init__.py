@@ -381,8 +381,6 @@ def configure_media_folder(app):
 def handle_bad_request_with_html(e):
     import traceback
 
-    from app.api_v1 import get_response_error_formatted
-
     traceback.print_tb(e.__traceback__)
     print(e.description)
     print(request.base_url)
