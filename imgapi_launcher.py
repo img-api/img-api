@@ -15,7 +15,7 @@ if os.environ.get('IMGAPI_SETTINGS', False):
 
 MONGODB_SETTINGS = {'host': 'mongodb://localhost/demo', 'port': 27017}
 
-app.config.update(DEBUG=True, MONGODB_SETTINGS=MONGODB_SETTINGS, SECRET_KEY="mysecret_key_loaded_from_the_system")
+app.config.update(DEBUG=True, MONGODB_SETTINGS=MONGODB_SETTINGS)
 
 # Path to the configuration file
 config_path = os.environ.get('IMGAPI_CONFIG', os.path.expanduser('~/.imgapi.json'))
@@ -27,6 +27,15 @@ if os.path.exists(config_path):
         app.config.update(config_data)
 else:
     print("Config file not found")
+
+# The secret key comes from the config file (or IMGAPI_SECRET_KEY).
+# The fallback is only good for local development.
+if os.environ.get('IMGAPI_SECRET_KEY'):
+    app.config['SECRET_KEY'] = os.environ['IMGAPI_SECRET_KEY']
+if not app.config.get('SECRET_KEY'):
+    print("WARNING: SECRET_KEY not configured, using the insecure development key")
+    app.config['SECRET_KEY'] = "dev-only-insecure-secret-key"
+
 
 class MongoEngine:
     """ Minimal replacement for flask_mongoengine (unmaintained, no Flask 3).
