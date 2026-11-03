@@ -3,7 +3,7 @@ import os
 import ffmpeg
 import redis
 import requests
-from rq import Connection, Queue, Worker
+from rq import Queue, Worker
 from wand.image import Image
 
 # https://www.pythonpool.com/imagemagick-python/
@@ -164,6 +164,5 @@ def fetch_url_image(json):
 
 
 if __name__ == '__main__':
-    with Connection(conn):
-        worker = Worker(list(map(Queue, listen)))
-        worker.work()
+    worker = Worker([Queue(name, connection=conn) for name in listen], connection=conn)
+    worker.work()

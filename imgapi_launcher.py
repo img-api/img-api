@@ -1,18 +1,14 @@
 import os
 import traceback
-from importlib import import_module
 
+import mongoengine
 import werkzeug
-from flasgger import LazyJSONEncoder, LazyString, Swagger, swag_from
-from flask import Flask, json, jsonify, request
+from flask import Flask, json
 from flask_cors import CORS
-from flask_login import LoginManager, current_user
-from flask_mongoengine import MongoEngine, MongoEngineSessionInterface
+from flask_login import LoginManager
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
-
-# Enable CORS on the entire application
 
 if os.environ.get('IMGAPI_SETTINGS', False):
     app.config.from_envvar('IMGAPI_SETTINGS')
@@ -32,57 +28,26 @@ if os.path.exists(config_path):
 else:
     print("Config file not found")
 
-# Database initialization
+class MongoEngine:
+    """ Minimal replacement for flask_mongoengine (unmaintained, no Flask 3).
+        Models use db.StringField, db.DynamicDocument... which map to mongoengine. """
 
+    def __getattr__(self, name):
+        return getattr(mongoengine, name)
+
+    def init_app(self, app):
+        settings = dict(app.config['MONGODB_SETTINGS'])
+        settings.setdefault('uuidRepresentation', 'pythonLegacy')  # same as before
+        mongoengine.connect(**settings)
+
+
+# Database initialization
 db = MongoEngine()
 db.init_app(app)
 
 # Login manager to handle users
-
 login_manager = LoginManager()
 login_manager.init_app(app)
-
-# Swagger and documentation
-
-app.json_encoder = LazyJSONEncoder  # Required by swagger
-"""
-app.config['SWAGGER'] = {'title': 'IMG API', 'DEFAULT_MODEL_DEPTH': -1}
-
-swagger_template = dict(
-    info={
-        'title':
-        LazyString(lambda: 'IMG-API API document'),
-        'version':
-        LazyString(lambda: '0.1'),
-        'description':
-        LazyString(
-            lambda:
-            'API Description to upload, convert, operate and download images and media  <style>.models {display: none !important}</style>'
-        ),
-        "basePath":
-        "/docs",  # base bash for blueprint registration
-    },
-    host=LazyString(lambda: request.host))
-
-swagger_config = {
-    "headers": [],
-    "specs": [{
-        "endpoint": 'imgapi_doc_v1',
-        "route": '/imgapi_doc_v1.json',
-        "rule_filter": lambda rule: True,
-        "model_filter": lambda tag: True,
-    }],
-    "static_url_path":
-    "/flasgger_static",
-    "swagger_ui":
-    True,
-    "specs_route":
-    "/apidocs/"
-}
-
-template = dict(swaggerUiPrefix=LazyString(lambda: request.environ.get('HTTP_X_SCRIPT_NAME', '')))
-swagger = Swagger(app, template=swagger_template, config=swagger_config)
-"""
 
 from api import register_api_blueprints
 # Blue prints section
