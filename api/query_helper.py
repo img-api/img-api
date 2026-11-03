@@ -19,6 +19,7 @@ def is_mongo_id(string):
     return bool(re.fullmatch(r'[0-9a-f]{24}', string))
 
 
+
 def get_adaptive_value(key, value):
     # Just check if true or false and change accordingly
     if key.find("date") != -1:
@@ -33,6 +34,23 @@ def get_adaptive_value(key, value):
         return False
 
     return value
+
+
+def adapt_json(json):
+    ret = {}
+    for key in json:
+        value = json[key]
+        if isinstance(value, list):
+            ret[key] = value
+            continue
+
+        if isinstance(value, dict):
+            ret[key] = adapt_json(value)
+            continue
+
+        ret[key] = get_adaptive_value(key, value)
+
+    return ret
 
 
 class DB_DateTimeFieldTimestamp(db.DateTimeField):

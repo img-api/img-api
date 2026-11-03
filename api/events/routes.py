@@ -4,7 +4,7 @@ from api import (api_key_or_login_required, get_response_error_formatted,
                  get_response_formatted)
 from api.events import blueprint
 from api.print_helper import *
-from api.query_helper import build_query_from_request, mongo_to_dict_helper
+from api.query_helper import adapt_json, build_query_from_request, mongo_to_dict_helper
 from flask import request
 from mongoengine.queryset.visitor import Q
 
@@ -108,7 +108,7 @@ def api_create_event():
     if (ctype := request.headers.get('Content-Type')) != 'application/json':
         return get_response_error_formatted(400, {'error_msg': "Wrong call."})
 
-    json_ = request.json
+    json_ = adapt_json(request.json)
 
     event = DB_Event(**json_)
     event.save(validate=False)
