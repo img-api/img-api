@@ -67,25 +67,3 @@ WTForms==3.0.1
 zipp==3.8.0
 
 python-dateutil==2.8.2
-
-yfinance==0.2.51
-multitasking==0.0.11  # 0.0.12+ requires Python 3.9+
-requests_ratelimiter
-requests_cache
-
-selenium
-psutil
-
-stripe
-
-markdown
-python-telegram-bot
-python-telegram-bot[job-queue]
-
-chromadb==0.5.23
-
-# Optional - install separately if needed: pip install spacy && python -m spacy download en_core_web_sm
-# spacy
-# sentence_transformers
-
-

@@ -14,7 +14,6 @@ def register_app_blueprints(app):
             'admin',
             'setup',
             'landing',
-            'business',
     ):
         module = import_module('app.{}.routes'.format(module_name))
         app.register_blueprint(module.blueprint)
