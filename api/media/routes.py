@@ -835,10 +835,11 @@ def api_get_media_post(media_id):
     position = 0
     media_list = None
 
-    if current_user.is_authenticated:
+    # Next/previous walk the post owner's photostream, also when someone else is logged in.
+    if current_user.is_authenticated and current_user.username == media_file.username:
         user = current_user
     else:
-        user = media_file.get_owner()
+        user = media_file.get_owner()  # None when the media is private
         if not user:
             return get_response_error_formatted(403, {'error_msg': "User is private."})
 
