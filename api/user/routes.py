@@ -214,7 +214,8 @@ def api_create_user_local():
         email = form['email'].strip().lower()
         username = form['username'].strip().lower()
         password = form['password']
-        referral = form['referral']
+        if 'referral' in form:
+            referral = form['referral']
     else:
         first_name = request.args.get("first_name", "")
         last_name = request.args.get("last_name", "")
