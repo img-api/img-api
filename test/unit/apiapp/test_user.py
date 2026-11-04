@@ -66,3 +66,32 @@ def test_user(client):
     assert len(name.split("_")) == 3
 
 
+
+
+# Missing or unknown fields get a 401 with a message, never a 500
+import pytest as _pytest
+
+
+@_pytest.mark.parametrize("query", [
+    "", "password=whatever123", "username=nobody_xyz", "username=nobody_xyz&password=whatever123",
+    "email=nobody@engineer.blue&password=whatever123",
+])
+def test_login_with_missing_fields_says_why(query):
+    from imgapi_launcher import app
+    with app.test_client() as c:
+        ret = c.get("/api/user/login?" + query)
+        assert ret.status_code == 401, ret.data[:200]
+        assert ret.json["error_msg"]
+
+
+def test_create_without_fields_says_why():
+    from imgapi_launcher import app
+    with app.test_client() as c:
+        assert c.get("/api/user/create").status_code == 401
+        assert c.post("/api/user/create", json={}).status_code == 401
+
+
+def test_recovery_with_unknown_user_id_says_why():
+    from imgapi_launcher import app
+    with app.test_client() as c:
+        assert c.get("/api/user/password_recovery?user_id=000000000000000000000000").status_code == 401

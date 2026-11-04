@@ -28,26 +28,16 @@ def get_user_from_request():
     user = None
     username = None
 
-    if request.method == 'POST':
-        form = request.json
-
-        if 'email' not in form or form['email'] == None:
-            return get_response_error_formatted(401, {'error_msg': "Please provide an email."})
-
-        email = form['email'].strip()
-        if 'username' in form:
-            username = form['username'].strip()
-
-        password = form['password']
-    else:
-        email = request.args.get("email").strip()
-        username = request.args.get("username").strip()
-        password = request.args.get("password")
+    # Any of the fields can be missing: answer with a message, never a 500
+    form = (request.get_json(silent=True) or {}) if request.method == 'POST' else request.args
+    email = (form.get('email') or '').strip()
+    username = (form.get('username') or '').strip()
+    password = form.get('password')
 
     if not password:
         return get_response_error_formatted(401, {'error_msg': "Please provide a password."})
 
-    if not email:
+    if not email and not username:
         return get_response_error_formatted(401, {'error_msg': "Please provide an email."})
 
     if email:
@@ -199,7 +189,7 @@ def api_create_user_local():
     referral = ""
 
     if request.method == 'POST':
-        form = request.json
+        form = request.get_json(silent=True) or {}
 
         if 'first_name' in form:
             first_name = form['first_name']
@@ -211,18 +201,18 @@ def api_create_user_local():
         else:
             last_name = ""
 
-        email = form['email'].strip().lower()
-        username = form['username'].strip().lower()
-        password = form['password']
+        email = (form.get('email') or '').strip().lower()
+        username = (form.get('username') or '').strip().lower()
+        password = form.get('password') or ''
         if 'referral' in form:
             referral = form['referral']
     else:
         first_name = request.args.get("first_name", "")
         last_name = request.args.get("last_name", "")
 
-        email = request.args.get("email").strip().lower()
-        username = request.args.get("username").strip()
-        password = request.args.get("password")
+        email = (request.args.get("email") or '').strip().lower()
+        username = (request.args.get("username") or '').strip()
+        password = request.args.get("password") or ''
         referral = request.args.get("referral")
 
     if first_name: first_name = first_name.strip()
@@ -311,12 +301,13 @@ def api_user_recovery():
     email = None
     user = None
 
-    if request.json:
-        if ('username' in request.json):
-            username = str(request.json['username'])
+    data = request.get_json(silent=True)
+    if data:
+        if ('username' in data):
+            username = str(data['username'])
             user = User.objects(username=username).first()
-        elif ('email' in request.json):
-            possible_email = str(request.json['email'])
+        elif ('email' in data):
+            possible_email = str(data['email'])
             user = User.objects(email=possible_email).first()
 
             if not user:
@@ -332,6 +323,8 @@ def api_user_recovery():
         user_id = request.args.get("user_id")
         if user_id:
             user = User.objects(id=user_id).first()
+            if not user:
+                return get_response_error_formatted(401, {'error_msg': "Sorry, we could not find your account."})
             username = user.username
             email = user.email
         else:
