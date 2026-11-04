@@ -239,7 +239,6 @@ class User(UserMixin, db.DynamicDocument):
 
     # Tokens are valid for ~12 Months
     def generate_auth_token(self, expiration=(12 * 31 * 24 * 60 * 60), extra={}):
-        print("- SERIALIZE APP KEY " + str(current_app.config['SECRET_KEY']))
         s = Serializer(current_app.config['SECRET_KEY'], expires_in=expiration)
         return s.dumps({'id': self.username, 'extra': extra}).decode("utf-8")
 

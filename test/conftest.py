@@ -10,7 +10,7 @@ MEDIA_DIR = tempfile.mkdtemp(prefix="imgapi_pytest_media_")
 
 os.environ["IMGAPI_MONGODB_HOST"] = "mongodb://localhost/" + TEST_DB
 os.environ["IMGAPI_MEDIA_PATH"] = MEDIA_DIR + "/"
-os.environ.setdefault("IMGAPI_SECRET_KEY", "pytest-secret")
+os.environ.setdefault("IMGAPI_SECRET_KEY", "pytest-secret-key-not-used-anywhere-else-0123456789")
 
 
 @pytest.fixture(scope="session", autouse=True)

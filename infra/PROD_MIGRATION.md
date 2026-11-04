@@ -20,6 +20,23 @@ that brings the files back to roughly origin/main. Its files match the repo
 
 `infra/deploy.sh` refuses to run while prod's git has uncommitted changes.
 
+## 0b. New SECRET_KEY (urgent, can be done on its own today)
+
+Prod signs login tokens with the key that was committed to the public repo, so
+anyone can forge a token for any user, admin included. The new code refuses to
+start with that key. Rotating it logs everyone out once (tokens are re-issued
+at the next login):
+
+    sudo -u imgapi python3 - <<'PY'
+    import json, os, secrets
+    p = '/home/imgapi/.imgapi.json'
+    d = json.load(open(p)); d['SECRET_KEY'] = secrets.token_urlsafe(48)
+    json.dump(d, open(p, 'w'), indent=4); os.chmod(p, 0o600)
+    PY
+    sudo systemctl reload apache2      # mod_wsgi picks up the new key
+
+Any other client holding a token (the Telegram bot) needs a fresh one.
+
 ## 1. Install the service (does not affect the live site)
 
     sudo cp /home/smartinez/img-api/infra/img-api.service /etc/systemd/system/

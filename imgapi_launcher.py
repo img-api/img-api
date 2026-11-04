@@ -32,13 +32,31 @@ else:
 if os.environ.get('IMGAPI_MONGODB_HOST'):
     app.config['MONGODB_SETTINGS'] = {'host': os.environ['IMGAPI_MONGODB_HOST']}
 
-# The secret key comes from the config file (or IMGAPI_SECRET_KEY).
-# The fallback is only good for local development.
+# The secret key signs every login token: whoever knows it can log in as anyone.
+# It comes from the config file (or IMGAPI_SECRET_KEY) and must never be one
+# that has been published. Generate one with:
+#   python3 -c 'import secrets; print(secrets.token_urlsafe(48))'
 if os.environ.get('IMGAPI_SECRET_KEY'):
     app.config['SECRET_KEY'] = os.environ['IMGAPI_SECRET_KEY']
-if not app.config.get('SECRET_KEY'):
-    print("WARNING: SECRET_KEY not configured, using the insecure development key")
-    app.config['SECRET_KEY'] = "dev-only-insecure-secret-key"
+
+# sha256 of keys that were committed to the public repo
+PUBLISHED_KEYS = {
+    "d672fa89866d0f90e60d8f5bd193fa2744c6a6732476a7da36a46c5d7c932324",
+}
+
+
+def check_secret_key(key):
+    import hashlib
+    if not key or len(key) < 32 or key.startswith("CHANGE-ME"):
+        return "SECRET_KEY is missing or too short (32+ characters)"
+    if hashlib.sha256(key.encode()).hexdigest() in PUBLISHED_KEYS:
+        return "SECRET_KEY is the one published in the git repo"
+    return None
+
+
+secret_problem = check_secret_key(app.config.get('SECRET_KEY'))
+if secret_problem:
+    raise RuntimeError(f"{secret_problem}. Set a new one in {config_path} (see imgapi_launcher.py).")
 
 
 class MongoEngine:
