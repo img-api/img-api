@@ -44,6 +44,8 @@ Any other client holding a token (the Telegram bot) needs a fresh one.
     sudo cp /home/smartinez/img-api/infra/img-api.service /etc/systemd/system/
     sudo systemctl daemon-reload
     sudo systemctl enable img-api
+    # Only imgapi writes here; Apache just reads (they used to be 777)
+    sudo chmod 755 /home/imgapi/img-api /home/imgapi/IMGAPI_DATA
 
 Rehearse the deploy script first (sandbox, never touches prod):
 `infra/test_deploy.sh`. Then run the first deploy: `infra/deploy.sh main`.
