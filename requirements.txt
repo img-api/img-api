@@ -48,3 +48,7 @@ Wand==0.7.2
 wcwidth==0.9.4
 webencodings==0.6.1
 Werkzeug==3.1.9
+
+# Not pinned on purpose: sites change and old yt-dlp versions stop working.
+# Every deploy builds a fresh venv, so it picks up the latest release.
+yt-dlp>=2025.10

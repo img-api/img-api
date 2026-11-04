@@ -59,7 +59,9 @@ def api_internal_add_to_media_list(media_list, my_file):
         print_exception(e, "Failed adding to list, please continue")
 
 
-def api_internal_upload_media():
+def api_internal_upload_media(files=None, gallery_id=None, extra_fields=None):
+    """ Uploads request.files, or files=[(key, FileStorage)] from server code (link import).
+        extra_fields (my_title, my_source_url...) are set on every uploaded media. """
     from flask_login import \
         current_user  # Required by pytest, otherwise client crashes on CI
 
@@ -79,12 +81,20 @@ def api_internal_upload_media():
     # If the target gallery is public, the media will be public too.
     # If the user is anonymous, we also check if the user created the library with "allow anonymous" permission.
     # This should be handled by the media list itself.
-    gallery_id = request.args.get("gallery_id", '')
+    if gallery_id is None:
+        gallery_id = request.args.get("gallery_id", '')
     media_list = current_user.get_media_list(gallery_id, raw_db=True)
+
+    def set_extra_fields(my_file):
+        if extra_fields:
+            try:
+                my_file.update_with_checks(extra_fields)
+            except Exception as e:
+                print_exception(e, "Failed setting extra fields")
 
     uploaded_ft = []
     idx = 0
-    for file_key, f_request in request.files.items():
+    for file_key, f_request in (files if files is not None else request.files.items()):
         key = file_key
 
         print(" Upload multiple " + key)
@@ -143,6 +153,7 @@ def api_internal_upload_media():
                         print_exception(e, "Failed loading json")
 
                     print(" FILE ALREADY UPLOADED WITH ID " + str(my_file.id))
+                    set_extra_fields(my_file)
 
                     ret = my_file.serialize()
                     ret['is_duplicated'] = True
@@ -230,6 +241,7 @@ def api_internal_upload_media():
             except Exception as e:
                 print_exception(e, "Crashed updating info")
 
+            set_extra_fields(my_file)
             api_internal_add_to_media_list(media_list, my_file)
             uploaded_ft.append(my_file.serialize())
 
@@ -283,6 +295,30 @@ def api_update_a_media():
 def api_web_upload_media():
     """ Uploads without an user or without checking a token, we use this to create new users on the fly """
     return api_internal_upload_media()
+
+
+@blueprint.route('/import', methods=['POST'])
+@api_key_or_login_required
+def api_import_media_from_url():
+    """ Downloads the video of an X, Reddit, Instagram or YouTube post and adds it like an upload.
+        JSON or form: {"url": "...", "gallery_id": "..."} (gallery optional: photostream)
+    """
+    from api.media.importer import ImportError_, import_from_url
+
+    data = request.get_json(silent=True) or request.form or {}
+    url = data.get('url') or request.args.get('url')
+    gallery_id = data.get('gallery_id') or request.args.get('gallery_id', '')
+
+    def upload(file_storage, extra):
+        return api_internal_upload_media(files=[('video', file_storage)], gallery_id=gallery_id, extra_fields=extra)
+
+    try:
+        return import_from_url(url, upload)
+    except ImportError_ as e:
+        return get_response_error_formatted(400, {"error_msg": str(e)})
+    except Exception as e:
+        print_exception(e, "Import from url crashed")
+        return get_response_error_formatted(500, {"error_msg": "Import failed"})
 
 
 @blueprint.route('/upload', methods=['POST'])
