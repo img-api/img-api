@@ -141,11 +141,36 @@ def api_delete_comments_get_query():
     return get_response_formatted(ret)
 
 
+# Anyone can query comments, so only these fields and operators are allowed:
+# no regex/contains operators (slow, and they could probe deleted text).
+QUERY_FIELDS = {'parent_obj', 'parent_obj_id', 'parent_comment_id', 'creation_date', 'is_NSFW', 'is_report'}
+QUERY_OPS = {'', 'ne', 'in', 'nin', 'gt', 'gte', 'lt', 'lte'}
+QUERY_PARAMS = {'limit', 'skip', 'order_by', 'reversed', 'fields', 'only', 'cleanup', 'verbose'}
+
+
+def check_comment_query(args):
+    """ Returns an error message, or None if the query is allowed """
+    for key, value in args.items(multi=True):
+        if key == 'order_by':
+            if value.lstrip('-+') not in QUERY_FIELDS:
+                return "Can't sort by " + value[:40]
+            continue
+        if key in QUERY_PARAMS:
+            continue
+        field, _, op = key.partition('__')
+        if field not in QUERY_FIELDS or op not in QUERY_OPS:
+            return "Can't filter by " + key[:40]
+    return None
+
+
 @blueprint.route('/query', methods=['GET', 'POST'])
 def api_comments_get_query():
     """
-    Example of queries: https://domain/api/comments/query?title=NULL
+    Example of queries: https://domain/api/comments/query?parent_obj_id=<id>
     """
+    bad = check_comment_query(request.args)
+    if bad:
+        return get_response_error_formatted(400, {'error_msg': bad})
 
     comments = build_query_from_request(DB_Comments, global_api=True)
 
