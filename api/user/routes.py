@@ -247,7 +247,7 @@ def api_create_user_local():
                     'duplicate': True,
                     'status': 'success',
                     'msg': 'You were already registered, here is our token of gratitude',
-                    'user': user.serialize(),
+                    'user': user.serialize(for_owner=True),
                     'referral': referral,
                     'token': user.generate_auth_token()
                 }
@@ -282,7 +282,7 @@ def api_create_user_local():
         'status': 'success',
         'msg': 'Thanks for registering',
         'token': user.generate_auth_token(),
-        'user': user.serialize()
+        'user': user.serialize(for_owner=True)
     }
 
     if username != "dummy":
@@ -564,6 +564,10 @@ def api_get_user_by_username(user_id):
 
     user = User.objects(username__iexact=user_id).first()
     if not user or not user.username:
+        return get_response_error_formatted(401, {'error_msg': "Account not found."})
+
+    # Private accounts look the same as missing ones to everyone else
+    if not user.is_public and not user.can_see_private(current_user):
         return get_response_error_formatted(401, {'error_msg': "Account not found."})
 
     return get_response_formatted({'user': user.serialize()})

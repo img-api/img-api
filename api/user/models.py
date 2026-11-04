@@ -188,7 +188,13 @@ class User(UserMixin, db.DynamicDocument):
 
         return True
 
-    def serialize(self):
+    def can_see_private(self, viewer):
+        """ The account owner and admins see everything about this account """
+        if not viewer or not viewer.is_authenticated:
+            return False
+        return viewer.username == self.username or viewer.is_admin or viewer.username == "admin"
+
+    def serialize(self, for_owner=False):
         """ Returns a clean version of the user name so we have to explicitely add variables here
             We could return the object after a filter, but on this case,
             it is safer to never return from that source and convert directly into an object
@@ -196,6 +202,19 @@ class User(UserMixin, db.DynamicDocument):
         if not self.creation_date:
             self.creation_date = datetime.utcnow()
             self.update(**{"creation_date": self.creation_date})
+
+        public = {
+            'id': str(self.id),
+            'username': self.username,
+            'profile_mid': self.profile_mid,
+            'is_public': self.is_public,
+            'is_media_public': self.is_media_public,
+            'creation_date': time.mktime(self.creation_date.timetuple()),
+        }
+
+        # Other people only see the public basics
+        if not for_owner and not self.can_see_private(current_user):
+            return public
 
         ret = {
             'id': str(self.id),
