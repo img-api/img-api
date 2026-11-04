@@ -1,0 +1,23 @@
+# One pass of video descriptions: collect finished jobs from lepochi's GPU
+# worker queue (tags + cats gallery), then queue more. See api/media/describe.py.
+# Started every 15 minutes by img-api-describe.timer. Install:
+#   sudo cp infra/img-api-describe.* /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now img-api-describe.timer
+[Unit]
+Description=img-api video descriptions (one pass)
+After=network-online.target mongod.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=imgapi
+Group=imgapi
+WorkingDirectory=/home/imgapi/img-api
+Environment=HOME=/home/imgapi
+Environment=IMGAPI_MEDIA_PATH=/home/imgapi/IMGAPI_DATA/
+Environment=LC_ALL=C.UTF-8
+Environment=LANG=C.UTF-8
+ExecStart=/home/imgapi/img-api/.venv-current/bin/python -m api.media.describe
+TimeoutStartSec=10min
+StandardOutput=append:/var/log/img-api/describe.log
+StandardError=append:/var/log/img-api/describe.log
