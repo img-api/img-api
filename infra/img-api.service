@@ -17,9 +17,14 @@ Environment=IMGAPI_MEDIA_PATH=/home/imgapi/IMGAPI_DATA/
 Environment=LC_ALL=C.UTF-8
 Environment=LANG=C.UTF-8
 # .venv-current is a symlink that infra/deploy.sh points at the newest venv
+# Access log without query strings: login tokens travel as ?key=...
 ExecStart=/home/imgapi/img-api/.venv-current/bin/gunicorn \
     --bind 127.0.0.1:47120 --workers 4 --threads 16 --timeout 120 \
-    --access-logfile - imgapi_launcher:app
+    --access-logfile - --access-logformat '%%(h)s %%(t)s "%%(m)s %%(U)s" %%(s)s %%(b)s %%(L)ss' \
+    imgapi_launcher:app
+# journald here only stores warnings, so logs go to files (infra/img-api.logrotate)
+StandardOutput=append:/var/log/img-api/access.log
+StandardError=append:/var/log/img-api/error.log
 Restart=always
 RestartSec=3
 

@@ -1,0 +1,10 @@
+# sudo cp infra/img-api.logrotate /etc/logrotate.d/img-api
+/var/log/img-api/*.log {
+    weekly
+    rotate 8
+    compress
+    delaycompress
+    missingok
+    notifempty
+    copytruncate
+}

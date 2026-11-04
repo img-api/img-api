@@ -39,6 +39,8 @@ Any other client holding a token (the Telegram bot) needs a fresh one.
 
 ## 1. Install the service (does not affect the live site)
 
+    sudo install -d -m 750 -o root -g adm /var/log/img-api
+    sudo cp /home/smartinez/img-api/infra/img-api.logrotate /etc/logrotate.d/img-api
     sudo cp /home/smartinez/img-api/infra/img-api.service /etc/systemd/system/
     sudo systemctl daemon-reload
     sudo systemctl enable img-api
