@@ -12,7 +12,7 @@ Per run (systemd timer, every 15 minutes):
   2. top the queue up to DESCRIBE_MAX_OUTSTANDING.
 
 State per video lives in `auto_describe_state`: queued, done, failed or
-no_preview. Run by hand with:  python -m api.media.describe [--dry-run]
+no_preview. Run by hand with:  python describe_videos.py [--dry-run]
 """
 import json
 import os
@@ -215,9 +215,3 @@ def run(dry_run=False):
     log(f"collected {collected}, queued {queued}, lepochi queue {queue}")
     return 0
 
-
-if __name__ == '__main__':
-    from imgapi_launcher import app
-
-    with app.app_context():
-        sys.exit(run(dry_run='--dry-run' in sys.argv))

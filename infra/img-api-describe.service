@@ -17,7 +17,7 @@ Environment=HOME=/home/imgapi
 Environment=IMGAPI_MEDIA_PATH=/home/imgapi/IMGAPI_DATA/
 Environment=LC_ALL=C.UTF-8
 Environment=LANG=C.UTF-8
-ExecStart=/home/imgapi/img-api/.venv-current/bin/python -m api.media.describe
+ExecStart=/home/imgapi/img-api/.venv-current/bin/python describe_videos.py
 TimeoutStartSec=10min
 StandardOutput=append:/var/log/img-api/describe.log
 StandardError=append:/var/log/img-api/describe.log
