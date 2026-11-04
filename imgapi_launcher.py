@@ -8,7 +8,6 @@ from flask_cors import CORS
 from flask_login import LoginManager
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}})
 
 if os.environ.get('IMGAPI_SETTINGS', False):
     app.config.from_envvar('IMGAPI_SETTINGS')
@@ -88,17 +87,18 @@ register_api_blueprints(app)
 register_app_blueprints(app)
 
 
-@app.after_request
-def after_request(response):
-    """ We are a public API, we return that we enable everything (Overrides Cors) """
-
-    # Using CORS for this part of the credentials
-    #origin = request.environ.get('HTTP_ORIGIN', '*')
-    #response.headers.add('Access-Control-Allow-Origin', origin)
-
-    response.headers.add('Access-Control-Allow-Credentials', 'true')
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-    return response
+# CORS: media files can be embedded by any site (no cookies). The rest of the
+# API only answers our own frontends from a browser, with cookies: any other
+# site's scripts can't read responses or act with a visitor's session.
+# Extra origins: "CORS_ORIGINS": [...] in the config file.
+CORS_ORIGINS = app.config.get('CORS_ORIGINS') or [
+    "https://img-api.com", "https://www.img-api.com", "https://dev.img-api.com",
+]
+CORS(app, resources={
+    r"/api/media/get/*": {"origins": "*", "supports_credentials": False},
+    r"/*": {"origins": CORS_ORIGINS, "supports_credentials": True,
+            "allow_headers": ["Content-Type", "Authorization"]},
+})
 
 
 def handle_bad_request(e):

@@ -1,7 +1,6 @@
 import os
 
 from flask import Blueprint, current_app
-from flask_cors import CORS
 
 blueprint = Blueprint('api_comments_blueprint',
                       __name__,
@@ -9,5 +8,4 @@ blueprint = Blueprint('api_comments_blueprint',
                       template_folder='templates',
                       static_folder='static')
 
-CORS(blueprint)
 

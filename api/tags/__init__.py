@@ -1,5 +1,4 @@
 from flask import Blueprint
-from flask_cors import CORS
 
 blueprint = Blueprint('api_tags_blueprint',
                       __name__,
@@ -7,4 +6,3 @@ blueprint = Blueprint('api_tags_blueprint',
                       template_folder='templates',
                       static_folder='static')
 
-CORS(blueprint)
